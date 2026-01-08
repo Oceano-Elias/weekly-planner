@@ -15,6 +15,7 @@ import { FocusMode } from './components/FocusMode.js';
 import { ConfirmModal } from './components/ConfirmModal.js';
 import { PlannerService } from './services/PlannerService.js';
 import { UpdateNotification } from './components/UpdateNotification.js';
+import { DepartmentSettings } from './components/DepartmentSettings.js';
 
 // Import styles
 import './styles/reset.css';
@@ -29,6 +30,7 @@ import './styles/analytics.css';
 import './styles/utilities.css';
 import './styles/modal.css';
 import './styles/confirm-modal.css';
+import './styles/settings.css';
 
 // Make modules available globally for cross-module communication
 window.Store = Store;
@@ -39,6 +41,7 @@ window.Filters = Filters;
 window.Analytics = Analytics;
 window.Departments = Departments;
 window.FocusMode = FocusMode;
+window.DepartmentSettings = DepartmentSettings;
 
 const App = {
     selectedDuration: 60,
@@ -60,6 +63,7 @@ const App = {
         this.setupSidebar();
         this.setupTemplateActions();
         this.setupPrintActions();
+        this.setupSettings();
         this.setupKeyboardShortcuts();
         this.updateBadgeCounts();
         this.setupFavicon();
@@ -466,6 +470,18 @@ const App = {
         if (printBtn) {
             printBtn.addEventListener('click', () => {
                 window.print();
+            });
+        }
+    },
+
+    /**
+     * Setup settings button
+     */
+    setupSettings() {
+        const settingsBtn = document.getElementById('settingsBtn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => {
+                DepartmentSettings.open();
             });
         }
     },

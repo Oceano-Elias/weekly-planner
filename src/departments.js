@@ -1,9 +1,11 @@
 /**
  * Department Hierarchy Data and Logic
  * Supports 4+ levels of nested departments with colors and abbreviations
+ * Now supports custom departments via localStorage
  */
 
-export const DepartmentData = {
+// Default department structure (used if no custom departments are saved)
+const DefaultDepartmentData = {
     WORK: {
         color: '#3B82F6',
         abbr: 'W',
@@ -212,6 +214,34 @@ export const DepartmentData = {
         }
     }
 };
+
+// Load custom departments from localStorage or use defaults
+function loadDepartments() {
+    try {
+        const saved = localStorage.getItem('weeklyPlanner_departments');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+    } catch (e) {
+        console.error('Error loading custom departments:', e);
+    }
+    return DefaultDepartmentData;
+}
+
+// Export mutable reference (will be updated when departments change)
+export let DepartmentData = loadDepartments();
+
+// Function to refresh departments (called after settings changes)
+export function refreshDepartments() {
+    DepartmentData = loadDepartments();
+}
+
+// Listen for department updates
+if (typeof window !== 'undefined') {
+    window.addEventListener('departmentsUpdated', () => {
+        DepartmentData = loadDepartments();
+    });
+}
 
 /**
  * Department utility functions

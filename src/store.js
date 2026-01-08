@@ -863,5 +863,48 @@ export const Store = {
         });
 
         return byHierarchy;
+    },
+
+    // ========================================
+    // CUSTOM DEPARTMENT MANAGEMENT
+    // ========================================
+
+    /**
+     * Get custom departments from localStorage
+     * @returns {Object|null} Custom department data or null if using defaults
+     */
+    getCustomDepartments() {
+        try {
+            const saved = localStorage.getItem('weeklyPlanner_departments');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('Error loading custom departments:', e);
+        }
+        return null;
+    },
+
+    /**
+     * Save custom departments to localStorage
+     * @param {Object} departmentData - The department hierarchy object
+     */
+    saveCustomDepartments(departmentData) {
+        try {
+            localStorage.setItem('weeklyPlanner_departments', JSON.stringify(departmentData));
+            // Trigger event for live updates
+            window.dispatchEvent(new CustomEvent('departmentsUpdated', { detail: departmentData }));
+        } catch (e) {
+            console.error('Error saving custom departments:', e);
+        }
+    },
+
+    /**
+     * Reset departments to defaults
+     */
+    resetDepartmentsToDefaults() {
+        localStorage.removeItem('weeklyPlanner_departments');
+        window.dispatchEvent(new CustomEvent('departmentsUpdated', { detail: null }));
     }
 };
+
