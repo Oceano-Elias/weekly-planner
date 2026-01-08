@@ -145,17 +145,41 @@ export const Calendar = {
             const dayName = this.days[index];
             const goal = goals[dayName] || '';
 
+            // Format date nicely
+            const dateStr = date.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            // Current time for initial render (will be updated by timer)
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+
             html += `
-        <div class="calendar-header-cell day-view-header">
-          <div class="calendar-day-name">${this.dayLabels[index]}</div>
-          <div class="calendar-day-date ${isToday ? 'today' : ''}">${date.getDate()}</div>
-          <input type="text" class="calendar-day-goal" 
-                 placeholder="Add goal for ${this.dayLabels[index]}..." 
-                 data-day="${dayName}"
-                 value="${goal.replace(/"/g, '&quot;')}">
+        <div class="calendar-header-cell day-view-header-new">
+          <div class="day-header-left">
+            <span class="day-header-date ${isToday ? 'today' : ''}">${dateStr}</span>
+          </div>
+          <div class="day-header-center">
+            <input type="text" class="day-header-goal" 
+                   placeholder="🎯 Set today's goal..." 
+                   data-day="${dayName}"
+                   value="${goal.replace(/"/g, '&quot;')}">
+          </div>
+          <div class="day-header-right">
+            <span class="day-header-clock" id="dayHeaderClock">${timeStr}</span>
+          </div>
         </div>
       `;
             header.style.gridTemplateColumns = `var(--calendar-time-col, 60px) 1fr`;
+
+            // Start clock update timer
+            this.startDayClockTimer();
         }
 
         header.innerHTML = html;
@@ -167,7 +191,8 @@ export const Calendar = {
      * Setup listeners for daily goal inputs
      */
     setupGoalListeners() {
-        const inputs = document.querySelectorAll('.calendar-day-goal');
+        // Select both week view and day view goal inputs
+        const inputs = document.querySelectorAll('.calendar-day-goal, .day-header-goal');
         inputs.forEach(input => {
             input.addEventListener('change', (e) => {
                 const day = e.target.dataset.day;
@@ -625,5 +650,35 @@ export const Calendar = {
     refresh() {
         this.renderScheduledTasks();
         this.setupCellClick();
+    },
+
+    /**
+     * Start/update the clock timer for day view header
+     */
+    dayClockTimer: null,
+
+    startDayClockTimer() {
+        // Clear any existing timer
+        if (this.dayClockTimer) {
+            clearInterval(this.dayClockTimer);
+        }
+
+        // Update clock every second
+        this.dayClockTimer = setInterval(() => {
+            const clockEl = document.getElementById('dayHeaderClock');
+            if (clockEl) {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                clockEl.textContent = timeStr;
+            } else {
+                // Clock element not found, stop timer (probably switched to week view)
+                clearInterval(this.dayClockTimer);
+                this.dayClockTimer = null;
+            }
+        }, 1000);
     }
 };
