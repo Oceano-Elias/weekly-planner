@@ -192,27 +192,38 @@
 
 /* Hierarchy row for standard/full layouts */
 .task-hierarchy-row {
-    font-size: 11px;
-    color: color-mix(in srgb, var(--task-color) 60%, white);
-    margin-top: 6px;
-    padding-top: 6px;
+    font-size: 12px;
+    color: color-mix(in srgb, var(--task-color) 70%, white);
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     font-weight: var(--font-weight-medium);
+    letter-spacing: 0.3px;
 }
 
 /* Day view enhancements */
 .task-block.day-view .task-header-left .task-title {
-    font-size: 15px;
-    max-width: 250px;
+    font-size: 16px;
+    max-width: 300px;
+    font-weight: var(--font-weight-bold);
 }
 
 .task-block.day-view .task-goal-center {
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: rgba(255, 255, 255, 0.95);
+    padding: 0 16px;
+}
+
+.task-block.day-view .task-header-row {
+    gap: 12px;
 }
 
 .task-block.day-view .task-duration {
-    font-size: 12px;
-    padding: 4px 10px;
+    font-size: 13px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.15);
+    font-weight: var(--font-weight-bold);
 }
 
 /* Layout-specific adjustments */
@@ -299,29 +310,30 @@
 
 .notes-summary {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    gap: 12px;
 }
 
 .notes-count {
     font-size: 12px;
     font-weight: var(--font-weight-semibold);
-    color: rgba(255, 255, 255, 0.8);
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .notes-progress-bar {
-    height: 4px;
+    flex: 1;
+    height: 6px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-full);
     overflow: hidden;
+    min-width: 100px;
 }
 
 .notes-progress-fill {
     height: 100%;
-    background: var(--task-color);
+    background: linear-gradient(90deg, var(--task-color), color-mix(in srgb, var(--task-color) 70%, white));
     box-shadow: 0 0 10px var(--task-color);
     transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }

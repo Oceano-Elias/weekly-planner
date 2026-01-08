@@ -123,15 +123,75 @@ export const Store = {
     },
 
     /**
-     * Update a task
+     * Update a task (handles both legacy and week-specific IDs)
      */
     updateTask(taskId, updates) {
-        const task = state.tasks.find(t => t.id === taskId);
-        if (task) {
-            Object.assign(task, updates);
+        // Try legacy tasks first
+        const legacyTask = state.tasks.find(t => t.id === taskId);
+        if (legacyTask) {
+            Object.assign(legacyTask, updates);
             this.save();
+            return legacyTask;
         }
-        return task;
+
+        // Handle week-specific task IDs
+        if (!taskId || !taskId.includes('_')) return null;
+
+        // Handle standalone week task IDs (format: week_weekId_instanceId or week_weekId_idx_X)
+        if (taskId.startsWith('week_')) {
+            const parts = taskId.split('_');
+            const weekId = parts[1]; // "2026-W01"
+
+            const weekInstances = state.weeklyInstances[weekId];
+            if (!weekInstances) return null;
+
+            // Find the task by instanceId or by index
+            const suffix = parts.slice(2).join('_');
+            let instance = null;
+
+            if (suffix.startsWith('inst_')) {
+                instance = weekInstances.tasks.find(t => t.instanceId === suffix);
+            } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
+                const taskIndex = parseInt(suffix.split('_')[1]);
+                instance = weekInstances.tasks[taskIndex];
+            }
+
+            if (instance) {
+                Object.assign(instance, updates);
+                this.save();
+                return this.getTask(taskId);
+            }
+            return null;
+        }
+
+        // Handle template-based week-specific IDs (format: template_X_weekId)
+        if (taskId.split('_').length >= 3) {
+            const parts = taskId.split('_');
+            const weekId = parts[parts.length - 1];
+            const templateId = parts.slice(0, -1).join('_');
+
+            // Update the template itself
+            const template = state.templates.find(t => t.id === templateId);
+            if (template) {
+                Object.assign(template, updates);
+            }
+
+            // Update the instance for this week
+            const weekInstances = state.weeklyInstances[weekId];
+            if (weekInstances) {
+                const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+                if (instance) {
+                    // Only copy relevant fields to instance (not schedule data)
+                    if (updates.completed !== undefined) instance.completed = updates.completed;
+                    if (updates.notes !== undefined) instance.notes = updates.notes;
+                }
+            }
+
+            this.save();
+            return this.getTask(taskId);
+        }
+
+        return null;
     },
 
     /**
