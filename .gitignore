@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build cache
+.vite/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Tauri build
+src-tauri/target/
+
+# Local env files
+.env
+.env.local

@@ -1,0 +1,371 @@
+/* =========================================
+   FOCUS MODE OVERLAY - Premium Edition
+   ========================================= */
+
+.focus-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.85) 0%, rgba(0, 0, 0, 0.95) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: focusFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes focusFadeIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+
+    to {
+        opacity: 1;
+        backdrop-filter: blur(20px) saturate(180%);
+    }
+}
+
+.focus-card {
+    width: 92%;
+    max-width: 520px;
+    background: linear-gradient(165deg,
+            color-mix(in srgb, var(--task-color, #6366f1) 12%, rgba(30, 41, 59, 0.95)) 0%,
+            rgba(15, 23, 42, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    padding: 40px 36px;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 25px 80px -15px rgba(0, 0, 0, 0.7),
+        0 0 60px -10px color-mix(in srgb, var(--task-color) 25%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    animation: cardFloat 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+/* Subtle glow orb behind card */
+.focus-card::before {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--task-color) 30%, transparent) 0%, transparent 70%);
+    top: -100px;
+    right: -100px;
+    pointer-events: none;
+    filter: blur(60px);
+    opacity: 0.6;
+}
+
+/* Bottom accent glow */
+.focus-card::after {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--task-color) 20%, transparent) 0%, transparent 70%);
+    bottom: -80px;
+    left: -60px;
+    pointer-events: none;
+    filter: blur(50px);
+    opacity: 0.4;
+}
+
+@keyframes cardFloat {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.focus-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.focus-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    transform: scale(1.05);
+}
+
+.focus-header {
+    margin-bottom: 32px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.focus-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--task-color);
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 12px;
+    padding: 6px 14px;
+    background: color-mix(in srgb, var(--task-color) 15%, transparent);
+    border-radius: 20px;
+    border: 1px solid color-mix(in srgb, var(--task-color) 25%, transparent);
+}
+
+.focus-goal {
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin: 0;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+}
+
+.focus-section {
+    position: relative;
+    z-index: 1;
+}
+
+.section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 14px;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+}
+
+.focus-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.checklist-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--task-color) 8%, transparent) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.checklist-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+}
+
+.checklist-item:hover::before {
+    opacity: 1;
+}
+
+.checklist-item.done {
+    opacity: 0.5;
+}
+
+.checklist-item.done span {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+}
+
+.checkbox {
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.checkbox.checked {
+    background: linear-gradient(135deg, var(--task-color) 0%, color-mix(in srgb, var(--task-color) 80%, white) 100%);
+    border-color: transparent;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--task-color) 50%, transparent);
+    transform: scale(1.1);
+}
+
+.checklist-item span {
+    font-size: 14px;
+    color: var(--text-secondary);
+    position: relative;
+    z-index: 1;
+    flex: 1;
+}
+
+.focus-footer {
+    margin-top: 32px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+}
+
+.focus-complete-btn {
+    padding: 16px 40px;
+    font-size: 15px;
+    font-weight: 600;
+    height: auto;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--task-color) 0%, color-mix(in srgb, var(--task-color) 70%, #1e1b4b) 100%);
+    border: 1px solid color-mix(in srgb, var(--task-color) 50%, white);
+    box-shadow:
+        0 10px 30px -5px color-mix(in srgb, var(--task-color) 40%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.focus-complete-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 15px 40px -5px color-mix(in srgb, var(--task-color) 50%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* Add Mini-Task UI */
+.add-minitask-container {
+    margin-top: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.add-minitask-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-minitask-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--task-color);
+    color: var(--task-color);
+}
+
+.add-minitask-input-wrap {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.add-minitask-input {
+    flex: 1;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.add-minitask-input:focus {
+    border-color: var(--task-color);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--task-color) 15%, transparent);
+}
+
+.add-minitask-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.add-minitask-confirm {
+    padding: 14px 20px;
+    background: var(--task-color);
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-minitask-confirm:hover {
+    filter: brightness(1.15);
+    transform: scale(1.02);
+}
+
+/* Delete Mini-Task Button */
+.delete-minitask {
+    margin-left: auto;
+    padding: 6px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.checklist-item:hover .delete-minitask {
+    opacity: 1;
+}
+
+.delete-minitask:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.checklist-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-style: italic;
+    font-size: 14px;
+}

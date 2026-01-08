@@ -1,0 +1,17 @@
+{
+    "name": "Weekly Planner Pro",
+    "short_name": "Planner",
+    "description": "Premium Weekly Planner with Hierarchical Tasks",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#3b82f6",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "1024x1024",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}

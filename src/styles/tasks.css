@@ -1,0 +1,369 @@
+/* =========================================
+   PREMIUM TASK CARDS - Department Colored Backgrounds
+   ========================================= */
+
+.task-block {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-sm) var(--space-md);
+    /* Vibrant department-colored background */
+    background: linear-gradient(135deg,
+            color-mix(in srgb, var(--task-color) 40%, var(--bg-elevated)) 0%,
+            color-mix(in srgb, var(--task-color) 30%, var(--bg-tertiary)) 100%);
+    border-radius: var(--radius-md);
+    cursor: grab;
+    border: 1px solid color-mix(in srgb, var(--task-color) 40%, var(--border-primary));
+    border-left: 4px solid var(--task-color, var(--accent-primary));
+    overflow: visible;
+    transition: all var(--transition-normal);
+    backdrop-filter: blur(0px);
+    /* Base state */
+}
+
+/* DAY VIEW - Professional Single Column Styling */
+.task-block.day-view {
+    padding: var(--space-xl) var(--space-lg);
+    margin: 4px 16px;
+    background: linear-gradient(135deg,
+            color-mix(in srgb, var(--task-color) 45%, var(--bg-elevated)) 0%,
+            color-mix(in srgb, var(--task-color) 35%, var(--bg-tertiary)) 100%);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius-lg);
+    border-width: 1.5px;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4),
+        0 0 20px -5px color-mix(in srgb, var(--task-color) 30%, transparent);
+    min-height: 100%;
+    /* Ensure it at least fills the scheduled slot */
+}
+
+/* Fix overlapping in Day View */
+.view-day .calendar-task {
+    position: relative !important;
+    height: auto !important;
+    min-height: 60px;
+    margin-bottom: var(--space-md);
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+}
+
+.view-day .task-block {
+    height: auto !important;
+}
+
+.view-day .day-column {
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--space-md);
+    overflow-y: auto;
+}
+
+.task-block.day-view .task-title {
+    font-size: 16px;
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-xs);
+}
+
+.task-block.day-view .task-duration {
+    font-size: 12px;
+    font-weight: var(--font-weight-bold);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    color: white;
+}
+
+/* Colored glow effect */
+.task-block::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--task-color) 0%, transparent 50%);
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.calendar-task .task-block {
+    box-shadow: var(--shadow-task), 0 0 15px color-mix(in srgb, var(--task-color) 20%, transparent);
+}
+
+.task-block:hover {
+    border-color: var(--task-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.task-block:hover::before {
+    opacity: 0.15;
+}
+
+.task-block.completed {
+    opacity: 0.5;
+    background: var(--bg-secondary);
+}
+
+.task-block.completed::before {
+    display: none;
+}
+
+.task-block.completed .task-title {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+}
+
+.task-block.dragging {
+    opacity: 0.9;
+    cursor: grabbing;
+    transform: scale(1.02) rotate(1deg);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Task Inner Elements */
+.task-header,
+.task-title,
+.task-hierarchy,
+.task-duration,
+.task-top-dept {
+    position: relative;
+    z-index: 1;
+}
+
+.task-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-bottom: 4px;
+}
+
+.task-dept-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 18px;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: var(--font-weight-bold);
+    color: white;
+    background: var(--task-color, var(--accent-primary));
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.task-top-dept {
+    font-size: 11px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--task-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.task-duration {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-left: auto;
+}
+
+.task-title {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.4;
+}
+
+.task-hierarchy {
+    font-size: 11px;
+    color: color-mix(in srgb, var(--task-color) 50%, white);
+    opacity: 0.9;
+    margin-top: 2px;
+    font-weight: var(--font-weight-medium);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.task-goal {
+    font-size: 13px;
+    font-weight: var(--font-weight-semibold);
+    color: rgba(255, 255, 255, 0.95);
+    margin: 4px 0 6px 0;
+    line-height: 1.3;
+}
+
+/* Day View Mini-Task Summary */
+.task-notes {
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notes-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.notes-count {
+    font-size: 12px;
+    font-weight: var(--font-weight-semibold);
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notes-progress-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.notes-progress-fill {
+    height: 100%;
+    background: var(--task-color);
+    box-shadow: 0 0 10px var(--task-color);
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.task-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    border-radius: var(--radius-full);
+    color: white;
+    cursor: pointer;
+    border: none;
+    z-index: 100;
+    pointer-events: all;
+    transition: all var(--transition-fast);
+    font-size: 12px;
+}
+
+
+.task-block:hover .task-delete {
+    display: flex;
+}
+
+.task-delete:hover {
+    background-color: var(--accent-error);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Calendar Task Positioning */
+.calendar-task {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    z-index: 10;
+    border-radius: var(--radius-md);
+    overflow: visible;
+}
+
+.calendar-task .task-block {
+    height: 100%;
+    border-radius: var(--radius-md);
+}
+
+/* Compact mode for short tasks (30min = ~60px height) */
+.calendar-task.compact .task-block {
+    padding: 4px 8px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.calendar-task.compact .task-header {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.calendar-task.compact .task-dept-badge {
+    height: 16px;
+    min-width: 20px;
+    font-size: 9px;
+    padding: 0 4px;
+}
+
+.calendar-task.compact .task-title {
+    font-size: 11px;
+    line-height: 1.2;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.calendar-task.compact .task-duration {
+    font-size: 9px;
+    margin-left: 0;
+}
+
+.calendar-task.compact .task-hierarchy {
+    display: none;
+}
+
+.calendar-task.compact .task-top-dept {
+    font-size: 9px;
+}
+
+/* Task Progress Overlay - Shows EXPIRED time (grows from top) */
+.task-progress-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    background: linear-gradient(135deg, var(--bg-tertiary) 10%, var(--bg-secondary) 100%);
+    opacity: 0.6;
+    pointer-events: none;
+    transition: height 0.8s linear, opacity 0.5s;
+    z-index: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* When time passes, the overlay shrinks from top */
+.task-progress-overlay.in-progress {
+    opacity: 0.8;
+    /* Adjusted for better darkening */
+}
+
+/* When task time has fully passed - overlay gone */
+.task-progress-overlay.expired {
+    height: 0 !important;
+    opacity: 0;
+}
+
+/* Expired task card styling - DARK PURPLE (not gray) */
+.calendar-task.time-passed .task-block {
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%) !important;
+    border-color: var(--border-primary) !important;
+    opacity: 0.7;
+}
+
+.calendar-task.time-passed .task-block::before {
+    opacity: 0.05 !important;
+}
+
+/* Completed tasks (user marked done) - GRAYED OUT */
+.calendar-task .task-block.completed {
+    background: var(--bg-secondary) !important;
+    opacity: 0.5;
+    filter: grayscale(50%);
+}
+
+.calendar-task .task-block.completed::before {
+    display: none;
+}

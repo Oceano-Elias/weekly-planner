@@ -1,0 +1,122 @@
+/* =========================================
+   PREMIUM BUTTONS
+   ========================================= */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: 8px 16px;
+    height: 36px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-secondary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.btn:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-primary);
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Primary Button - Gradient */
+.btn-primary {
+    background: var(--accent-gradient);
+    color: white;
+    border: none;
+    font-weight: var(--font-weight-semibold);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+.btn-primary:hover {
+    box-shadow: var(--shadow-lg), 0 0 30px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+}
+
+/* Navigation Buttons */
+.nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.nav-btn:hover {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    border-color: var(--border-secondary);
+}
+
+/* View Toggle */
+.view-toggle {
+    display: flex;
+    background: var(--bg-secondary);
+    padding: 3px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
+}
+
+.view-btn {
+    padding: 6px 14px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-tertiary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.view-btn:hover {
+    color: var(--text-secondary);
+}
+
+.view-btn.active {
+    background: var(--accent-gradient);
+    color: white;
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Sidebar Toggle */
+.sidebar-toggle {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.sidebar-toggle:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}

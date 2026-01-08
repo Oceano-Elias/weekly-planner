@@ -1,0 +1,105 @@
+/* Update Notification Styles */
+
+.update-notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #2563eb 100%);
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(0);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.update-notification.hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.update-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.update-content svg {
+    flex-shrink: 0;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+.update-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.update-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.update-btn-primary {
+    background: white;
+    color: var(--primary-color);
+}
+
+.update-btn-primary:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: scale(1.02);
+}
+
+.update-btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.update-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Adjust app layout when notification is visible */
+.update-notification:not(.hidden)~.app {
+    margin-top: 52px;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+    .update-notification {
+        flex-direction: column;
+        text-align: center;
+        padding: 16px;
+    }
+
+    .update-actions {
+        width: 100%;
+        justify-content: center;
+    }
+}
