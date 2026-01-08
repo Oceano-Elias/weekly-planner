@@ -2,6 +2,7 @@ import { defineConfig } from "vite"
 import { viteSingleFile } from "vite-plugin-singlefile"
 
 export default defineConfig({
+    base: '/weekly-planner/',
     plugins: [process.env.VITE_SINGLEFILE ? viteSingleFile() : null].filter(Boolean),
     build: {
         target: "esnext",
@@ -9,3 +10,4 @@ export default defineConfig({
         chunkSizeWarningLimit: 1000,
     },
 })
+
