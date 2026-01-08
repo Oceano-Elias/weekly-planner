@@ -384,6 +384,24 @@ const App = {
         }
 
         if (this.editingTaskId) {
+            // Check for overlap if this is a scheduled task and duration changed
+            const existingTask = Store.getTask(this.editingTaskId);
+            if (existingTask && existingTask.scheduledDay && existingTask.scheduledTime && duration !== existingTask.duration) {
+                // Get all tasks for the same day - use ISO week identifier format (e.g., "2026-W01")
+                const weekId = Store.getWeekIdentifier(new Date());
+                const allWeekTasks = Store.getTasksForWeek(weekId);
+                const dayTasks = allWeekTasks.filter(t =>
+                    t.scheduledDay === existingTask.scheduledDay &&
+                    t.id !== this.editingTaskId
+                );
+
+                // Check if new duration would cause overlap
+                if (!PlannerService.isSlotAvailable(existingTask.scheduledTime, duration, dayTasks, this.editingTaskId)) {
+                    alert(`Cannot set duration to ${PlannerService.formatDuration(duration)} - it would overlap with another task. Please adjust your schedule first.`);
+                    return;
+                }
+            }
+
             Store.updateTask(this.editingTaskId, { title, goal, hierarchy, duration, notes });
         } else {
             const task = Store.addTask({ title, goal, hierarchy, duration, notes });
