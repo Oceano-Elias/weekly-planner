@@ -865,6 +865,57 @@ export const Store = {
         return byHierarchy;
     },
 
+    /**
+     * Get analytics data for current week (includes mini-tasks)
+     */
+    getAnalyticsForWeek() {
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        const weekTasks = this.getTasksForWeek(currentWeekId);
+
+        const byHierarchy = {};
+        let totalMiniTasks = 0;
+        let completedMiniTasks = 0;
+        let totalTasks = weekTasks.length;
+        let completedTasks = 0;
+        let totalDuration = 0;
+        let completedDuration = 0;
+
+        weekTasks.forEach(task => {
+            const topLevel = task.hierarchy[0] || 'Uncategorized';
+            if (!byHierarchy[topLevel]) {
+                byHierarchy[topLevel] = { total: 0, completed: 0 };
+            }
+            byHierarchy[topLevel].total += task.duration;
+            totalDuration += task.duration;
+
+            if (task.completed) {
+                byHierarchy[topLevel].completed += task.duration;
+                completedTasks++;
+                completedDuration += task.duration;
+            }
+
+            // Count mini-tasks from notes
+            if (task.notes) {
+                const lines = task.notes.split('\n').filter(l => l.trim() !== '');
+                lines.forEach(line => {
+                    if (line.includes('[ ]') || line.includes('[x]')) {
+                        totalMiniTasks++;
+                        if (line.includes('[x]')) {
+                            completedMiniTasks++;
+                        }
+                    }
+                });
+            }
+        });
+
+        return {
+            byHierarchy,
+            miniTasks: { total: totalMiniTasks, completed: completedMiniTasks },
+            tasks: { total: totalTasks, completed: completedTasks },
+            duration: { total: totalDuration, completed: completedDuration }
+        };
+    },
+
     // ========================================
     // CUSTOM DEPARTMENT MANAGEMENT
     // ========================================
@@ -905,6 +956,53 @@ export const Store = {
     resetDepartmentsToDefaults() {
         localStorage.removeItem('weeklyPlanner_departments');
         window.dispatchEvent(new CustomEvent('departmentsUpdated', { detail: null }));
+    },
+
+    /**
+     * Migrate department path in all tasks, templates, and weekly instances
+     * @param {Array} oldPath - The current hierarchy path
+     * @param {Array|null} newPath - The new hierarchy path (null if deleted)
+     */
+    migrateDepartment(oldPath, newPath) {
+        const updateHierarchy = (hierarchy) => {
+            if (!hierarchy) return hierarchy;
+
+            // Check if hierarchy starts with oldPath
+            const startsWith = oldPath.every((p, i) => hierarchy[i] === p);
+            if (!startsWith) return hierarchy;
+
+            if (newPath === null) {
+                // If deleted, just remove the prefix... or maybe set to empty?
+                // For now, let's just clear it if it was specifically that department
+                return [];
+            }
+
+            // Replace oldPath prefix with newPath
+            const tail = hierarchy.slice(oldPath.length);
+            return [...newPath, ...tail];
+        };
+
+        // 1. Update queue tasks
+        state.tasks.forEach(task => {
+            task.hierarchy = updateHierarchy(task.hierarchy);
+        });
+
+        // 2. Update templates
+        state.templates.forEach(template => {
+            template.hierarchy = updateHierarchy(template.hierarchy);
+        });
+
+        // 3. Update weekly instances
+        Object.values(state.weeklyInstances).forEach(week => {
+            if (week.tasks) {
+                week.tasks.forEach(task => {
+                    task.hierarchy = updateHierarchy(task.hierarchy);
+                });
+            }
+        });
+
+        this.save();
     }
 };
+
 

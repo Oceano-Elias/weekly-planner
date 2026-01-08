@@ -1,4 +1,4 @@
-/* Department Settings Modal Styles */
+/* Department Settings Modal — Professional Redesign v2 */
 
 .dept-settings-modal {
     position: fixed;
@@ -7,118 +7,254 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .dept-settings-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
 }
 
 .dept-settings-content {
     position: relative;
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-primary);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    width: 92%;
+    max-width: 520px;
+    max-height: 85vh;
+    background: linear-gradient(180deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.3),
+        0 25px 60px -10px rgba(0, 0, 0, 0.6),
+        0 0 40px rgba(99, 102, 241, 0.1);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    animation: slideUp 0.3s ease-out;
 }
 
+/* Header */
 .dept-settings-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-lg);
-    border-bottom: 1px solid var(--border-primary);
-    background: var(--bg-tertiary);
+    padding: 18px 22px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .dept-settings-header h2 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: -0.01em;
+}
+
+.dept-settings-header h2::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
 }
 
 .dept-settings-close {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
     color: var(--text-secondary);
-    font-size: 24px;
+    font-size: 16px;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.15s ease;
 }
 
 .dept-settings-close:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #EF4444;
 }
 
+/* Body */
 .dept-settings-body {
     flex: 1;
     overflow-y: auto;
-    padding: var(--space-md);
+    padding: 12px 16px 16px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-.dept-settings-footer {
+.dept-settings-body::-webkit-scrollbar {
+    width: 5px;
+}
+
+.dept-settings-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dept-settings-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+/* ============================================
+   SECTION: Parent Department (Top Level)
+   ============================================ */
+.dept-section {
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.dept-parent {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: var(--space-md) var(--space-lg);
-    border-top: 1px solid var(--border-primary);
-    background: var(--bg-tertiary);
+    gap: 10px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: all 0.15s ease;
 }
 
-.dept-settings-actions {
-    display: flex;
-    gap: var(--space-sm);
+.dept-parent:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%);
 }
 
-/* Department Nodes */
-.dept-node {
-    margin-bottom: 4px;
-}
-
-.dept-node-content {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: var(--bg-primary);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-tertiary);
-    transition: all var(--transition-fast);
-}
-
-.dept-node-content:hover {
-    border-color: var(--border-primary);
-    background: var(--bg-hover);
-}
-
-.dept-node-content:hover .dept-actions {
+.dept-parent:hover .dept-actions {
     opacity: 1;
 }
 
+/* Child count badge */
+.dept-child-count {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: -4px;
+}
+
+/* ============================================
+   SECTION: Children Container
+   ============================================ */
+.dept-children {
+    padding: 6px 10px 10px 32px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.dept-child {
+    position: relative;
+}
+
+.dept-child-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.dept-child-content:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.dept-child-content:hover .dept-actions {
+    opacity: 1;
+}
+
+/* Connector line */
+.dept-connector {
+    width: 10px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 1px;
+    margin-left: -12px;
+}
+
+/* Sub-children (level 3) */
+.dept-subchildren {
+    margin-left: 18px;
+    padding-left: 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.dept-subchild {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.dept-subchild:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.dept-subchild:hover .dept-actions {
+    opacity: 1;
+}
+
+.dept-connector.deep {
+    width: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    margin-left: -10px;
+}
+
+/* ============================================
+   ELEMENTS: Color Picker, Badge, Name, Actions
+   ============================================ */
 .dept-color-picker {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: 6px;
     cursor: pointer;
     padding: 0;
     background: transparent;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+.dept-color-picker:hover {
+    transform: scale(1.1);
 }
 
 .dept-color-picker::-webkit-color-swatch-wrapper {
@@ -127,60 +263,169 @@
 
 .dept-color-picker::-webkit-color-swatch {
     border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-sm);
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.dept-indent-line {
-    width: 24px;
-    height: 2px;
-    background: var(--border-tertiary);
-    border-radius: 1px;
-}
-
+/* Badge */
 .dept-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 28px;
+    min-width: 30px;
     height: 20px;
     padding: 0 6px;
     font-size: 10px;
     font-weight: 700;
     color: white;
     background: var(--accent-primary);
-    border-radius: var(--radius-full);
+    border-radius: 5px;
     text-transform: uppercase;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
 }
 
+.dept-badge.small {
+    min-width: 26px;
+    height: 18px;
+    font-size: 9px;
+}
+
+.dept-badge.tiny {
+    min-width: 22px;
+    height: 16px;
+    font-size: 8px;
+    padding: 0 4px;
+}
+
+/* Name */
 .dept-name {
     flex: 1;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-primary);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+.dept-child-content .dept-name,
+.dept-subchild .dept-name {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+/* Actions */
 .dept-actions {
     display: flex;
-    gap: 4px;
+    gap: 3px;
     opacity: 0;
-    transition: opacity var(--transition-fast);
+    transition: opacity 0.15s ease;
+    flex-shrink: 0;
 }
 
 .dept-action-btn {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
-    border: 1px solid var(--border-tertiary);
-    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 14px;
-    transition: all var(--transition-fast);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    transition: all 0.12s ease;
 }
 
 .dept-action-btn:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--border-primary);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+}
+
+.dept-action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #EF4444;
+}
+
+.dept-action-btn.add:hover {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #10B981;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.dept-settings-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.dept-settings-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.dept-settings-footer .btn {
+    padding: 9px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 7px;
+    transition: all 0.15s ease;
+}
+
+.dept-settings-footer .btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+}
+
+.dept-settings-footer .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+.dept-settings-footer .btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-tertiary);
+}
+
+.dept-settings-footer .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+}
+
+.dept-settings-footer .btn-primary {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.dept-settings-footer .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+/* Empty state */
+.dept-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-tertiary);
+}
+
+.dept-empty-state p {
+    margin: 0;
+    font-size: 13px;
 }

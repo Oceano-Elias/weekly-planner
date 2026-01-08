@@ -6,6 +6,113 @@
     padding: var(--space-md);
 }
 
+/* Stats Cards Grid - 2 columns for narrow sidebar */
+.analytics-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: var(--space-md);
+}
+
+.analytics-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    padding: 10px 8px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Third card spans full width */
+.analytics-stat-card:last-child {
+    grid-column: span 2;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+}
+
+.stat-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.stat-icon svg {
+    opacity: 0.9;
+}
+
+/* Accent colors for each stat type */
+.stat-icon-tasks {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+}
+
+.stat-icon-mini {
+    color: #a855f7;
+    background: rgba(168, 85, 247, 0.12);
+}
+
+.stat-icon-time {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.12);
+}
+
+.stat-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.stat-value .stat-total {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+}
+
+.stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+.stat-bar {
+    height: 3px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #22d3ee);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+.stat-bar-fill.mini {
+    background: linear-gradient(90deg, #8b5cf6, #a855f7);
+}
+
+/* Department Section */
 .analytics-header {
     margin-bottom: var(--space-md);
 }
