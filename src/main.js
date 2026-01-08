@@ -17,6 +17,7 @@ import { PlannerService } from './services/PlannerService.js';
 import { UpdateNotification } from './components/UpdateNotification.js';
 
 // Import styles
+import './styles/reset.css';
 import './styles/variables.css';
 import './styles/update-notification.css';
 import './styles/layout.css';
@@ -27,6 +28,7 @@ import './styles/filters.css';
 import './styles/analytics.css';
 import './styles/utilities.css';
 import './styles/modal.css';
+import './styles/confirm-modal.css';
 
 // Make modules available globally for cross-module communication
 window.Store = Store;
