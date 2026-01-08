@@ -168,18 +168,26 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding: 0 8px;
+    padding: 0 4px;
     min-width: 0;
+    /* Hidden in week view by default */
+    display: none;
+}
+
+/* Show goal only in day view where there's more space */
+.task-block.day-view .task-goal-center {
+    display: block;
 }
 
 .task-header-row .task-duration {
     flex-shrink: 0;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: var(--font-weight-bold);
     color: var(--text-secondary);
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 6px;
     border-radius: var(--radius-sm);
+    margin-left: auto;
 }
 
 /* Hierarchy row for standard/full layouts */
