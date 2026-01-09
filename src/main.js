@@ -144,7 +144,6 @@ const App = {
         this.editingTaskId = taskId;
 
         document.getElementById('taskTitle').value = task.title;
-        document.getElementById('taskNotes').value = task.notes || '';
 
         // Populate hierarchy
         this.populateDepartmentLevel(1, Departments.getTopLevel());
@@ -376,7 +375,6 @@ const App = {
         const title = document.getElementById('taskTitle').value.trim();
         const hierarchy = this.getSelectedHierarchy();
         const duration = this.getSelectedDuration();
-        const notes = document.getElementById('taskNotes').value.trim();
 
         if (!title) {
             alert('Please enter a task title');
@@ -409,9 +407,9 @@ const App = {
                 }
             }
 
-            Store.updateTask(this.editingTaskId, { title, hierarchy, duration, notes });
+            Store.updateTask(this.editingTaskId, { title, hierarchy, duration });
         } else {
-            const task = Store.addTask({ title, hierarchy, duration, notes });
+            const task = Store.addTask({ title, hierarchy, duration });
 
             if (this.scheduledData) {
                 Store.scheduleTask(task.id, this.scheduledData.day, this.scheduledData.time);
