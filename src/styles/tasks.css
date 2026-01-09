@@ -498,3 +498,36 @@
 .calendar-task .task-block.completed::before {
     display: none;
 }
+
+/* =========================================
+   GHOST SHELF - Queue Task Items (Sidebar)
+   ========================================= */
+
+/* Tasks in sidebar queue should be ghosted */
+.task-queue .task-block {
+    background: transparent;
+    border: 1px solid var(--border-tertiary);
+    border-left: 3px solid color-mix(in srgb, var(--task-color) 50%, transparent);
+    border-top: none;
+    color: var(--text-tertiary);
+}
+
+.task-queue .task-block .task-title {
+    color: var(--text-tertiary);
+}
+
+.task-queue .task-block .task-duration {
+    color: var(--text-muted);
+    background: transparent;
+}
+
+/* Hover: reveal the bottle */
+.task-queue .task-block:hover {
+    background: color-mix(in srgb, var(--task-color) 15%, transparent);
+    border-color: color-mix(in srgb, var(--task-color) 30%, transparent);
+    border-left: 3px solid var(--task-color);
+}
+
+.task-queue .task-block:hover .task-title {
+    color: var(--text-primary);
+}
