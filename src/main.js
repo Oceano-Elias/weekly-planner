@@ -680,9 +680,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isHttps || isLocalhost) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                // Detect base path from current URL (works on GitHub Pages and localhost)
+                const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                const swPath = basePath + 'sw.js';
+
+                navigator.serviceWorker.register(swPath)
                     .then(registration => {
-                        console.log('[App] Service Worker registered');
+                        console.log('[App] Service Worker registered at:', swPath);
 
                         // Check for updates every 60 seconds when online
                         setInterval(() => {

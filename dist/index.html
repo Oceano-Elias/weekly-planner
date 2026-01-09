@@ -9,20 +9,18 @@
         content="Desktop weekly planner with hierarchical tasks, drag-and-drop scheduling, and department-based organization">
 
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" type="image/png" href="/icon.png" />
-    <link rel="apple-touch-icon" href="/icon.png" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/png" href="./icon.png" />
+    <link rel="apple-touch-icon" href="./icon.png" />
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#1a1d2e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="/src/styles/reset.css" />
-
-  <script type="module" crossorigin src="/assets/index-PzYxdweE.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-iE2IF-JE.css">
+    <!-- CSS is bundled by Vite via main.js imports -->
+  <script type="module" crossorigin src="/weekly-planner/assets/index-CioGJfkr.js"></script>
+  <link rel="stylesheet" crossorigin href="/weekly-planner/assets/index-CJ8tZrYI.css">
 </head>
 
 <body>
@@ -78,6 +76,15 @@
                 </div>
             </div>
             <div class="header-right">
+                <button class="nav-btn" id="settingsBtn" title="Department Settings"
+                    style="width: auto; padding: 0 12px; gap: 8px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span style="font-size: 11px; font-weight: 600;">Settings</span>
+                </button>
                 <button class="nav-btn" id="printPdfBtn" title="Export as PDF / Print"
                     style="width: auto; padding: 0 12px; gap: 8px;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -188,12 +195,7 @@
                             placeholder="Enter task title (e.g. Spanish Course)" required>
                     </div>
 
-                    <!-- Main Goal -->
-                    <div class="form-group">
-                        <label class="form-label" for="taskGoal">Main Goal</label>
-                        <input type="text" class="form-input" id="taskGoal"
-                            placeholder="Enter specific objective (e.g. Finish Chapter 3)">
-                    </div>
+
 
                     <!-- Schedule Info (shown when creating from calendar click) -->
                     <div class="form-group" id="scheduleInfo" style="display: none;">
@@ -254,13 +256,6 @@
                             <span
                                 style="color: var(--text-secondary); display: flex; align-items: center;">minutes</span>
                         </div>
-                    </div>
-
-                    <!-- Notes -->
-                    <div class="form-group">
-                        <label class="form-label" for="taskNotes">Notes (Optional)</label>
-                        <textarea class="form-textarea" id="taskNotes"
-                            placeholder="Add any additional notes..."></textarea>
                     </div>
                 </form>
             </div>
