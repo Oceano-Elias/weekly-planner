@@ -441,45 +441,53 @@ header {
     border-bottom: 1px solid var(--border-tertiary);
 }
 
-/* Current Time Marker - Glowing */
+/* Current Time Marker - "LASER" Glow Effect */
 #currentTimeMarker {
     position: absolute;
     left: var(--calendar-time-col, 64px);
     right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent-error) 0%, rgba(239, 68, 68, 0.3) 100%);
-    z-index: 15;
+    height: 1px;
+    /* Sharper laser line */
+    background: #ff2d55;
+    /* Vivid laser red */
+    z-index: 100;
+    /* Above tasks */
     pointer-events: none;
-    box-shadow: 0 0 8px var(--accent-error), 0 0 16px rgba(239, 68, 68, 0.3);
+    box-shadow:
+        0 0 4px #ff2d55,
+        0 0 12px rgba(255, 45, 85, 0.6),
+        0 0 24px rgba(255, 45, 85, 0.3);
 }
 
 #currentTimeMarker::before {
     content: '';
     position: absolute;
     left: -5px;
-    top: -4px;
+    top: -4.5px;
     width: 10px;
     height: 10px;
-    background-color: var(--accent-error);
+    background-color: #ff2d55;
     border-radius: 50%;
-    box-shadow: 0 0 8px var(--accent-error);
-    animation: pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 10px #ff2d55;
+    animation: pulse 1.5s ease-in-out infinite;
+    z-index: 101;
 }
 
 /* Time Label next to the red line */
 #currentTimeMarker::after {
     content: attr(data-time);
     position: absolute;
-    left: -60px;
-    top: -8px;
+    left: -64px;
+    top: -9px;
     font-size: 10px;
-    font-weight: 600;
-    color: var(--accent-error);
-    background: var(--bg-secondary);
+    font-weight: 700;
+    color: #ff2d55;
+    background: var(--bg-primary);
     padding: 2px 6px;
     border-radius: var(--radius-sm);
     white-space: nowrap;
-    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 0 10px rgba(255, 45, 85, 0.2);
+    border: 1px solid rgba(255, 45, 85, 0.3);
 }
 
 @keyframes pulse {
