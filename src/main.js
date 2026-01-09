@@ -291,11 +291,11 @@ const App = {
 
         this.updateHierarchyPreview();
 
-        // Auto-fill title with the last selected department name ONLY if title is empty
+        // Auto-fill title with the deepest selected department/sub-department
         if (hierarchy.length > 0) {
             const lastSelected = hierarchy[hierarchy.length - 1];
             const titleInput = document.getElementById('taskTitle');
-            if (titleInput && !titleInput.value.trim()) {
+            if (titleInput) {
                 titleInput.value = lastSelected;
             }
         }
