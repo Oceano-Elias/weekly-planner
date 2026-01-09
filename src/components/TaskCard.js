@@ -10,6 +10,18 @@ export class TaskCard {
     this.task = task;
   }
 
+  /**
+   * Count steps (checklist items) from notes
+   * Returns { completed, total }
+   */
+  getStepCounts() {
+    const notes = this.task.notes || '';
+    const lines = notes.split('\n').filter(line => line.trim());
+    const steps = lines.filter(line => line.includes('[ ]') || line.includes('[x]'));
+    const completed = steps.filter(line => line.includes('[x]')).length;
+    return { completed, total: steps.length };
+  }
+
   render({ isDayView = false, isCompact = false } = {}) {
     const task = this.task;
     const color = Departments.getColor(task.hierarchy);
@@ -31,8 +43,14 @@ export class TaskCard {
     // Escape HTML helper
     const esc = PlannerService.escapeHtml;
 
+    // Step progress for Day View
+    const { completed, total } = this.getStepCounts();
+    const stepProgressHtml = isDayView && total > 0
+      ? `<span class="task-step-progress">${completed}/${total} steps</span>`
+      : '';
+
     if (isCompact || task.duration <= 30) {
-      // COMPACT: Badge + Title + Goal (centered) + Duration — all in one row
+      // COMPACT: Badge + Title + Steps + Duration — all in one row
       el.innerHTML = `
         <button class="task-delete" title="Delete">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,7 +62,7 @@ export class TaskCard {
             <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>
             <span class="task-title">${esc(task.title)}</span>
           </div>
-          ${task.goal ? `<span class="task-goal-center">${esc(task.goal)}</span>` : '<span class="task-goal-center"></span>'}
+          ${stepProgressHtml}
           <span class="task-duration">${PlannerService.formatDuration(task.duration)}</span>
         </div>
       `;
@@ -89,7 +107,7 @@ export class TaskCard {
             <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>
             <span class="task-title">${esc(task.title)}</span>
           </div>
-          ${task.goal ? `<span class="task-goal-center">${esc(task.goal)}</span>` : '<span class="task-goal-center"></span>'}
+          ${stepProgressHtml}
           <span class="task-duration">${PlannerService.formatDuration(task.duration)}</span>
         </div>
         ${additionalContent}

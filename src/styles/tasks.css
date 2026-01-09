@@ -163,24 +163,28 @@
     max-width: 80px;
 }
 
-.task-goal-center {
+/* Step progress counter (replaces goal field) */
+.task-step-progress {
     flex: 1;
     text-align: center;
-    font-size: 12px;
-    font-weight: var(--font-weight-semibold);
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 11px;
+    font-weight: var(--font-weight-medium);
+    color: rgba(255, 255, 255, 0.7);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding: 0 4px;
+    padding: 2px 8px;
     min-width: 0;
+    /* Subtle pill background */
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
     /* Hidden in week view by default */
     display: none;
 }
 
-/* Show goal only in day view where there's more space */
-.task-block.day-view .task-goal-center {
-    display: block;
+/* Show step progress only in day view */
+.task-block.day-view .task-step-progress {
+    display: inline-block;
 }
 
 .task-header-row .task-duration {
@@ -212,11 +216,12 @@
     font-weight: var(--font-weight-bold);
 }
 
-.task-block.day-view .task-goal-center {
-    font-size: 15px;
-    font-weight: var(--font-weight-semibold);
-    color: rgba(255, 255, 255, 0.95);
-    padding: 0 16px;
+.task-block.day-view .task-step-progress {
+    font-size: 13px;
+    font-weight: var(--font-weight-medium);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .task-block.day-view .task-header-row {
