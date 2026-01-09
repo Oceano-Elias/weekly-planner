@@ -16,6 +16,7 @@ import { ConfirmModal } from './components/ConfirmModal.js';
 import { PlannerService } from './services/PlannerService.js';
 import { UpdateNotification } from './components/UpdateNotification.js';
 import { DepartmentSettings } from './components/DepartmentSettings.js';
+import { APP_VERSION } from './version.js';
 
 // Import styles
 import './styles/reset.css';
@@ -67,6 +68,18 @@ const App = {
         this.setupKeyboardShortcuts();
         this.updateBadgeCounts();
         this.setupFavicon();
+        this.displayVersion();
+    },
+
+    /**
+     * Display version number in header
+     */
+    displayVersion() {
+        const badge = document.getElementById('versionBadge');
+        if (badge) {
+            badge.textContent = `v${APP_VERSION}`;
+        }
+        console.log(`[App] Weekly Planner v${APP_VERSION}`);
     },
 
     /**

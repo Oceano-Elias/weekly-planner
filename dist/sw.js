@@ -1,7 +1,8 @@
 // Service Worker for Weekly Planner PWA
-// Version: 3.0.0 - Full offline support with update notifications
+// Version: 3.1.0 - Full offline support with update notifications
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
+const APP_VERSION = '3.1.0';
 const CACHE_NAME = `planner-${CACHE_VERSION}`;
 
 // Core assets to cache for offline use

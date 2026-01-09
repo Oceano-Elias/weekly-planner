@@ -87,12 +87,12 @@ export const UpdateNotification = {
         this.isVisible = true;
         this.container.classList.remove('hidden');
 
-        // Auto-dismiss after 30 seconds
-        setTimeout(() => {
-            if (this.isVisible) {
-                this.hide();
-            }
-        }, 30000);
+        // Play a subtle sound or vibration on mobile (if supported)
+        if ('vibrate' in navigator) {
+            navigator.vibrate(200);
+        }
+
+        // NO auto-dismiss - notification stays until user takes action
     },
 
     /**
