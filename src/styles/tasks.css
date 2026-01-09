@@ -467,25 +467,31 @@
     opacity: 0;
 }
 
-/* "EMPTY BOTTLE" - Past Task Styling */
+/* "EMPTY BOTTLE" - Glassmorphism Past Task Styling */
 .calendar-task.time-passed .task-block {
-    background: transparent !important;
-    border: 1px dashed var(--border-primary) !important;
-    border-left: 4px solid color-mix(in srgb, var(--task-color) 40%, transparent) !important;
-    opacity: 0.55;
+    /* Glassmorphism: Frosted glass effect */
+    background: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* Solid glass edge border - keeps the "bottle" visible */
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-left: 4px solid color-mix(in srgb, var(--task-color) 50%, transparent) !important;
+    /* Slightly muted but still visible */
+    opacity: 0.85;
 }
 
 .calendar-task.time-passed .task-block::before {
-    display: none;
+    /* Remove the color tint overlay for past tasks */
+    opacity: 0.03;
 }
 
 .calendar-task.time-passed .task-block .task-title {
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
 }
 
 .calendar-task.time-passed .task-block .task-duration,
 .calendar-task.time-passed .task-block .task-hierarchy-row {
-    color: var(--text-muted);
+    color: var(--text-tertiary);
 }
 
 /* Completed tasks (user marked done) - Faded */
