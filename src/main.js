@@ -292,6 +292,15 @@ const App = {
         }
 
         this.updateHierarchyPreview();
+
+        // Auto-fill title with the last selected department name
+        if (hierarchy.length > 0) {
+            const lastSelected = hierarchy[hierarchy.length - 1];
+            const titleInput = document.getElementById('taskTitle');
+            if (titleInput) {
+                titleInput.value = lastSelected;
+            }
+        }
     },
 
     /**

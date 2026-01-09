@@ -271,7 +271,7 @@ export const Departments = {
     },
 
     /**
-     * Get abbreviation for a department
+     * Get abbreviation for a department (deepest level)
      */
     getAbbreviation(hierarchy) {
         if (!hierarchy || hierarchy.length === 0) return '';
@@ -292,6 +292,16 @@ export const Departments = {
         }
 
         return abbr;
+    },
+
+    /**
+     * Get abbreviation for the ROOT/main department (first level only)
+     * Used for task badges to show main category
+     */
+    getRootAbbreviation(hierarchy) {
+        if (!hierarchy || hierarchy.length === 0) return '';
+        const topLevel = hierarchy[0];
+        return DepartmentData[topLevel]?.abbr || '';
     },
 
     /**

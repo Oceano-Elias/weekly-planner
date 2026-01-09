@@ -13,7 +13,7 @@ export class TaskCard {
   render({ isDayView = false, isCompact = false } = {}) {
     const task = this.task;
     const color = Departments.getColor(task.hierarchy);
-    const abbr = Departments.getAbbreviation(task.hierarchy);
+    const abbr = Departments.getRootAbbreviation(task.hierarchy);
     const topDept = task.hierarchy[0] || '';
     const hierarchyPath = task.hierarchy.slice(1).join(' › ');
 
