@@ -1,13 +1,15 @@
 /* =========================================
-   FOCUS MODE OVERLAY - Premium Edition
+   FOCUS MODE - "DEEP DIVE" Zen Edition
    ========================================= */
 
 .focus-overlay {
     position: fixed;
     inset: 0;
     z-index: 2000;
-    background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.85) 0%, rgba(0, 0, 0, 0.95) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
+    /* Heavy blur, near-black backdrop */
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -22,41 +24,29 @@
 
     to {
         opacity: 1;
-        backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(24px);
     }
 }
 
 .focus-card {
     width: 92%;
     max-width: 520px;
-    background: linear-gradient(165deg,
-            color-mix(in srgb, var(--task-color, #6366f1) 12%, rgba(30, 41, 59, 0.95)) 0%,
-            rgba(15, 23, 42, 0.98) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 28px;
+    /* Matte, minimal card - no radial gradients */
+    background: color-mix(in srgb, var(--task-color, #6366f1) 8%, var(--bg-secondary));
+    border: 1px solid var(--border-primary);
+    border-radius: 20px;
     padding: 40px 36px;
     box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.05),
-        0 25px 80px -15px rgba(0, 0, 0, 0.7),
-        0 0 60px -10px color-mix(in srgb, var(--task-color) 25%, transparent),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        0 25px 60px -15px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
     position: relative;
     animation: cardFloat 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
 }
 
-/* Subtle glow orb behind card */
+/* Remove the glowing orb - keep it minimal */
 .focus-card::before {
-    content: '';
-    position: absolute;
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, color-mix(in srgb, var(--task-color) 30%, transparent) 0%, transparent 70%);
-    top: -100px;
-    right: -100px;
-    pointer-events: none;
-    filter: blur(60px);
-    opacity: 0.6;
+    display: none;
 }
 
 /* Bottom accent glow */

@@ -82,13 +82,14 @@ header {
     overflow: hidden;
 }
 
-/* Sidebar - Glassmorphism */
+/* Sidebar - "Ghost Shelf" - Visually Secondary */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-right: 1px solid var(--glass-border);
+    background: rgba(15, 23, 42, 0.6);
+    /* Very subtle, almost transparent */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-right: 1px solid var(--border-tertiary);
     display: flex;
     flex-direction: column;
     z-index: 20;

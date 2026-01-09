@@ -1,10 +1,10 @@
-/* Modal Overlay - Premium */
+/* Modal Overlay - Zen Matte */
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -20,16 +20,16 @@
 }
 
 .modal {
-    background: linear-gradient(180deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
-    border: 1px solid var(--border-secondary);
-    border-radius: var(--radius-xl);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
     width: 100%;
     max-width: 480px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 40px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     animation: modalSlideIn 0.25s ease-out;
 }
 
@@ -352,73 +352,74 @@
 .modal-footer .btn-primary {
     padding: 10px 24px;
 }
+
 /* Hierarchy Level Container */
 .hierarchy-level {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
 }
 
 .hierarchy-level-indicator {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: 700;
-  color: white;
-  flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
 }
 
 .hierarchy-level .form-select {
-  flex: 1;
+    flex: 1;
 }
 
 /* Schedule Preview - Enhanced */
 .schedule-preview {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: var(--radius-lg);
 }
 
 .schedule-preview span {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--accent-secondary);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--accent-secondary);
 }
 
 .schedule-separator {
-  color: var(--text-tertiary) !important;
-  font-weight: normal !important;
+    color: var(--text-tertiary) !important;
+    font-weight: normal !important;
 }
 
 .schedule-max-info {
-  margin-left: auto;
-  font-size: var(--font-size-xs) !important;
-  color: var(--text-tertiary) !important;
-  background: var(--bg-tertiary);
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-weight: var(--font-weight-medium) !important;
+    margin-left: auto;
+    font-size: var(--font-size-xs) !important;
+    color: var(--text-tertiary) !important;
+    background: var(--bg-tertiary);
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-weight: var(--font-weight-medium) !important;
 }
 
 /* Hierarchy Path Preview - Pills */
 .hierarchy-path-preview {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: var(--space-sm) var(--space-md);
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-md);
-  min-height: 36px;
-  margin-top: var(--space-sm);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    min-height: 36px;
+    margin-top: var(--space-sm);
 }

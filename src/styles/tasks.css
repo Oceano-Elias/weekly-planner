@@ -1,5 +1,6 @@
 /* =========================================
-   PREMIUM TASK CARDS - Department Colored Backgrounds
+   ZEN & DEEP LIQUID - Task Cards
+   "Glass Bottle" Structure with Meniscus
    ========================================= */
 
 .task-block {
@@ -7,18 +8,20 @@
     display: flex;
     flex-direction: column;
     padding: var(--space-sm) var(--space-md);
-    /* Vibrant department-colored background */
-    background: linear-gradient(135deg,
-            color-mix(in srgb, var(--task-color) 40%, var(--bg-elevated)) 0%,
-            color-mix(in srgb, var(--task-color) 30%, var(--bg-tertiary)) 100%);
+    /* "Glass Bottle" - Solid deep color fill (no transparency) */
+    background: color-mix(in srgb, var(--task-color) 35%, var(--bg-secondary));
     border-radius: var(--radius-md);
     cursor: grab;
-    border: 1px solid color-mix(in srgb, var(--task-color) 40%, var(--border-primary));
+    /* Glass edge border */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Left accent stripe */
     border-left: 4px solid var(--task-color, var(--accent-primary));
+    /* "Meniscus" - Subtle highlight at top simulating liquid surface */
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
     overflow: hidden;
     transition: all var(--transition-normal);
-    backdrop-filter: blur(0px);
-    /* Base state */
+    /* Text at 90% opacity for readability */
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* DAY VIEW - Professional Single Column Styling */
@@ -74,20 +77,21 @@
     color: white;
 }
 
-/* Colored glow effect */
+/* Subtle color tint - no glow */
 .task-block::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--task-color) 0%, transparent 50%);
-    opacity: 0.15;
+    background: linear-gradient(135deg, var(--task-color) 0%, transparent 60%);
+    opacity: 0.08;
     pointer-events: none;
     z-index: 0;
     transition: opacity var(--transition-normal);
 }
 
+/* Matte shadow - no glow */
 .calendar-task .task-block {
-    box-shadow: var(--shadow-task), 0 0 15px color-mix(in srgb, var(--task-color) 20%, transparent);
+    box-shadow: var(--shadow-task);
 }
 
 .task-block:hover {
@@ -97,7 +101,7 @@
 }
 
 .task-block:hover::before {
-    opacity: 0.15;
+    opacity: 0.12;
 }
 
 .task-block.completed {
@@ -429,49 +433,66 @@
     font-size: 9px;
 }
 
-/* Task Progress Overlay - Shows EXPIRED time (grows from top) */
+/* =========================================
+   TIME-BASED STATES - "DEEP LIQUID" MECHANIC
+   ========================================= */
+
+/* Progress Overlay - "DRAINING" Effect for Active Tasks */
 .task-progress-overlay {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     height: 0;
-    background: linear-gradient(135deg, var(--bg-tertiary) 10%, var(--bg-secondary) 100%);
-    opacity: 0.6;
+    /* The "drained" portion becomes transparent */
+    background: linear-gradient(180deg,
+            var(--bg-primary) 0%,
+            color-mix(in srgb, var(--bg-primary) 90%, transparent) 100%);
+    opacity: 0.85;
     pointer-events: none;
     transition: height 0.8s linear, opacity 0.5s;
     z-index: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* When time passes, the overlay shrinks from top */
+/* Active draining task - shows "liquid" at bottom */
 .task-progress-overlay.in-progress {
-    opacity: 0.8;
-    /* Adjusted for better darkening */
+    opacity: 0.9;
+    /* Add subtle inner glow effect */
+    box-shadow: inset 0 -2px 6px color-mix(in srgb, var(--task-color) 30%, transparent);
 }
 
-/* When task time has fully passed - overlay gone */
+/* When task time has fully passed - overlay covers all */
 .task-progress-overlay.expired {
-    height: 0 !important;
+    height: 100% !important;
     opacity: 0;
 }
 
-/* Expired task card styling - DARK PURPLE (not gray) */
+/* "EMPTY BOTTLE" - Past Task Styling */
 .calendar-task.time-passed .task-block {
-    background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%) !important;
-    border-color: var(--border-primary) !important;
-    opacity: 0.7;
+    background: transparent !important;
+    border: 1px dashed var(--border-primary) !important;
+    border-left: 4px solid color-mix(in srgb, var(--task-color) 40%, transparent) !important;
+    opacity: 0.55;
 }
 
 .calendar-task.time-passed .task-block::before {
-    opacity: 0.05 !important;
+    display: none;
 }
 
-/* Completed tasks (user marked done) - GRAYED OUT */
+.calendar-task.time-passed .task-block .task-title {
+    color: var(--text-tertiary);
+}
+
+.calendar-task.time-passed .task-block .task-duration,
+.calendar-task.time-passed .task-block .task-hierarchy-row {
+    color: var(--text-muted);
+}
+
+/* Completed tasks (user marked done) - Faded */
 .calendar-task .task-block.completed {
     background: var(--bg-secondary) !important;
-    opacity: 0.5;
-    filter: grayscale(50%);
+    opacity: 0.45;
+    filter: grayscale(30%);
 }
 
 .calendar-task .task-block.completed::before {

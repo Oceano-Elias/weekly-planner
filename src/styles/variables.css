@@ -1,60 +1,99 @@
-/* Premium Design System - Weekly Planner V3 */
+/* Zen & Deep Liquid Design System - Weekly Planner V3 */
 
 /* Google Fonts Import */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
   /* =========================================
-     PREMIUM COLOR SYSTEM
+     ZEN & DEEP LIQUID COLOR SYSTEM
+     "The Screen is a Void, Time is Liquid"
      ========================================= */
 
-  /* Department Colors - Vibrant */
-  --dept-work: #3B82F6;
-  --dept-personal: #10B981;
-  --dept-health: #F59E0B;
-  --dept-learning: #8B5CF6;
-  --dept-finance: #EC4899;
-  --dept-admin: #6366F1;
+  /* Department Colors - Deep Ink (ACCENT/BORDER colors) */
+  --dept-work: #6366f1;
+  /* Indigo-500 for accents */
+  --dept-personal: #10b981;
+  /* Emerald-500 for accents */
+  --dept-health: #f97316;
+  /* Orange-500 for accents */
+  --dept-learning: #8b5cf6;
+  /* Violet-500 for accents */
+  --dept-finance: #f43f5e;
+  /* Rose-500 for accents */
+  --dept-admin: #64748b;
+  /* Slate-500 for accents */
 
-  /* Base Backgrounds - Rich Dark Theme */
-  --bg-primary: #0f0f1a;
-  --bg-secondary: #16162a;
-  --bg-tertiary: #1e1e38;
-  --bg-elevated: #252545;
-  --bg-hover: rgba(255, 255, 255, 0.05);
-  --bg-active: rgba(59, 130, 246, 0.15);
+  /* Department Deep Fills - For "Full Bottle" Future Tasks */
+  --dept-work-deep: #312e81;
+  /* Indigo-950 */
+  --dept-personal-deep: #064e3b;
+  /* Emerald-900 */
+  --dept-health-deep: #7c2d12;
+  /* Burnt Sienna */
+  --dept-learning-deep: #2e1065;
+  /* Violet-950 */
+  --dept-finance-deep: #4c0519;
+  /* Rose-950 */
+  --dept-admin-deep: #1e293b;
+  /* Slate-800 */
 
-  /* Text Colors */
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0b8;
-  --text-tertiary: #6b6b80;
-  --text-muted: #4a4a60;
+  /* Base Backgrounds - The Void (Deep Matte Slate) */
+  --bg-primary: #0f172a;
+  /* Slate-950 - The Void */
+  --bg-secondary: #1e293b;
+  /* Slate-800 - The Paper */
+  --bg-tertiary: #334155;
+  /* Slate-700 - Elevated */
+  --bg-elevated: #475569;
+  /* Slate-600 */
+  --bg-hover: rgba(255, 255, 255, 0.03);
+  --bg-active: rgba(99, 102, 241, 0.1);
 
-  /* Accent Colors - Gradients */
-  --accent-primary: #3B82F6;
-  --accent-secondary: #60A5FA;
-  --accent-gradient: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
-  --accent-success: #10B981;
-  --accent-warning: #F59E0B;
-  --accent-error: #EF4444;
+  /* Text Colors - NEVER Pure White */
+  --text-primary: #e2e8f0;
+  /* Slate-200 */
+  --text-secondary: #94a3b8;
+  /* Slate-400 */
+  --text-tertiary: #64748b;
+  /* Slate-500 */
+  --text-muted: #475569;
+  /* Slate-600 */
 
-  /* Borders */
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --border-secondary: rgba(255, 255, 255, 0.12);
-  --border-tertiary: rgba(255, 255, 255, 0.04);
-  --border-accent: rgba(59, 130, 246, 0.5);
+  /* Accent Colors */
+  --accent-primary: #6366f1;
+  /* Indigo-500 */
+  --accent-secondary: #818cf8;
+  /* Indigo-400 */
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --accent-success: #10b981;
+  /* Emerald-500 */
+  --accent-warning: #f59e0b;
+  /* Amber-500 */
+  --accent-error: #ef4444;
+  /* Red-500 */
 
-  /* Glassmorphism */
-  --glass-bg: rgba(30, 30, 56, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  /* Borders - Ultra Subtle */
+  --border-primary: rgba(51, 65, 85, 0.6);
+  /* Slate-700/60 */
+  --border-secondary: rgba(71, 85, 105, 0.5);
+  /* Slate-600/50 */
+  --border-tertiary: rgba(51, 65, 85, 0.3);
+  /* Slate-700/30 */
+  --border-accent: rgba(99, 102, 241, 0.4);
+  /* Indigo/40 */
+
+  /* Glassmorphism - Matte Version */
+  --glass-bg: rgba(30, 41, 59, 0.8);
+  /* Slate-800/80 */
+  --glass-border: rgba(51, 65, 85, 0.4);
   --glass-blur: blur(20px);
 
-  /* Shadows - Premium Depth */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
-  --shadow-task: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  /* Shadows - Subtle Depth */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+  --shadow-task: 0 2px 8px rgba(0, 0, 0, 0.25);
 
   /* =========================================
      TYPOGRAPHY - Inter Font
@@ -69,6 +108,7 @@
   --font-size-xl: 20px;
   --font-size-2xl: 28px;
 
+  --font-weight-light: 300;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
