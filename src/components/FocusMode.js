@@ -12,6 +12,15 @@ export const FocusMode = {
     activeKeyHandler: null,
 
     /**
+     * Count the number of steps in the notes
+     */
+    getStepCount(notes) {
+        if (!notes) return 0;
+        const lines = notes.split('\n').filter(l => l.trim() !== '');
+        return lines.length;
+    },
+
+    /**
      * Open Focus Mode for a specific task
      */
     open(taskId) {
@@ -60,11 +69,10 @@ export const FocusMode = {
                     
                     <div class="focus-header">
                         <span class="focus-title">${PlannerService.escapeHtml(task.title)}</span>
-                        <h1 class="focus-goal">${PlannerService.escapeHtml(task.goal || 'Execution Mode')}</h1>
+                        <h1 class="focus-goal">Break this task into steps</h1>
                     </div>
 
                     <div class="focus-section">
-                        <div class="section-label">Break this task into steps</div>
                         <ul class="focus-checklist">
                             ${this.renderChecklist(task.notes || '')}
                         </ul>
@@ -73,7 +81,7 @@ export const FocusMode = {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M12 5v14M5 12h14"/>
                                 </svg>
-                                Add Mini-Task
+                                Add Step ${this.getStepCount(task.notes) + 1}
                             </button>
                             <div class="add-minitask-input-wrap" id="addMiniTaskInput" style="display: none;">
                                 <input type="text" class="add-minitask-input" id="miniTaskInput" placeholder="What needs to be done?">
@@ -126,7 +134,7 @@ export const FocusMode = {
             });
         });
 
-        // Reset the add mini-task UI
+        // Reset the add mini-task UI and update button text
         const addBtn = document.getElementById('addMiniTaskBtn');
         const addInput = document.getElementById('addMiniTaskInput');
         const miniTaskInput = document.getElementById('miniTaskInput');
@@ -135,6 +143,14 @@ export const FocusMode = {
             addBtn.style.display = 'flex';
             addInput.style.display = 'none';
             miniTaskInput.value = '';
+            // Update button text to show next step number
+            const stepCount = this.getStepCount(task.notes);
+            addBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Add Step ${stepCount + 1}
+            `;
         }
     },
 
