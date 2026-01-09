@@ -31,18 +31,29 @@
     color: rgba(255, 255, 255, 0.9);
 }
 
-/* DAY VIEW - Professional Single Column Styling */
+/* DAY VIEW - Volumetric Glass Styling */
 .task-block.day-view {
     padding: var(--space-xl) var(--space-lg);
     margin: 4px 16px;
-    background: linear-gradient(135deg,
-            color-mix(in srgb, var(--task-color) 45%, var(--bg-elevated)) 0%,
-            color-mix(in srgb, var(--task-color) 35%, var(--bg-tertiary)) 100%);
-    backdrop-filter: blur(12px);
+
+    /* 1. FROSTED DEPTH */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    /* 2. SHEEN - Vertical gradient (light top, dark bottom) */
+    background: linear-gradient(to bottom,
+            color-mix(in srgb, var(--task-color) 45%, var(--bg-secondary)) 0%,
+            color-mix(in srgb, var(--task-color) 20%, var(--bg-primary)) 100%);
+
     border-radius: var(--radius-lg);
-    border-width: 1.5px;
-    /* Subtle shadow - barely visible */
-    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.15);
+
+    /* 3. RIM LIGHT - Bright top, faint sides/bottom */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    border-left: 4px solid var(--task-color);
+
+    /* Ultra-subtle shadow */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     min-height: 100%;
 }
 
@@ -404,9 +415,25 @@
 .calendar-task.compact .task-block {
     padding: 4px 8px;
     flex-direction: row;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.calendar-task.compact .task-header-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 6px;
+    justify-content: space-between;
+}
+
+.calendar-task.compact .task-header-left {
+    display: flex;
     align-items: center;
     gap: 4px;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .calendar-task.compact .task-header {
@@ -419,12 +446,12 @@
     min-width: 20px;
     font-size: 9px;
     padding: 0 4px;
+    flex-shrink: 0;
 }
 
 .calendar-task.compact .task-title {
     font-size: 11px;
     line-height: 1.2;
-    flex: 1;
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -433,7 +460,8 @@
 
 .calendar-task.compact .task-duration {
     font-size: 9px;
-    margin-left: 0;
+    flex-shrink: 0;
+    padding: 2px 6px;
 }
 
 .calendar-task.compact .task-hierarchy {
