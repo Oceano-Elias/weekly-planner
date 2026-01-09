@@ -64,7 +64,7 @@ export const FocusMode = {
                     </div>
 
                     <div class="focus-section">
-                        <div class="section-label">Mini-Tasks</div>
+                        <div class="section-label">Break this task into steps</div>
                         <ul class="focus-checklist">
                             ${this.renderChecklist(task.notes || '')}
                         </ul>

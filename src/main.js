@@ -144,7 +144,6 @@ const App = {
         this.editingTaskId = taskId;
 
         document.getElementById('taskTitle').value = task.title;
-        document.getElementById('taskGoal').value = task.goal || '';
         document.getElementById('taskNotes').value = task.notes || '';
 
         // Populate hierarchy
@@ -375,7 +374,6 @@ const App = {
      */
     saveTask() {
         const title = document.getElementById('taskTitle').value.trim();
-        const goal = document.getElementById('taskGoal').value.trim();
         const hierarchy = this.getSelectedHierarchy();
         const duration = this.getSelectedDuration();
         const notes = document.getElementById('taskNotes').value.trim();
@@ -411,9 +409,9 @@ const App = {
                 }
             }
 
-            Store.updateTask(this.editingTaskId, { title, goal, hierarchy, duration, notes });
+            Store.updateTask(this.editingTaskId, { title, hierarchy, duration, notes });
         } else {
-            const task = Store.addTask({ title, goal, hierarchy, duration, notes });
+            const task = Store.addTask({ title, hierarchy, duration, notes });
 
             if (this.scheduledData) {
                 Store.scheduleTask(task.id, this.scheduledData.day, this.scheduledData.time);
@@ -432,7 +430,6 @@ const App = {
      */
     resetForm() {
         document.getElementById('taskForm').reset();
-        document.getElementById('taskGoal').value = '';
 
         for (let i = 2; i <= 4; i++) {
             document.getElementById(`deptLevel${i}`).style.display = 'none';
