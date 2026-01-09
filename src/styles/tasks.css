@@ -476,39 +476,32 @@
    TIME-BASED STATES - "DEEP LIQUID" MECHANIC
    ========================================= */
 
-/* Progress Overlay - "DRAINING" Effect for Active Tasks */
+/* Progress Bar - Horizontal line at bottom of task */
 .task-progress-overlay {
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
-    right: 0;
-    height: 0;
-    /* The "drained" portion - Dark Matte / Smoked Glass */
-    background: linear-gradient(180deg,
-            rgba(15, 23, 42, 0.6) 0%,
-            rgba(15, 23, 42, 0.4) 100%);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    opacity: 0.85;
+    width: 0%;
+    height: 4px;
+    /* Progress bar style */
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.5) 0%,
+            rgba(255, 255, 255, 0.3) 100%);
     pointer-events: none;
-    transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 0;
-    border-radius: inherit;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 5;
+    border-radius: 0 0 inherit inherit;
 }
 
-/* Active draining task - shows "liquid" at bottom */
+/* Active progress - glowing effect */
 .task-progress-overlay.in-progress {
-    opacity: 0.95;
-    /* Bottom edge of the drain (the surface of the liquid) */
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
-/* When task time has fully passed - overlay covers all */
+/* When task time has fully passed */
 .task-progress-overlay.expired {
-    height: 100% !important;
-    opacity: 0;
-    /* Let the time-passed styles take over the whole task-block */
+    width: 100% !important;
+    background: rgba(255, 255, 255, 0.2);
 }
 
 /* "EMPTY BOTTLE" - Glass Container with Visible Light Edge */

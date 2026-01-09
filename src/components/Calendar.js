@@ -382,7 +382,7 @@ export const Calendar = {
     },
 
     /**
-     * Update visual progress for a task (inverted - drains as time passes)
+     * Update visual progress for a task (horizontal progress bar)
      */
     updateTaskProgress(taskEl, task) {
         if (task.completed) return;
@@ -396,18 +396,18 @@ export const Calendar = {
         taskEl.classList.remove('time-passed');
 
         if (progress <= 0) {
-            // Not started yet - overlay is 0 height (fully vibrant)
-            overlay.style.height = '0%';
+            // Not started yet - progress bar is 0 width
+            overlay.style.width = '0%';
         } else if (progress >= 1) {
-            // Time has fully passed - solid dark background
-            overlay.style.height = '100%';
+            // Time has fully passed
+            overlay.style.width = '100%';
             overlay.classList.add('expired');
             taskEl.classList.add('time-passed');
         } else {
-            // In progress - darkened overlay grows from top down
+            // In progress - progress bar grows from left to right
             overlay.classList.add('in-progress');
-            const passedHeight = progress * 100;
-            overlay.style.height = `${passedHeight.toFixed(1)}%`;
+            const progressWidth = progress * 100;
+            overlay.style.width = `${progressWidth.toFixed(1)}%`;
         }
     },
 
