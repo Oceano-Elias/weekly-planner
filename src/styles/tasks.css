@@ -467,29 +467,44 @@
     opacity: 0;
 }
 
-/* "EMPTY BOTTLE" - Glassmorphism Past Task Styling */
+/* "EMPTY BOTTLE" - Heavy Dark Glass Overlay */
 .calendar-task.time-passed .task-block {
-    /* Glassmorphism: Frosted glass effect */
-    background: rgba(15, 23, 42, 0.75) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    /* Solid glass edge border - keeps the "bottle" visible */
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    /* Dramatically desaturated and dimmed */
+    filter: saturate(0.3) brightness(0.55) !important;
+    /* Strong glass border for visibility */
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
     border-left: 4px solid color-mix(in srgb, var(--task-color) 50%, transparent) !important;
-    /* Slightly muted but still visible */
-    opacity: 0.85;
 }
 
 .calendar-task.time-passed .task-block::before {
-    /* Remove the color tint overlay for past tasks */
-    opacity: 0.03;
+    /* Heavy dark overlay */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    pointer-events: none;
+    z-index: 1;
+    border-radius: inherit;
+}
+
+/* Ensure content is above overlay */
+.calendar-task.time-passed .task-block .task-header,
+.calendar-task.time-passed .task-block .task-title,
+.calendar-task.time-passed .task-block .task-duration,
+.calendar-task.time-passed .task-block .task-hierarchy-row,
+.calendar-task.time-passed .task-block .dept-badge {
+    position: relative;
+    z-index: 2;
 }
 
 .calendar-task.time-passed .task-block .task-title {
-    color: var(--text-secondary);
+    color: var(--text-tertiary) !important;
 }
 
-.calendar-task.time-passed .task-block .task-duration,
+.calendar-task.time-passed .task-block .task-duration {
+    opacity: 0.6 !important;
+}
+
 .calendar-task.time-passed .task-block .task-hierarchy-row {
     color: var(--text-tertiary);
 }
