@@ -140,6 +140,8 @@
     cursor: grabbing;
     transform: scale(1.02) rotate(1deg);
     box-shadow: var(--shadow-lg);
+    overflow: visible;
+    z-index: 1000;
 }
 
 /* Task Inner Elements */
