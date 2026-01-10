@@ -180,28 +180,48 @@
     max-width: 80px;
 }
 
-/* Step progress counter (replaces goal field) */
+/* Step progress bar with fill */
 .task-step-progress {
+    position: relative;
     flex: 1;
     text-align: center;
     font-size: 11px;
     font-weight: var(--font-weight-medium);
-    color: rgba(255, 255, 255, 0.7);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     padding: 2px 8px;
     min-width: 0;
-    /* Subtle pill background */
+    /* Background track */
     background: rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-full);
     /* Hidden in week view by default */
     display: none;
 }
 
+/* Fill bar inside step progress */
+.task-step-progress .step-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+}
+
+/* Text on top of fill */
+.task-step-progress .step-text {
+    position: relative;
+    z-index: 1;
+    color: rgba(255, 255, 255, 0.85);
+}
+
 /* Show step progress only in day view */
 .task-block.day-view .task-step-progress {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .task-header-row .task-duration {

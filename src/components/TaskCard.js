@@ -45,8 +45,12 @@ export class TaskCard {
 
     // Step progress - show in both Day View and Week View if task has steps
     const { completed, total } = this.getStepCounts();
+    const progressPercent = total > 0 ? (completed / total) * 100 : 0;
     const stepProgressHtml = total > 0
-      ? `<span class="task-step-progress">${completed}/${total} steps</span>`
+      ? `<span class="task-step-progress">
+           <span class="step-fill" style="width: ${progressPercent}%"></span>
+           <span class="step-text">${completed}/${total} steps</span>
+         </span>`
       : '';
 
     if (isCompact || task.duration <= 30) {
