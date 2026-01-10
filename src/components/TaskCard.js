@@ -55,6 +55,17 @@ export class TaskCard {
 
     if (isCompact || task.duration <= 30) {
       // COMPACT: Badge + Title + Steps + Duration — all in one row
+      // In Week View, show full-width progress below; in Day View, show inline
+      const compactProgress = isDayView ? stepProgressHtml : '';
+      const compactProgressRow = (!isDayView && total > 0)
+        ? `<div class="task-progress-row compact">
+             <span class="task-step-progress full-width">
+               <span class="step-fill" style="width: ${progressPercent}%"></span>
+               <span class="step-text">${completed}/${total} steps</span>
+             </span>
+           </div>`
+        : '';
+
       el.innerHTML = `
         <button class="task-delete" title="Delete">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -66,9 +77,10 @@ export class TaskCard {
             <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>
             <span class="task-title">${esc(task.title)}</span>
           </div>
-          ${stepProgressHtml}
+          ${compactProgress}
           <span class="task-duration">${PlannerService.formatDuration(task.duration)}</span>
         </div>
+        ${compactProgressRow}
       `;
     } else {
       // STANDARD/FULL: Header row + additional content below
