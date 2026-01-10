@@ -476,32 +476,32 @@
    TIME-BASED STATES - "DEEP LIQUID" MECHANIC
    ========================================= */
 
-/* Progress Bar - Horizontal line at bottom of task */
+/* Progress Overlay - Grey wash for past portion of active tasks */
 .task-progress-overlay {
     position: absolute;
-    bottom: 0;
+    top: 0;
     left: 0;
-    width: 0%;
-    height: 4px;
-    /* Progress bar style */
-    background: linear-gradient(90deg,
-            rgba(255, 255, 255, 0.5) 0%,
-            rgba(255, 255, 255, 0.3) 100%);
+    right: 0;
+    height: 0%;
+    /* Subtle grey wash effect */
+    background: linear-gradient(180deg,
+            rgba(30, 41, 59, 0.5) 0%,
+            rgba(30, 41, 59, 0.35) 100%);
     pointer-events: none;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 5;
-    border-radius: 0 0 inherit inherit;
+    transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2;
+    border-radius: inherit;
 }
 
-/* Active progress - glowing effect */
+/* Active task - subtle bottom edge */
 .task-progress-overlay.in-progress {
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 /* When task time has fully passed */
 .task-progress-overlay.expired {
-    width: 100% !important;
-    background: rgba(255, 255, 255, 0.2);
+    height: 100% !important;
+    opacity: 0;
 }
 
 /* "EMPTY BOTTLE" - Glass Container with Visible Light Edge */
