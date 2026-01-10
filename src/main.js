@@ -143,7 +143,7 @@ const App = {
         const modal = document.getElementById('taskModal');
         modal.classList.add('active');
         this.resetForm();
-        document.getElementById('taskTitle').focus();
+        document.getElementById('dept1').focus();
     },
 
     /**
@@ -155,8 +155,6 @@ const App = {
 
         this.openModal();
         this.editingTaskId = taskId;
-
-        document.getElementById('taskTitle').value = task.title;
 
         // Populate hierarchy
         this.populateDepartmentLevel(1, Departments.getTopLevel());
@@ -227,7 +225,7 @@ const App = {
             }
         }
 
-        document.getElementById('taskTitle').focus();
+        document.getElementById('dept1').focus();
     },
 
     /**
@@ -303,15 +301,6 @@ const App = {
         }
 
         this.updateHierarchyPreview();
-
-        // Auto-fill title with the deepest selected department/sub-department
-        if (hierarchy.length > 0) {
-            const lastSelected = hierarchy[hierarchy.length - 1];
-            const titleInput = document.getElementById('taskTitle');
-            if (titleInput) {
-                titleInput.value = lastSelected;
-            }
-        }
     },
 
     /**
@@ -385,21 +374,17 @@ const App = {
      * Save the task
      */
     saveTask() {
-        const title = document.getElementById('taskTitle').value.trim();
         const hierarchy = this.getSelectedHierarchy();
         const duration = this.getSelectedDuration();
-
-        if (!title) {
-            alert('Please enter a task title');
-            document.getElementById('taskTitle').focus();
-            return;
-        }
 
         if (hierarchy.length === 0) {
             alert('Please select at least one department level');
             document.getElementById('dept1').focus();
             return;
         }
+
+        // Auto-generate title from deepest hierarchy level
+        const title = hierarchy[hierarchy.length - 1];
 
         if (this.editingTaskId) {
             // Check for overlap if this is a scheduled task and duration changed
