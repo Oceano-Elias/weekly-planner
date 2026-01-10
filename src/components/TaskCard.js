@@ -74,13 +74,27 @@ export class TaskCard {
       // STANDARD/FULL: Header row + additional content below
       let additionalContent = '';
 
-      // Show hierarchy for 60min+
-      if (task.duration >= 60 && (topDept || hierarchyPath)) {
-        const fullPath = [topDept, ...task.hierarchy.slice(1)].filter(Boolean).join(' › ');
-        additionalContent += `<div class="task-hierarchy-row">${esc(fullPath)}</div>`;
+      if (isDayView) {
+        // DAY VIEW: Show hierarchy path for 60min+ tasks
+        if (task.duration >= 60 && (topDept || hierarchyPath)) {
+          const fullPath = [topDept, ...task.hierarchy.slice(1)].filter(Boolean).join(' › ');
+          additionalContent += `<div class="task-hierarchy-row">${esc(fullPath)}</div>`;
+        }
+      } else {
+        // WEEK VIEW: Show full-width progress bar instead of hierarchy
+        if (total > 0) {
+          additionalContent += `
+            <div class="task-progress-row">
+              <span class="task-step-progress full-width">
+                <span class="step-fill" style="width: ${progressPercent}%"></span>
+                <span class="step-text">${completed}/${total} steps</span>
+              </span>
+            </div>`;
+        }
       }
 
-      // Mini-tasks are now shown in header as "X/Y steps" - no duplicate display needed
+      // In Week View, hide the small header progress bar since we show full-width below
+      const headerStepProgress = isDayView ? stepProgressHtml : '';
 
       el.innerHTML = `
         <button class="task-delete" title="Delete">
@@ -93,7 +107,7 @@ export class TaskCard {
             <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>
             <span class="task-title">${esc(task.title)}</span>
           </div>
-          ${stepProgressHtml}
+          ${headerStepProgress}
           <span class="task-duration">${PlannerService.formatDuration(task.duration)}</span>
         </div>
         ${additionalContent}

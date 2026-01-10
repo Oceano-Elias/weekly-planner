@@ -262,6 +262,24 @@
     letter-spacing: 0.3px;
 }
 
+/* Week View: Full-width progress bar row (replaces hierarchy) */
+.task-progress-row {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.task-step-progress.full-width {
+    display: flex;
+    width: 100%;
+    max-width: none;
+    height: 20px;
+    font-size: 11px;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.35);
+}
+
 /* Day view enhancements */
 .task-block.day-view .task-header-left .task-title {
     font-size: 16px;
