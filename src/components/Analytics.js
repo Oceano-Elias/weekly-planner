@@ -43,7 +43,41 @@ export const Analytics = {
         if (entries.length === 0) {
             container.innerHTML = `
                 <div class="analytics-empty">
-                    <p>No scheduled tasks this week</p>
+                    <div class="empty-state-illustration">
+                        <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Background decorations -->
+                            <circle class="float-shape s1" cx="25" cy="30" r="6" fill="url(#aGrad1)" opacity="0.3"/>
+                            <circle class="float-shape s2" cx="175" cy="25" r="5" fill="url(#aGrad2)" opacity="0.4"/>
+                            
+                            <!-- Chart bars -->
+                            <g transform="translate(40, 20)">
+                                <rect x="0" y="60" width="20" height="50" rx="4" fill="url(#aGrad1)" opacity="0.4"/>
+                                <rect x="30" y="40" width="20" height="70" rx="4" fill="url(#aGrad1)" opacity="0.5"/>
+                                <rect x="60" y="20" width="20" height="90" rx="4" fill="url(#aGrad1)" opacity="0.6"/>
+                                <rect x="90" y="50" width="20" height="60" rx="4" fill="url(#aGrad1)" opacity="0.45"/>
+                                
+                                <!-- Baseline -->
+                                <line x1="0" y1="110" x2="110" y2="110" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+                            </g>
+                            
+                            <!-- Sparkle -->
+                            <path class="sparkle" d="M160 60 L162 65 L167 67 L162 69 L160 74 L158 69 L153 67 L158 65 Z" fill="#fbbf24"/>
+                            
+                            <!-- Gradients -->
+                            <defs>
+                                <linearGradient id="aGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#3b82f6"/>
+                                    <stop offset="100%" stop-color="#8b5cf6"/>
+                                </linearGradient>
+                                <linearGradient id="aGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#10b981"/>
+                                    <stop offset="100%" stop-color="#06b6d4"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <p class="empty-state-title">No scheduled tasks</p>
+                    <p class="empty-state-subtitle">Schedule tasks to see your analytics</p>
                 </div>
             `;
             return;

@@ -240,6 +240,10 @@
 
 .analytics-empty {
     text-align: center;
-    padding: var(--space-xl);
+    padding: var(--space-xl) var(--space-md);
     color: var(--text-tertiary);
+    border: 1px dashed var(--border-secondary);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03), rgba(139, 92, 246, 0.03));
+    margin: 0;
 }

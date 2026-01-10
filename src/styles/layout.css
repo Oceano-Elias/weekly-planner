@@ -272,11 +272,88 @@ header {
 
 .task-queue-empty {
     text-align: center;
-    padding: var(--space-xl);
+    padding: var(--space-xl) var(--space-md);
     color: var(--text-tertiary);
-    border: 2px dashed var(--border-primary);
+    border: 1px dashed var(--border-secondary);
     margin: var(--space-md);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03), rgba(139, 92, 246, 0.03));
+}
+
+/* Empty State Illustration */
+.empty-state-illustration {
+    width: 160px;
+    height: 130px;
+    margin: 0 auto var(--space-md);
+}
+
+.empty-state-illustration svg {
+    width: 100%;
+    height: 100%;
+}
+
+.empty-state-title {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    margin: 0 0 6px;
+}
+
+.empty-state-subtitle {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Floating shape animations */
+.float-shape {
+    animation: floatBob 4s ease-in-out infinite;
+}
+
+.float-shape.s1 {
+    animation-delay: 0s;
+}
+
+.float-shape.s2 {
+    animation-delay: 0.5s;
+}
+
+.float-shape.s3 {
+    animation-delay: 1s;
+}
+
+.float-shape.s4 {
+    animation-delay: 1.5s;
+}
+
+@keyframes floatBob {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+.sparkle {
+    animation: sparklePulse 2s ease-in-out infinite;
+}
+
+@keyframes sparklePulse {
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
 }
 
 /* Calendar Container with Page Transition */
