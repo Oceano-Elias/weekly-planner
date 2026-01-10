@@ -46,10 +46,14 @@ export class TaskCard {
     // Step progress - show in both Day View and Week View if task has steps
     const { completed, total } = this.getStepCounts();
     const progressPercent = total > 0 ? (completed / total) * 100 : 0;
+    const isAllComplete = total > 0 && completed === total;
+    const stepText = isAllComplete ? '✓ Complete' : `${completed}/${total} steps`;
+    const completeClass = isAllComplete ? 'complete' : '';
+
     const stepProgressHtml = total > 0
-      ? `<span class="task-step-progress">
+      ? `<span class="task-step-progress ${completeClass}">
            <span class="step-fill" style="width: ${progressPercent}%"></span>
-           <span class="step-text">${completed}/${total} steps</span>
+           <span class="step-text">${stepText}</span>
          </span>`
       : '';
 
@@ -59,9 +63,9 @@ export class TaskCard {
       const compactProgress = isDayView ? stepProgressHtml : '';
       const compactProgressRow = (!isDayView && total > 0)
         ? `<div class="task-progress-row compact">
-             <span class="task-step-progress full-width">
+             <span class="task-step-progress full-width ${completeClass}">
                <span class="step-fill" style="width: ${progressPercent}%"></span>
-               <span class="step-text">${completed}/${total} steps</span>
+               <span class="step-text">${stepText}</span>
              </span>
            </div>`
         : '';
@@ -97,9 +101,9 @@ export class TaskCard {
         if (total > 0) {
           additionalContent += `
             <div class="task-progress-row">
-              <span class="task-step-progress full-width">
+              <span class="task-step-progress full-width ${completeClass}">
                 <span class="step-fill" style="width: ${progressPercent}%"></span>
-                <span class="step-text">${completed}/${total} steps</span>
+                <span class="step-text">${stepText}</span>
               </span>
             </div>`;
         }

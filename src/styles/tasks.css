@@ -109,16 +109,24 @@
 /* Matte shadow - no glow */
 .calendar-task .task-block {
     box-shadow: var(--shadow-task);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .task-block:hover {
     border-color: var(--task-color);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: var(--shadow-md),
+        0 0 20px color-mix(in srgb, var(--task-color) 25%, transparent);
 }
 
 .task-block:hover::before {
-    opacity: 0.12;
+    opacity: 0.15;
+}
+
+/* Active/pressed state */
+.task-block:active {
+    transform: translateY(0) scale(0.99);
+    box-shadow: var(--shadow-sm);
 }
 
 .task-block.completed {
@@ -136,12 +144,15 @@
 }
 
 .task-block.dragging {
-    opacity: 0.9;
+    opacity: 0.95;
     cursor: grabbing;
-    transform: scale(1.02) rotate(1deg);
-    box-shadow: var(--shadow-lg);
+    transform: scale(1.03) rotate(1deg);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
+        0 0 30px color-mix(in srgb, var(--task-color) 40%, transparent);
     overflow: visible;
     z-index: 1000;
+    filter: brightness(1.05);
+    border: 2px solid var(--task-color);
 }
 
 /* Task Inner Elements */
@@ -222,6 +233,37 @@
     z-index: 1;
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================
+   CELEBRATION EFFECT - 100% Complete
+   ========================================= */
+.task-step-progress.complete {
+    background: rgba(16, 185, 129, 0.3);
+    animation: celebration-pulse 2s ease-in-out infinite;
+}
+
+.task-step-progress.complete .step-fill {
+    background: linear-gradient(90deg, #10b981, #34d399);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.8),
+        0 0 24px rgba(16, 185, 129, 0.4);
+}
+
+.task-step-progress.complete .step-text {
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.5px;
+}
+
+@keyframes celebration-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+
+    50% {
+        box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.4);
+    }
 }
 
 /* Day view - WIDER step progress bar (stays in header, fills available space) */
