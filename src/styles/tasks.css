@@ -183,20 +183,21 @@
 /* Step progress bar with fill */
 .task-step-progress {
     position: relative;
-    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    font-size: 11px;
-    font-weight: var(--font-weight-medium);
+    font-size: 9px;
+    font-weight: var(--font-weight-bold);
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 2px 8px;
-    min-width: 0;
+    padding: 2px 6px;
+    min-width: 40px;
+    max-width: 70px;
     /* Background track */
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.25);
     border-radius: var(--radius-full);
-    /* Hidden in week view by default */
-    display: none;
+    flex-shrink: 0;
 }
 
 /* Fill bar inside step progress */
@@ -205,23 +206,28 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: rgba(255, 255, 255, 0.25);
+    background: linear-gradient(90deg,
+            var(--task-color, var(--accent-primary)),
+            color-mix(in srgb, var(--task-color, var(--accent-primary)) 70%, white));
     border-radius: var(--radius-full);
-    transition: width 0.3s ease;
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 6px var(--task-color, var(--accent-primary));
 }
 
 /* Text on top of fill */
 .task-step-progress .step-text {
     position: relative;
     z-index: 1;
-    color: rgba(255, 255, 255, 0.85);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Show step progress only in day view */
+/* Day view - larger step progress */
 .task-block.day-view .task-step-progress {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 12px;
+    padding: 4px 12px;
+    min-width: 60px;
+    max-width: 120px;
 }
 
 .task-header-row .task-duration {
@@ -254,11 +260,10 @@
 }
 
 .task-block.day-view .task-step-progress {
-    font-size: 13px;
-    font-weight: var(--font-weight-medium);
-    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
     padding: 4px 12px;
-    background: rgba(255, 255, 255, 0.15);
+    min-width: 60px;
+    max-width: 120px;
 }
 
 .task-block.day-view .task-header-row {
