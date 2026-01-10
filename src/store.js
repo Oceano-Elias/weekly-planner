@@ -976,6 +976,48 @@ export const Store = {
         };
     },
 
+    /**
+     * Get daily task stats for sparkline charts
+     * Returns array of 7 days with completion percentages
+     */
+    getDailyStatsForWeek() {
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        const weekTasks = this.getTasksForWeek(currentWeekId);
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        return days.map(day => {
+            const dayTasks = weekTasks.filter(t => t.scheduledDay === day);
+            const total = dayTasks.length;
+            const completed = dayTasks.filter(t => t.completed).length;
+            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            // Also count mini-tasks for that day
+            let miniTotal = 0;
+            let miniCompleted = 0;
+            dayTasks.forEach(task => {
+                if (task.notes) {
+                    const lines = task.notes.split('\n').filter(l => l.trim() !== '');
+                    lines.forEach(line => {
+                        if (line.includes('[ ]') || line.includes('[x]')) {
+                            miniTotal++;
+                            if (line.includes('[x]')) {
+                                miniCompleted++;
+                            }
+                        }
+                    });
+                }
+            });
+
+            const miniPercent = miniTotal > 0 ? Math.round((miniCompleted / miniTotal) * 100) : 0;
+
+            return {
+                day: day.charAt(0).toUpperCase() + day.slice(1, 3),
+                tasks: { total, completed, percent },
+                miniTasks: { total: miniTotal, completed: miniCompleted, percent: miniPercent }
+            };
+        });
+    },
+
     // ========================================
     // CUSTOM DEPARTMENT MANAGEMENT
     // ========================================

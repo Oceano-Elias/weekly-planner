@@ -11,6 +11,10 @@ export const DepartmentSettings = {
     editingData: null,
     migrationsPending: [],
 
+    // Drag and drop state
+    draggedDept: null,
+    dragOverDept: null,
+
     /**
      * Open the settings modal
      */
@@ -109,6 +113,7 @@ export const DepartmentSettings = {
         const pathStr = JSON.stringify(path);
         const hasChildren = data.children && Object.keys(data.children).length > 0;
         const childCount = hasChildren ? Object.keys(data.children).length : 0;
+        const isDragOver = this.dragOverDept === name;
 
         let childrenHtml = '';
         if (hasChildren) {
@@ -120,8 +125,17 @@ export const DepartmentSettings = {
         }
 
         return `
-            <div class="dept-section" data-path='${pathStr}'>
+            <div class="dept-section ${isDragOver ? 'drag-over' : ''}" 
+                 data-path='${pathStr}'
+                 data-dept-name="${name}"
+                 draggable="true"
+                 ondragstart="window.DepartmentSettings.handleDragStart(event, '${name}')"
+                 ondragend="window.DepartmentSettings.handleDragEnd(event)"
+                 ondragover="window.DepartmentSettings.handleDragOver(event, '${name}')"
+                 ondragleave="window.DepartmentSettings.handleDragLeave(event)"
+                 ondrop="window.DepartmentSettings.handleDrop(event, '${name}')">
                 <div class="dept-parent">
+                    <span class="dept-drag-handle" title="Drag to reorder">⋮⋮</span>
                     <input type="color" class="dept-color-picker" 
                            value="${data.color || '#6366F1'}" 
                            onchange="window.DepartmentSettings.updateColor(${pathStr}, this.value)"
@@ -350,6 +364,101 @@ export const DepartmentSettings = {
         if (container) {
             container.innerHTML = this.renderTree();
         }
+    },
+
+    // ========================================
+    // DRAG AND DROP HANDLERS
+    // ========================================
+
+    /**
+     * Handle drag start
+     */
+    handleDragStart(event, deptName) {
+        this.draggedDept = deptName;
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', deptName);
+
+        // Add dragging class for visual feedback
+        setTimeout(() => {
+            const el = event.target.closest('.dept-section');
+            if (el) el.classList.add('dragging');
+        }, 0);
+    },
+
+    /**
+     * Handle drag end
+     */
+    handleDragEnd(event) {
+        this.draggedDept = null;
+        this.dragOverDept = null;
+
+        // Remove all drag classes
+        document.querySelectorAll('.dept-section').forEach(el => {
+            el.classList.remove('dragging', 'drag-over');
+        });
+    },
+
+    /**
+     * Handle drag over
+     */
+    handleDragOver(event, deptName) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+
+        if (deptName !== this.draggedDept && deptName !== this.dragOverDept) {
+            this.dragOverDept = deptName;
+            // Update visual feedback
+            document.querySelectorAll('.dept-section').forEach(el => {
+                el.classList.remove('drag-over');
+                if (el.dataset.deptName === deptName) {
+                    el.classList.add('drag-over');
+                }
+            });
+        }
+    },
+
+    /**
+     * Handle drag leave
+     */
+    handleDragLeave(event) {
+        // Only remove if leaving the section entirely
+        const relatedTarget = event.relatedTarget;
+        if (!relatedTarget || !event.target.contains(relatedTarget)) {
+            event.target.classList.remove('drag-over');
+        }
+    },
+
+    /**
+     * Handle drop - reorder departments
+     */
+    handleDrop(event, targetDeptName) {
+        event.preventDefault();
+
+        const sourceDeptName = this.draggedDept;
+        if (!sourceDeptName || sourceDeptName === targetDeptName) {
+            this.handleDragEnd(event);
+            return;
+        }
+
+        // Reorder the editingData object
+        const entries = Object.entries(this.editingData);
+        const sourceIndex = entries.findIndex(([name]) => name === sourceDeptName);
+        const targetIndex = entries.findIndex(([name]) => name === targetDeptName);
+
+        if (sourceIndex === -1 || targetIndex === -1) {
+            this.handleDragEnd(event);
+            return;
+        }
+
+        // Remove source and insert at target position
+        const [removed] = entries.splice(sourceIndex, 1);
+        entries.splice(targetIndex, 0, removed);
+
+        // Rebuild editingData with new order
+        this.editingData = Object.fromEntries(entries);
+
+        this.handleDragEnd(event);
+        this.updateTreeView();
     }
 };
 

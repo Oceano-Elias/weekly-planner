@@ -30,6 +30,48 @@ export const Analytics = {
     },
 
     /**
+     * Generate SVG path for sparkline chart
+     * @param {Array<number>} values - Array of 7 percentage values (0-100)
+     * @returns {Object} - { line: path for stroke, fill: path for gradient fill }
+     */
+    generateSparklinePath(values) {
+        const width = 70;
+        const height = 24;
+        const padding = 2;
+
+        // If all values are 0, return flat lines
+        const hasData = values.some(v => v > 0);
+        if (!hasData) {
+            const y = height - padding;
+            return {
+                line: `M ${padding} ${y} L ${width - padding} ${y}`,
+                fill: `M ${padding} ${y} L ${width - padding} ${y} L ${width - padding} ${height} L ${padding} ${height} Z`
+            };
+        }
+
+        const points = values.map((val, i) => {
+            const x = padding + (i * (width - 2 * padding) / (values.length - 1));
+            const y = height - padding - (val / 100) * (height - 2 * padding);
+            return { x, y };
+        });
+
+        // Create smooth curve using quadratic bezier
+        let linePath = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+            const midX = (points[i - 1].x + points[i].x) / 2;
+            linePath += ` Q ${points[i - 1].x} ${points[i - 1].y}, ${midX} ${(points[i - 1].y + points[i].y) / 2}`;
+        }
+        linePath += ` T ${points[points.length - 1].x} ${points[points.length - 1].y}`;
+
+        // Create fill path (close to bottom)
+        const fillPath = linePath +
+            ` L ${points[points.length - 1].x} ${height} ` +
+            ` L ${points[0].x} ${height} Z`;
+
+        return { line: linePath, fill: fillPath };
+    },
+
+    /**
      * Render analytics
      */
     render() {
@@ -87,6 +129,11 @@ export const Analytics = {
         const taskPercent = tasks.total > 0 ? Math.round((tasks.completed / tasks.total) * 100) : 0;
         const miniPercent = miniTasks.total > 0 ? Math.round((miniTasks.completed / miniTasks.total) * 100) : 0;
 
+        // Get daily stats for sparkline
+        const dailyStats = Store.getDailyStatsForWeek();
+        const taskSparkline = this.generateSparklinePath(dailyStats.map(d => d.tasks.percent));
+        const miniSparkline = this.generateSparklinePath(dailyStats.map(d => d.miniTasks.percent));
+
         container.innerHTML = `
             <div class="analytics-stats-grid">
                 <div class="analytics-stat-card ring-card">
@@ -102,6 +149,18 @@ export const Analytics = {
                     <div class="stat-content">
                         <div class="stat-value">${tasks.completed}<span class="stat-total">/${tasks.total}</span></div>
                         <div class="stat-label">Tasks Done</div>
+                        <div class="sparkline-container">
+                            <svg class="sparkline" viewBox="0 0 70 24" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="sparkGradTasks" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#10b981" stop-opacity="0.3"/>
+                                        <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                                <path class="sparkline-fill" d="${taskSparkline.fill}" fill="url(#sparkGradTasks)"/>
+                                <path class="sparkline-line tasks" d="${taskSparkline.line}" fill="none" stroke="#10b981" stroke-width="1.5"/>
+                            </svg>
+                        </div>
                     </div>
                 </div>
                 
@@ -118,6 +177,18 @@ export const Analytics = {
                     <div class="stat-content">
                         <div class="stat-value">${miniTasks.completed}<span class="stat-total">/${miniTasks.total}</span></div>
                         <div class="stat-label">Mini-Tasks</div>
+                        <div class="sparkline-container">
+                            <svg class="sparkline" viewBox="0 0 70 24" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="sparkGradMini" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#a855f7" stop-opacity="0.3"/>
+                                        <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                                <path class="sparkline-fill" d="${miniSparkline.fill}" fill="url(#sparkGradMini)"/>
+                                <path class="sparkline-line mini" d="${miniSparkline.line}" fill="none" stroke="#a855f7" stroke-width="1.5"/>
+                            </svg>
+                        </div>
                     </div>
                 </div>
                 
