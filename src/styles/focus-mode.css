@@ -358,3 +358,114 @@
     font-style: italic;
     font-size: 14px;
 }
+
+/* =========================================
+   POMODORO TIMER - Focus Mode Enhancement
+   ========================================= */
+
+.pomodoro-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pomodoro-timer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.pomodoro-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.pomodoro-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.pomodoro-ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 8;
+}
+
+.pomodoro-ring-fill {
+    fill: none;
+    stroke: #3b82f6;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
+    filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+}
+
+.pomodoro-time {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    letter-spacing: -1px;
+}
+
+.pomodoro-mode {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+}
+
+.pomodoro-controls {
+    display: flex;
+    gap: 12px;
+}
+
+.pomodoro-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.pomodoro-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+.pomodoro-btn:active {
+    transform: scale(0.95);
+}
+
+.pomodoro-btn.pomodoro-reset {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+
+.pomodoro-btn.pomodoro-reset:hover {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: none;
+}

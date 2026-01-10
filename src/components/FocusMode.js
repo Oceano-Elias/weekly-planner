@@ -11,6 +11,14 @@ export const FocusMode = {
     activeTaskId: null,
     activeKeyHandler: null,
 
+    // Pomodoro Timer State
+    pomodoroTimer: null,
+    pomodoroSeconds: 25 * 60, // 25 minutes default
+    pomodoroRunning: false,
+    pomodoroMode: 'work', // 'work' or 'break'
+    workDuration: 25 * 60,
+    breakDuration: 5 * 60,
+
     /**
      * Count the number of steps in the notes
      */
@@ -40,6 +48,9 @@ export const FocusMode = {
         this.isOpen = false;
         this.activeTaskId = null;
 
+        // Stop the pomodoro timer
+        this.stopTimer();
+
         // Remove the keyboard listener to prevent leaks
         if (this.activeKeyHandler) {
             document.removeEventListener('keydown', this.activeKeyHandler);
@@ -58,6 +69,11 @@ export const FocusMode = {
         const container = document.getElementById('focusModeContainer');
         const color = Departments.getColor(task.hierarchy);
 
+        // Reset timer state when opening
+        this.pomodoroSeconds = this.workDuration;
+        this.pomodoroRunning = false;
+        this.pomodoroMode = 'work';
+
         container.innerHTML = `
             <div class="focus-overlay" id="focusOverlay">
                 <div class="focus-card" style="--task-color: ${color}">
@@ -70,6 +86,33 @@ export const FocusMode = {
                     <div class="focus-header">
                         <span class="focus-title">${PlannerService.escapeHtml(task.title)}</span>
                         <h1 class="focus-goal">Break this task into steps</h1>
+                    </div>
+
+                    <!-- Pomodoro Timer Section -->
+                    <div class="pomodoro-section">
+                        <div class="pomodoro-timer-container">
+                            <div class="pomodoro-ring">
+                                <svg viewBox="0 0 120 120">
+                                    <circle class="pomodoro-ring-bg" cx="60" cy="60" r="52"/>
+                                    <circle class="pomodoro-ring-fill" id="pomodoroRing" cx="60" cy="60" r="52"/>
+                                </svg>
+                                <div class="pomodoro-time" id="pomodoroTime">${this.formatTime(this.pomodoroSeconds)}</div>
+                            </div>
+                            <div class="pomodoro-mode" id="pomodoroModeLabel">🎯 Focus Mode</div>
+                        </div>
+                        <div class="pomodoro-controls">
+                            <button class="pomodoro-btn" id="pomodoroStartPause" title="Start/Pause">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <polygon points="5,3 19,12 5,21"/>
+                                </svg>
+                            </button>
+                            <button class="pomodoro-btn pomodoro-reset" id="pomodoroReset" title="Reset">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                    <path d="M3 3v5h5"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="focus-section">
@@ -100,6 +143,7 @@ export const FocusMode = {
         `;
 
         this.setupListeners();
+        this.updateTimerDisplay();
     },
 
     /**
@@ -210,6 +254,17 @@ export const FocusMode = {
             this.close();
         });
 
+        // Pomodoro Timer Controls
+        const startPauseBtn = document.getElementById('pomodoroStartPause');
+        const resetBtn = document.getElementById('pomodoroReset');
+
+        if (startPauseBtn) {
+            startPauseBtn.addEventListener('click', () => this.startPauseTimer());
+        }
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => this.resetTimer());
+        }
+
         checklistItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 if (e.target.closest('.delete-minitask')) return;
@@ -315,6 +370,144 @@ export const FocusMode = {
         Store.updateTaskNotesForWeek(this.activeTaskId, lines.join('\n'));
         this.updateChecklist();
         if (window.Calendar) window.Calendar.refresh();
+    },
+
+    // =========================================
+    // POMODORO TIMER METHODS
+    // =========================================
+
+    /**
+     * Format seconds to MM:SS
+     */
+    formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    },
+
+    /**
+     * Update timer display
+     */
+    updateTimerDisplay() {
+        const timeEl = document.getElementById('pomodoroTime');
+        const ringEl = document.getElementById('pomodoroRing');
+        const modeEl = document.getElementById('pomodoroModeLabel');
+
+        if (!timeEl || !ringEl) return;
+
+        timeEl.textContent = this.formatTime(this.pomodoroSeconds);
+
+        // Update ring progress (circumference = 2 * PI * 52 ≈ 327)
+        const circumference = 327;
+        const totalSeconds = this.pomodoroMode === 'work' ? this.workDuration : this.breakDuration;
+        const progress = this.pomodoroSeconds / totalSeconds;
+        const offset = circumference * (1 - progress);
+        ringEl.style.strokeDasharray = circumference;
+        ringEl.style.strokeDashoffset = offset;
+
+        // Update mode label and color
+        if (this.pomodoroMode === 'work') {
+            modeEl.textContent = '🎯 Focus Mode';
+            ringEl.style.stroke = '#3b82f6';
+        } else {
+            modeEl.textContent = '☕ Break Time';
+            ringEl.style.stroke = '#10b981';
+        }
+    },
+
+    /**
+     * Start/Pause timer
+     */
+    startPauseTimer() {
+        const btn = document.getElementById('pomodoroStartPause');
+
+        if (this.pomodoroRunning) {
+            // Pause
+            clearInterval(this.pomodoroTimer);
+            this.pomodoroRunning = false;
+            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21"/>
+            </svg>`;
+        } else {
+            // Start
+            this.pomodoroRunning = true;
+            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="5" y="4" width="4" height="16"/>
+                <rect x="15" y="4" width="4" height="16"/>
+            </svg>`;
+
+            this.pomodoroTimer = setInterval(() => {
+                if (this.pomodoroSeconds > 0) {
+                    this.pomodoroSeconds--;
+                    this.updateTimerDisplay();
+                } else {
+                    // Timer complete - switch mode
+                    this.switchMode();
+                }
+            }, 1000);
+        }
+    },
+
+    /**
+     * Reset timer
+     */
+    resetTimer() {
+        clearInterval(this.pomodoroTimer);
+        this.pomodoroRunning = false;
+        this.pomodoroMode = 'work';
+        this.pomodoroSeconds = this.workDuration;
+
+        const btn = document.getElementById('pomodoroStartPause');
+        if (btn) {
+            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21"/>
+            </svg>`;
+        }
+
+        this.updateTimerDisplay();
+    },
+
+    /**
+     * Switch between work and break mode
+     */
+    switchMode() {
+        clearInterval(this.pomodoroTimer);
+        this.pomodoroRunning = false;
+
+        if (this.pomodoroMode === 'work') {
+            this.pomodoroMode = 'break';
+            this.pomodoroSeconds = this.breakDuration;
+            // Play notification sound or show notification
+            if (Notification.permission === 'granted') {
+                new Notification('🎉 Focus session complete!', { body: 'Time for a break.' });
+            }
+        } else {
+            this.pomodoroMode = 'work';
+            this.pomodoroSeconds = this.workDuration;
+            if (Notification.permission === 'granted') {
+                new Notification('💪 Break over!', { body: 'Ready to focus again?' });
+            }
+        }
+
+        const btn = document.getElementById('pomodoroStartPause');
+        if (btn) {
+            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21"/>
+            </svg>`;
+        }
+
+        this.updateTimerDisplay();
+    },
+
+    /**
+     * Stop timer when closing modal
+     */
+    stopTimer() {
+        if (this.pomodoroTimer) {
+            clearInterval(this.pomodoroTimer);
+            this.pomodoroTimer = null;
+        }
+        this.pomodoroRunning = false;
     },
 
 };
