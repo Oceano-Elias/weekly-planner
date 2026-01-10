@@ -43,9 +43,9 @@ export class TaskCard {
     // Escape HTML helper
     const esc = PlannerService.escapeHtml;
 
-    // Step progress for Day View
+    // Step progress - show in both Day View and Week View if task has steps
     const { completed, total } = this.getStepCounts();
-    const stepProgressHtml = isDayView && total > 0
+    const stepProgressHtml = total > 0
       ? `<span class="task-step-progress">${completed}/${total} steps</span>`
       : '';
 
