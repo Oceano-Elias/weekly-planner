@@ -76,25 +76,7 @@ export class TaskCard {
         additionalContent += `<div class="task-hierarchy-row">${esc(fullPath)}</div>`;
       }
 
-      // Show mini-tasks for 90min+ in day view
-      if (isFull && isDayView && task.notes) {
-        const lines = task.notes.split('\n').filter(line => line.trim());
-        const miniTasks = lines.filter(line => line.includes('[ ]') || line.includes('[x]'));
-
-        if (miniTasks.length > 0) {
-          const completedCount = miniTasks.filter(line => line.includes('[x]')).length;
-          additionalContent += `
-            <div class="task-notes">
-              <div class="notes-summary">
-                <span class="notes-count">${completedCount}/${miniTasks.length} mini-tasks</span>
-                <div class="notes-progress-bar">
-                  <div class="notes-progress-fill" style="width: ${(completedCount / miniTasks.length) * 100}%"></div>
-                </div>
-              </div>
-            </div>
-          `;
-        }
-      }
+      // Mini-tasks are now shown in header as "X/Y steps" - no duplicate display needed
 
       el.innerHTML = `
         <button class="task-delete" title="Delete">
