@@ -412,12 +412,22 @@ export const Calendar = {
     },
 
     /**
-     * Calculate progress (0 to 1) based on current time and mini-task completion
+     * Calculate progress (0 to 1) based on mini-task completion (primary) or time (fallback)
      */
     calculateProgress(task) {
         if (!task.scheduledDay || !task.scheduledTime) return 0;
 
-        // 1. Calculate time-based progress
+        // 1. Check for mini-task progress FIRST - if steps exist, use step progress only
+        if (task.notes) {
+            const lines = task.notes.split('\n').filter(line => line.trim());
+            const miniTasks = lines.filter(line => line.includes('[ ]') || line.includes('[x]'));
+            if (miniTasks.length > 0) {
+                const completedCount = miniTasks.filter(line => line.includes('[x]')).length;
+                return completedCount / miniTasks.length;
+            }
+        }
+
+        // 2. Fallback to time-based progress ONLY if no mini-tasks exist
         const weekDates = this.getWeekDates();
         const dayIndex = this.days.indexOf(task.scheduledDay);
         const taskDate = weekDates[dayIndex];
@@ -425,11 +435,10 @@ export const Calendar = {
         const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
         const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        let timeProgress = 0;
         if (taskDateOnly < nowDateOnly) {
-            timeProgress = 1;
+            return 1;
         } else if (taskDateOnly > nowDateOnly) {
-            timeProgress = 0;
+            return 0;
         } else {
             const [startHours, startMinutes] = task.scheduledTime.split(':').map(Number);
             const start = new Date(now);
@@ -437,24 +446,10 @@ export const Calendar = {
             const end = new Date(start);
             end.setMinutes(end.getMinutes() + task.duration);
 
-            if (now < start) timeProgress = 0;
-            else if (now > end) timeProgress = 1;
-            else timeProgress = (now - start) / (end - start);
+            if (now < start) return 0;
+            else if (now > end) return 1;
+            else return (now - start) / (end - start);
         }
-
-        // 2. Calculate mini-task progress if present
-        let miniTaskProgress = 0;
-        if (task.notes) {
-            const lines = task.notes.split('\n').filter(line => line.trim());
-            const miniTasks = lines.filter(line => line.includes('[ ]') || line.includes('[x]'));
-            if (miniTasks.length > 0) {
-                const completedCount = miniTasks.filter(line => line.includes('[x]')).length;
-                miniTaskProgress = completedCount / miniTasks.length;
-            }
-        }
-
-        // 3. Return the higher of the two (ensures visual urgency even if no tasks checked)
-        return Math.max(timeProgress, miniTaskProgress);
     },
 
     /**
