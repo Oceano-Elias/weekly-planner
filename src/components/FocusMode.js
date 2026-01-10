@@ -216,7 +216,7 @@ export const FocusMode = {
                     <div class="checkbox ${isCompleted ? 'checked' : ''}">
                         ${isCompleted ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' : ''}
                     </div>
-                    <span>${PlannerService.escapeHtml(cleanText)}</span>
+                    <span class="step-text">${PlannerService.escapeHtml(cleanText)}</span>
                     <button class="delete-minitask" data-index="${index}" title="Delete">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 6L6 18M6 6l12 12"/>

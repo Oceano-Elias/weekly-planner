@@ -26,7 +26,10 @@ export const Filters = {
         let html = `
       <div class="filter-header">
         <h3 class="filter-title">Filter by Department</h3>
-        <button class="filter-clear-btn" id="clearFilters">Clear All</button>
+        <div class="filter-actions">
+          <button class="filter-action-btn" id="selectAllFilters">Select All</button>
+          <button class="filter-action-btn" id="clearFilters">Clear All</button>
+        </div>
       </div>
       <div class="filter-cards">
     `;
@@ -101,6 +104,26 @@ export const Filters = {
                 filters.clear();
             });
         }
+
+        // Select all button
+        const selectAllBtn = document.getElementById('selectAllFilters');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                filters.selectAll();
+            });
+        }
+    },
+
+    /**
+     * Select all departments
+     */
+    selectAll() {
+        const topLevel = Departments.getTopLevel();
+        this.selectedDepts = [...topLevel];
+        this.selectedPaths = this.selectedDepts.map(d => [d]);
+        this.render();
+        if (window.TaskQueue) window.TaskQueue.refresh();
+        if (window.Calendar) window.Calendar.refresh();
     },
 
     /**

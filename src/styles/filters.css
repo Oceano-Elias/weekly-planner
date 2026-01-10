@@ -82,6 +82,40 @@
     background: rgba(239, 68, 68, 0.1);
 }
 
+/* Filter Action Buttons (Select All / Clear All) */
+.filter-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.filter-action-btn {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-tertiary);
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    font-weight: var(--font-weight-medium);
+}
+
+.filter-action-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    border-color: var(--border-secondary);
+}
+
+.filter-action-btn:first-child:hover {
+    color: var(--accent-success);
+    border-color: var(--accent-success);
+}
+
+.filter-action-btn:last-child:hover {
+    color: var(--accent-error);
+    border-color: var(--accent-error);
+}
+
 .filter-cards {
     display: flex;
     flex-direction: column;

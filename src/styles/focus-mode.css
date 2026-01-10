@@ -1,15 +1,18 @@
 /* =========================================
-   FOCUS MODE - "DEEP DIVE" Zen Edition
+   FOCUS MODE - "DEEP DIVE" Premium Glass Edition
    ========================================= */
 
 .focus-overlay {
     position: fixed;
     inset: 0;
     z-index: 2000;
-    /* Heavy blur, near-black backdrop */
-    background: rgba(15, 23, 42, 0.92);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    /* Heavy blur backdrop with subtle gradient */
+    background: linear-gradient(135deg,
+            rgba(10, 15, 30, 0.95) 0%,
+            rgba(15, 23, 42, 0.92) 50%,
+            rgba(20, 30, 50, 0.95) 100%);
+    backdrop-filter: blur(32px) saturate(150%);
+    -webkit-backdrop-filter: blur(32px) saturate(150%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -24,29 +27,41 @@
 
     to {
         opacity: 1;
-        backdrop-filter: blur(24px);
+        backdrop-filter: blur(32px) saturate(150%);
     }
 }
 
 .focus-card {
     width: 92%;
     max-width: 520px;
-    /* Matte, minimal card - no radial gradients */
-    background: color-mix(in srgb, var(--task-color, #6366f1) 8%, var(--bg-secondary));
-    border: 1px solid var(--border-primary);
-    border-radius: 20px;
+    /* Frosted glass background with subtle color tint */
+    background: linear-gradient(145deg,
+            color-mix(in srgb, var(--task-color, #6366f1) 10%, rgba(30, 40, 60, 0.8)),
+            color-mix(in srgb, var(--task-color, #6366f1) 5%, rgba(20, 30, 50, 0.85)));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
     padding: 40px 36px;
     box-shadow:
-        0 25px 60px -15px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        0 30px 80px -20px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
     position: relative;
     animation: cardFloat 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
 }
 
-/* Remove the glowing orb - keep it minimal */
+/* Subtle grain texture overlay */
 .focus-card::before {
-    display: none;
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+    border-radius: 24px;
 }
 
 /* Bottom accent glow */
@@ -187,10 +202,41 @@
 }
 
 .checklist-item.done {
-    opacity: 0.5;
+    opacity: 0.6;
 }
 
-.checklist-item.done span {
+.checklist-item.done .step-text {
+    color: var(--text-tertiary);
+    position: relative;
+}
+
+/* Animated Strikethrough */
+.checklist-item.done .step-text::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--task-color), color-mix(in srgb, var(--task-color) 60%, white));
+    transform: translateY(-50%);
+    animation: strikethrough 0.3s ease-out forwards;
+}
+
+@keyframes strikethrough {
+    from {
+        width: 0;
+        opacity: 0;
+    }
+
+    to {
+        width: 100%;
+        opacity: 1;
+    }
+}
+
+/* Legacy text-decoration fallback */
+.checklist-item.done span:not(.step-text) {
     text-decoration: line-through;
     color: var(--text-tertiary);
 }
@@ -214,6 +260,21 @@
     border-color: transparent;
     box-shadow: 0 0 20px color-mix(in srgb, var(--task-color) 50%, transparent);
     transform: scale(1.1);
+    animation: checkPop 0.3s ease-out;
+}
+
+@keyframes checkPop {
+    0% {
+        transform: scale(0.8);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1.1);
+    }
 }
 
 .checklist-item span {
