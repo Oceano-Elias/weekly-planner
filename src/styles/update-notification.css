@@ -67,7 +67,8 @@
 
 .update-btn-primary {
     background: white;
-    color: var(--primary-color);
+    color: #1e40af;
+    /* Explicit dark blue for text visibility */
 }
 
 .update-btn-primary:hover {
