@@ -120,3 +120,72 @@
     color: var(--text-primary);
     background: var(--bg-hover);
 }
+
+/* =========================================
+   BUTTON GROUPS & LABELS
+   ========================================= */
+
+/* Button Group - Groups related buttons */
+.btn-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--border-tertiary);
+    border-radius: var(--radius-lg);
+}
+
+.btn-group .nav-btn {
+    width: auto;
+    padding: 0 10px;
+    gap: 6px;
+    background: transparent;
+    border: none;
+}
+
+.btn-group .nav-btn:hover {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+}
+
+/* Header Divider */
+.header-divider {
+    width: 1px;
+    height: 24px;
+    background: linear-gradient(to bottom,
+            transparent 0%,
+            var(--border-secondary) 30%,
+            var(--border-secondary) 70%,
+            transparent 100%);
+    margin: 0 8px;
+}
+
+/* Button Labels */
+.btn-label {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.btn-label-sm {
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+/* Glowing Primary Button */
+.btn-glow {
+    animation: btn-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes btn-glow-pulse {
+
+    0%,
+    100% {
+        box-shadow: var(--shadow-md), 0 0 20px rgba(59, 130, 246, 0.2);
+    }
+
+    50% {
+        box-shadow: var(--shadow-lg), 0 0 30px rgba(59, 130, 246, 0.4);
+    }
+}

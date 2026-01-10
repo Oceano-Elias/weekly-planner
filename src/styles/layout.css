@@ -252,13 +252,26 @@ header {
     border-radius: var(--radius-md);
 }
 
-/* Calendar Container */
+/* Calendar Container with Page Transition */
 .calendar-container {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     min-width: 0;
+    animation: page-fade-in 0.3s ease-out;
+}
+
+@keyframes page-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Calendar Header - Days row */
@@ -386,7 +399,26 @@ header {
 .day-header-goal:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2),
+        0 0 20px rgba(59, 130, 246, 0.4),
+        0 0 40px rgba(59, 130, 246, 0.2);
+    animation: goal-focus-pulse 2s ease-in-out infinite;
+}
+
+@keyframes goal-focus-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2),
+            0 0 20px rgba(59, 130, 246, 0.4),
+            0 0 40px rgba(59, 130, 246, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3),
+            0 0 30px rgba(59, 130, 246, 0.5),
+            0 0 50px rgba(59, 130, 246, 0.3);
+    }
 }
 
 .day-header-right {

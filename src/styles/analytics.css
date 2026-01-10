@@ -112,6 +112,72 @@
     background: linear-gradient(90deg, #8b5cf6, #a855f7);
 }
 
+/* =========================================
+   CIRCULAR PROGRESS RINGS
+   ========================================= */
+
+.analytics-stat-card.ring-card {
+    flex-direction: row;
+    gap: 12px;
+    padding: 12px;
+}
+
+.analytics-stat-card.ring-card .stat-content {
+    text-align: left;
+}
+
+.analytics-stat-card.time-card {
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+}
+
+.progress-ring-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+}
+
+.progress-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 6;
+}
+
+.progress-ring-fill {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-ring-fill.tasks {
+    stroke: #10b981;
+    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5));
+}
+
+.progress-ring-fill.mini {
+    stroke: #a855f7;
+    filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.5));
+}
+
+.progress-ring-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
 /* Department Section */
 .analytics-header {
     margin-bottom: var(--space-md);

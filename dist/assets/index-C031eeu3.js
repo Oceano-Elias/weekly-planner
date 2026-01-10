@@ -130,29 +130,39 @@
                 </div>
             `;return}const d=H.reduce((r,[,B])=>r+B.total,0),g=t.total>0?Math.round(t.completed/t.total*100):0,P=c.total>0?Math.round(c.completed/c.total*100):0;e.innerHTML=`
             <div class="analytics-stats-grid">
-                <div class="analytics-stat-card">
-                    <div class="stat-icon stat-icon-tasks">${this.icons.tasks}</div>
+                <div class="analytics-stat-card ring-card">
+                    <div class="progress-ring-container">
+                        <svg class="progress-ring" viewBox="0 0 80 80">
+                            <circle class="progress-ring-bg" cx="40" cy="40" r="32" />
+                            <circle class="progress-ring-fill tasks" cx="40" cy="40" r="32" 
+                                stroke-dasharray="201" 
+                                stroke-dashoffset="${201-201*g/100}" />
+                        </svg>
+                        <div class="progress-ring-value">${g}%</div>
+                    </div>
                     <div class="stat-content">
                         <div class="stat-value">${t.completed}<span class="stat-total">/${t.total}</span></div>
                         <div class="stat-label">Tasks Done</div>
-                        <div class="stat-bar">
-                            <div class="stat-bar-fill" style="width: ${g}%"></div>
-                        </div>
                     </div>
                 </div>
                 
-                <div class="analytics-stat-card">
-                    <div class="stat-icon stat-icon-mini">${this.icons.miniTasks}</div>
+                <div class="analytics-stat-card ring-card">
+                    <div class="progress-ring-container">
+                        <svg class="progress-ring" viewBox="0 0 80 80">
+                            <circle class="progress-ring-bg" cx="40" cy="40" r="32" />
+                            <circle class="progress-ring-fill mini" cx="40" cy="40" r="32" 
+                                stroke-dasharray="201" 
+                                stroke-dashoffset="${201-201*P/100}" />
+                        </svg>
+                        <div class="progress-ring-value">${P}%</div>
+                    </div>
                     <div class="stat-content">
                         <div class="stat-value">${c.completed}<span class="stat-total">/${c.total}</span></div>
                         <div class="stat-label">Mini-Tasks</div>
-                        <div class="stat-bar">
-                            <div class="stat-bar-fill mini" style="width: ${P}%"></div>
-                        </div>
                     </div>
                 </div>
                 
-                <div class="analytics-stat-card">
+                <div class="analytics-stat-card time-card">
                     <div class="stat-icon stat-icon-time">${this.icons.time}</div>
                     <div class="stat-content">
                         <div class="stat-value">${D.formatDuration(O.total)}</div>
