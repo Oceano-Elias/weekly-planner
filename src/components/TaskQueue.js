@@ -23,12 +23,22 @@ export const TaskQueue = {
      */
     setupSearch() {
         const searchInput = document.getElementById('taskSearchInput');
+        const clearBtn = document.getElementById('searchClearBtn');
         if (!searchInput) return;
 
         searchInput.addEventListener('input', (e) => {
             this.searchTerm = e.target.value.toLowerCase();
             this.render();
         });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                this.searchTerm = '';
+                this.render();
+                searchInput.focus();
+            });
+        }
     },
 
     /**

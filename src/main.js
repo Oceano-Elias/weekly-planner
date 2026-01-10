@@ -48,6 +48,7 @@ const App = {
     selectedDuration: 60,
     scheduledData: null,
     editingTaskId: null,
+    pendingSteps: [],
 
     /**
      * Initialize the application
@@ -253,6 +254,66 @@ const App = {
         });
 
         document.getElementById('saveTask').addEventListener('click', () => this.saveTask());
+
+        // Setup steps input
+        this.setupStepsInput();
+    },
+
+    /**
+     * Setup steps input functionality
+     */
+    setupStepsInput() {
+        const stepInput = document.getElementById('stepInput');
+        const addBtn = document.getElementById('addStepBtn');
+
+        if (!stepInput || !addBtn) return;
+
+        const addStep = () => {
+            const text = stepInput.value.trim();
+            if (text) {
+                this.pendingSteps.push(text);
+                this.renderStepsList();
+                stepInput.value = '';
+                stepInput.focus();
+            }
+        };
+
+        addBtn.addEventListener('click', addStep);
+        stepInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addStep();
+            }
+        });
+    },
+
+    /**
+     * Render the steps list
+     */
+    renderStepsList() {
+        const list = document.getElementById('stepsList');
+        if (!list) return;
+
+        list.innerHTML = this.pendingSteps.map((step, index) => `
+            <li class="step-item">
+                <span class="step-checkbox"></span>
+                <span class="step-text">${PlannerService.escapeHtml(step)}</span>
+                <button type="button" class="step-remove" data-index="${index}">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </li>
+        `).join('');
+
+        // Add remove handlers
+        list.querySelectorAll('.step-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index);
+                this.pendingSteps.splice(index, 1);
+                this.renderStepsList();
+            });
+        });
     },
 
     /**
@@ -407,7 +468,13 @@ const App = {
 
             Store.updateTask(this.editingTaskId, { title, hierarchy, duration });
         } else {
-            const task = Store.addTask({ title, hierarchy, duration });
+            // Build notes from pending steps
+            let notes = '';
+            if (this.pendingSteps.length > 0) {
+                notes = this.pendingSteps.map(step => `[ ] ${step}`).join('\n');
+            }
+
+            const task = Store.addTask({ title, hierarchy, duration, notes });
 
             if (this.scheduledData) {
                 Store.scheduleTask(task.id, this.scheduledData.day, this.scheduledData.time);
@@ -445,6 +512,11 @@ const App = {
         this.editingTaskId = null;
         document.querySelector('.modal-title').textContent = 'Create New Task';
         document.getElementById('saveTask').textContent = 'Create Task';
+
+        // Clear pending steps
+        this.pendingSteps = [];
+        const stepsList = document.getElementById('stepsList');
+        if (stepsList) stepsList.innerHTML = '';
     },
 
     /**

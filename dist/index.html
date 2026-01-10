@@ -20,8 +20,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- CSS is bundled by Vite via main.js imports -->
-  <script type="module" crossorigin src="/weekly-planner/assets/index-C031eeu3.js"></script>
-  <link rel="stylesheet" crossorigin href="/weekly-planner/assets/index-B1tep2AZ.css">
+  <script type="module" crossorigin src="/weekly-planner/assets/index-tjuppTsQ.js"></script>
+  <link rel="stylesheet" crossorigin href="/weekly-planner/assets/index-27qPIJK9.css">
 </head>
 
 <body>
@@ -149,6 +149,12 @@
                                 <path d="m21 21-4.3-4.3" />
                             </svg>
                             <input type="text" id="taskSearchInput" placeholder="Search tasks..." class="search-input">
+                            <button class="search-clear" id="searchClearBtn" title="Clear search">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
@@ -270,6 +276,18 @@
                             <span
                                 style="color: var(--text-secondary); display: flex; align-items: center;">minutes</span>
                         </div>
+                    </div>
+
+                    <!-- Mini-Tasks/Steps (Optional) -->
+                    <div class="form-group">
+                        <label class="form-label">Steps / Mini-Tasks <span
+                                class="form-label-optional">(optional)</span></label>
+                        <div class="steps-input-wrapper">
+                            <input type="text" class="form-input" id="stepInput"
+                                placeholder="Add a step and press Enter...">
+                            <button type="button" class="btn-add-step" id="addStepBtn" title="Add Step">+</button>
+                        </div>
+                        <ul class="steps-list" id="stepsList"></ul>
                     </div>
                 </form>
             </div>
