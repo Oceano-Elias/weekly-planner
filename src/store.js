@@ -1104,6 +1104,121 @@ export const Store = {
         });
 
         this.save();
+    },
+
+    // ========================================
+    // DATA EXPORT/IMPORT
+    // ========================================
+
+    /**
+     * Export all data as JSON
+     * @returns {Object} Complete data export
+     */
+    exportData() {
+        return {
+            version: '3.0',
+            exportedAt: new Date().toISOString(),
+            data: {
+                tasks: state.tasks,
+                templates: state.templates,
+                weeklyInstances: state.weeklyInstances,
+                goals: state.goals,
+                nextId: state.nextId,
+                migrated: state.migrated
+            }
+        };
+    },
+
+    /**
+     * Export data as downloadable JSON file
+     */
+    downloadExport() {
+        const data = this.exportData();
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `weekly-planner-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    /**
+     * Import data from JSON
+     * @param {Object} importedData - The data to import
+     * @param {boolean} merge - If true, merge with existing; if false, replace
+     * @returns {boolean} Success status
+     */
+    importData(importedData, merge = false) {
+        try {
+            // Validate the data structure
+            if (!importedData || !importedData.data) {
+                throw new Error('Invalid data format');
+            }
+
+            const { data } = importedData;
+
+            if (merge) {
+                // Merge mode - add to existing data
+                if (data.tasks) {
+                    data.tasks.forEach(task => {
+                        task.id = `task_${state.nextId++}`;
+                        state.tasks.push(task);
+                    });
+                }
+                if (data.templates) {
+                    data.templates.forEach(template => {
+                        template.id = `template_${state.nextId++}`;
+                        state.templates.push(template);
+                    });
+                }
+                if (data.goals) {
+                    state.goals = { ...state.goals, ...data.goals };
+                }
+            } else {
+                // Replace mode - overwrite existing data
+                state.tasks = data.tasks || [];
+                state.templates = data.templates || [];
+                state.weeklyInstances = data.weeklyInstances || {};
+                state.goals = data.goals || {};
+                state.nextId = data.nextId || 1;
+                state.migrated = data.migrated || false;
+            }
+
+            this.save();
+            return true;
+        } catch (error) {
+            console.error('Import failed:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Import data from file input
+     * @param {File} file - The file to import
+     * @param {boolean} merge - If true, merge with existing
+     * @returns {Promise<boolean>} Success status
+     */
+    async importFromFile(file, merge = false) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    const success = this.importData(data, merge);
+                    resolve(success);
+                } catch (error) {
+                    console.error('Failed to parse import file:', error);
+                    resolve(false);
+                }
+            };
+            reader.onerror = () => resolve(false);
+            reader.readAsText(file);
+        });
     }
 };
 

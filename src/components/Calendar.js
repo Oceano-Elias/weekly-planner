@@ -359,6 +359,12 @@ export const Calendar = {
             // Use per-week toggle method
             Store.toggleCompleteForWeek(task.id);
 
+            // Check if all tasks for the day are now complete
+            const updatedTaskCheck = Store.getTask(task.id);
+            if (updatedTaskCheck && updatedTaskCheck.completed) {
+                this.checkDailyCelebration(task.scheduledDay);
+            }
+
             // Delay refresh to allow animation to play
             setTimeout(() => {
                 this.renderScheduledTasks();
@@ -680,5 +686,24 @@ export const Calendar = {
                 this.dayClockTimer = null;
             }
         }, 1000);
+    },
+
+    /**
+     * Check if all tasks for a day are complete and trigger celebration
+     */
+    checkDailyCelebration(day) {
+        const weekId = Store.getWeekIdentifier(this.currentWeekStart);
+        const dayTasks = Store.getTasksForWeek(weekId).filter(t => t.scheduledDay === day);
+
+        if (dayTasks.length === 0) return;
+
+        const allComplete = dayTasks.every(t => t.completed);
+
+        if (allComplete && window.Confetti) {
+            // Small delay to let the completion animation finish
+            setTimeout(() => {
+                window.Confetti.celebrate();
+            }, 600);
+        }
     }
 };

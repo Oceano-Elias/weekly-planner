@@ -16,6 +16,7 @@ import { ConfirmModal } from './components/ConfirmModal.js';
 import { PlannerService } from './services/PlannerService.js';
 import { UpdateNotification } from './components/UpdateNotification.js';
 import { DepartmentSettings } from './components/DepartmentSettings.js';
+import { Confetti } from './components/Confetti.js';
 import { APP_VERSION } from './version.js';
 
 // Import styles
@@ -43,6 +44,7 @@ window.Analytics = Analytics;
 window.Departments = Departments;
 window.FocusMode = FocusMode;
 window.DepartmentSettings = DepartmentSettings;
+window.Confetti = Confetti;
 
 const App = {
     selectedDuration: 60,
@@ -574,6 +576,47 @@ const App = {
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => {
                 DepartmentSettings.open();
+            });
+        }
+
+        // Export button
+        const exportBtn = document.getElementById('exportDataBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                Store.downloadExport();
+            });
+        }
+
+        // Import button
+        const importBtn = document.getElementById('importDataBtn');
+        const importInput = document.getElementById('importFileInput');
+        if (importBtn && importInput) {
+            importBtn.addEventListener('click', () => {
+                importInput.click();
+            });
+
+            importInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const confirmed = await ConfirmModal.show(
+                    'Import will replace ALL existing data. Are you sure you want to continue?'
+                );
+
+                if (confirmed) {
+                    const success = await Store.importFromFile(file, false);
+                    if (success) {
+                        alert('Data imported successfully!');
+                        Calendar.refresh();
+                        TaskQueue.refresh();
+                        Filters.refresh();
+                    } else {
+                        alert('Failed to import data. Please check the file format.');
+                    }
+                }
+
+                // Reset file input
+                importInput.value = '';
             });
         }
     },
