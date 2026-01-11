@@ -20,8 +20,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- CSS is bundled by Vite via main.js imports -->
-  <script type="module" crossorigin src="/weekly-planner/assets/index-BpM3_mZK.js"></script>
-  <link rel="stylesheet" crossorigin href="/weekly-planner/assets/index-Cw-nX2oq.css">
+  <script type="module" crossorigin src="/weekly-planner/assets/index-DsUkh3WX.js"></script>
+  <link rel="stylesheet" crossorigin href="/weekly-planner/assets/index-DRcUqj28.css">
 </head>
 
 <body>
@@ -319,6 +319,41 @@
 
     <!-- Focus Mode Modal -->
     <div id="focusModeContainer"></div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="shortcuts-modal" id="shortcutsModal">
+        <div class="shortcuts-overlay" id="shortcutsOverlay"></div>
+        <div class="shortcuts-content">
+            <div class="shortcuts-header">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <button class="shortcuts-close" id="closeShortcuts">×</button>
+            </div>
+            <div class="shortcuts-body">
+                <div class="shortcut-group">
+                    <h4>Navigation</h4>
+                    <div class="shortcut-item"><kbd>←</kbd> <span>Previous Week/Day</span></div>
+                    <div class="shortcut-item"><kbd>→</kbd> <span>Next Week/Day</span></div>
+                    <div class="shortcut-item"><kbd>T</kbd> <span>Go to Today</span></div>
+                </div>
+                <div class="shortcut-group">
+                    <h4>Views</h4>
+                    <div class="shortcut-item"><kbd>W</kbd> <span>Week View</span></div>
+                    <div class="shortcut-item"><kbd>D</kbd> <span>Day View</span></div>
+                </div>
+                <div class="shortcut-group">
+                    <h4>Tasks</h4>
+                    <div class="shortcut-item"><kbd>N</kbd> <span>New Task</span></div>
+                    <div class="shortcut-item"><kbd>F</kbd> <span>Focus Mode</span></div>
+                    <div class="shortcut-item"><kbd>⌘</kbd> + <kbd>Enter</kbd> <span>Save Task</span></div>
+                </div>
+                <div class="shortcut-group">
+                    <h4>General</h4>
+                    <div class="shortcut-item"><kbd>Esc</kbd> <span>Close Modal</span></div>
+                    <div class="shortcut-item"><kbd>?</kbd> <span>Show Shortcuts</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

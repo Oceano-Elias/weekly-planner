@@ -627,10 +627,19 @@ const App = {
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
             const modal = document.getElementById('taskModal');
+            const shortcutsModal = document.getElementById('shortcutsModal');
             const isModalOpen = modal.classList.contains('active');
+            const isShortcutsOpen = shortcutsModal && shortcutsModal.classList.contains('active');
             const isInputFocused = document.activeElement.tagName === 'INPUT' ||
                 document.activeElement.tagName === 'TEXTAREA' ||
                 document.activeElement.tagName === 'SELECT';
+
+            // Close shortcuts modal with Escape
+            if (isShortcutsOpen && e.key === 'Escape') {
+                e.preventDefault();
+                this.closeShortcutsModal();
+                return;
+            }
 
             // Modal shortcuts
             if (isModalOpen) {
@@ -641,8 +650,8 @@ const App = {
                 return;
             }
 
-            // Don't trigger shortcuts when typing in inputs
-            if (isInputFocused) return;
+            // Don't trigger shortcuts when typing in inputs or shortcuts modal is open
+            if (isInputFocused || isShortcutsOpen) return;
 
             switch (e.key.toLowerCase()) {
                 case 'n':
@@ -727,8 +736,57 @@ const App = {
                         console.log('No task found to focus on. Try hovering over a task first.');
                     }
                     break;
+                case '?':
+                    e.preventDefault();
+                    this.toggleShortcutsModal();
+                    break;
             }
         });
+
+        // Setup shortcuts modal button and click handlers
+        this.setupShortcutsModal();
+    },
+
+    /**
+     * Setup keyboard shortcuts modal
+     */
+    setupShortcutsModal() {
+        const modal = document.getElementById('shortcutsModal');
+        const overlay = document.getElementById('shortcutsOverlay');
+        const closeBtn = document.getElementById('closeShortcuts');
+        const openBtn = document.getElementById('shortcutsBtn');
+
+        if (openBtn) {
+            openBtn.addEventListener('click', () => this.toggleShortcutsModal());
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', () => this.closeShortcutsModal());
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.closeShortcutsModal());
+        }
+    },
+
+    /**
+     * Toggle shortcuts modal
+     */
+    toggleShortcutsModal() {
+        const modal = document.getElementById('shortcutsModal');
+        if (modal) {
+            modal.classList.toggle('active');
+        }
+    },
+
+    /**
+     * Close shortcuts modal
+     */
+    closeShortcutsModal() {
+        const modal = document.getElementById('shortcutsModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
     },
 
     /**
