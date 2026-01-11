@@ -452,6 +452,13 @@ const App = {
      * Save the task
      */
     saveTask() {
+        // Safety: If there's text in the step input that hasn't been added yet, add it
+        const stepInput = document.getElementById('stepInput');
+        if (stepInput && stepInput.value.trim()) {
+            this.pendingSteps.push(stepInput.value.trim());
+            stepInput.value = '';
+        }
+
         const hierarchy = this.getSelectedHierarchy();
         const duration = this.getSelectedDuration();
 

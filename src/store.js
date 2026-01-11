@@ -396,6 +396,15 @@ export const Store = {
                 scheduledDay: day,
                 scheduledTime: time
             });
+        } else {
+            // Update existing instance (e.g. if we are overwriting a template task with a custom one)
+            existing.title = task.title;
+            existing.goal = task.goal || '';
+            existing.hierarchy = [...task.hierarchy];
+            existing.duration = task.duration;
+            existing.notes = task.notes || '';
+            // Preserving completion status or other flags if necessary, 
+            // but usually a new schedule implies a fresh start unless it was the same task
         }
 
         this.save();
@@ -629,6 +638,7 @@ export const Store = {
                 goal: task.goal || '',
                 hierarchy: [...task.hierarchy],
                 duration: task.duration,
+                notes: task.notes || '',
                 scheduledDay: task.scheduledDay,
                 scheduledTime: task.scheduledTime
             });
@@ -719,7 +729,7 @@ export const Store = {
             tasks: state.templates.map(template => ({
                 templateId: template.id,
                 completed: false,
-                notes: '',
+                notes: template.notes || '',
                 scheduledDay: template.scheduledDay,
                 scheduledTime: template.scheduledTime
             }))
