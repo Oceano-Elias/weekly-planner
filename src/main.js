@@ -17,6 +17,7 @@ import { PlannerService } from './services/PlannerService.js';
 import { UpdateNotification } from './components/UpdateNotification.js';
 import { DepartmentSettings } from './components/DepartmentSettings.js';
 import { Confetti } from './components/Confetti.js';
+import { WeeklySummary } from './components/WeeklySummary.js';
 import { APP_VERSION } from './version.js';
 
 // Import styles
@@ -45,6 +46,7 @@ window.Departments = Departments;
 window.FocusMode = FocusMode;
 window.DepartmentSettings = DepartmentSettings;
 window.Confetti = Confetti;
+window.WeeklySummary = WeeklySummary;
 
 const App = {
     selectedDuration: 60,
@@ -617,6 +619,14 @@ const App = {
 
                 // Reset file input
                 importInput.value = '';
+            });
+        }
+
+        // Weekly Summary button
+        const summaryBtn = document.getElementById('weeklySummaryBtn');
+        if (summaryBtn) {
+            summaryBtn.addEventListener('click', () => {
+                WeeklySummary.open();
             });
         }
     },
