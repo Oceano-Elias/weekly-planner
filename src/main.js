@@ -56,39 +56,63 @@ const App = {
     updateScheduleValidation() {
         const saveBtn = document.getElementById('saveTask');
         const infoEl = document.getElementById('scheduleMaxInfo');
+        const scheduleInfo = document.getElementById('scheduleInfo');
         if (!saveBtn) return;
 
-        // Only validate when opened from a calendar cell
-        if (!this.scheduledData) {
+        // Determine if we are validating a new task from a cell or an existing scheduled task
+        let day, time, maxDuration, isEdit = false;
+
+        if (this.scheduledData) {
+            ({ day, time, maxDuration } = this.scheduledData);
+        } else if (this.editingTaskId) {
+            const task = Store.getTask(this.editingTaskId);
+            if (task && task.scheduledDay) {
+                day = task.scheduledDay;
+                time = task.scheduledTime;
+                // For existing tasks, we can calculate maxDuration but it's more complex.
+                // For now, let's just use the overlap check.
+                isEdit = true;
+            }
+        }
+
+        if (!day) {
             saveBtn.disabled = false;
+            saveBtn.classList.remove('btn-disabled');
             if (infoEl) infoEl.textContent = '';
             return;
         }
 
-        const { day, time, maxDuration } = this.scheduledData;
-        if (maxDuration <= 0) {
-            saveBtn.disabled = true;
-            if (infoEl) infoEl.textContent = 'No available time in this slot';
-            return;
-        }
-
         const duration = this.getSelectedDuration();
-        if (duration > maxDuration) {
-            saveBtn.disabled = true;
-            if (infoEl) infoEl.textContent = `Max: ${PlannerService.formatDuration(maxDuration)} — reduce duration`;
-            return;
+        const weekId = Store.getWeekIdentifier(new Date());
+        const allTasks = Store.getTasksForWeek(weekId);
+        const dayTasks = allTasks.filter(t =>
+            t.scheduledDay === day && t.id !== this.editingTaskId
+        );
+
+        const available = PlannerService.isSlotAvailable(time, duration, dayTasks);
+
+        // Show schedule info if it was hidden (for edits)
+        if (isEdit && scheduleInfo) {
+            scheduleInfo.style.display = 'block';
+            document.getElementById('scheduleDayDisplay').textContent = day;
+            document.getElementById('scheduleTimeDisplay').textContent = time;
         }
 
-        const dayTasks = Store.getTasksForDay(day);
-        const available = PlannerService.isSlotAvailable(time, duration, dayTasks);
         if (!available) {
             saveBtn.disabled = true;
-            if (infoEl) infoEl.textContent = `Max: ${PlannerService.formatDuration(maxDuration)} — overlaps, adjust duration`;
-            return;
+            saveBtn.classList.add('btn-disabled');
+            if (infoEl) {
+                infoEl.textContent = '⚠️ Overlaps with another task';
+                infoEl.style.color = 'var(--danger)';
+            }
+        } else {
+            saveBtn.disabled = false;
+            saveBtn.classList.remove('btn-disabled');
+            if (infoEl) {
+                infoEl.textContent = maxDuration ? `Max: ${PlannerService.formatDuration(maxDuration)}` : 'Schedule valid';
+                infoEl.style.color = 'var(--text-secondary)';
+            }
         }
-
-        saveBtn.disabled = false;
-        if (infoEl) infoEl.textContent = `Max: ${PlannerService.formatDuration(maxDuration)}`;
     },
 
     /**
@@ -244,6 +268,7 @@ const App = {
             this.pendingSteps = task.notes.split('\n').filter(line => line.trim() !== '');
         }
         this.renderStepsList();
+        this.updateScheduleValidation();
     },
 
     /**

@@ -133,37 +133,89 @@ export const Confetti = {
      * Play celebration sound
      */
     playSound() {
-        // Create a simple celebration sound using Web Audio API
         try {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             if (!AudioCtx) return;
 
             const audioContext = new AudioCtx();
+            const masterGain = audioContext.createGain();
+            masterGain.connect(audioContext.destination);
+            masterGain.gain.setValueAtTime(0.15, audioContext.currentTime);
 
-            // Create a cheerful arpeggio
-            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
+            // Layer 1: The "Pop" - Quick frequency sweep
+            const pop = audioContext.createOscillator();
+            const popGain = audioContext.createGain();
+            pop.connect(popGain);
+            popGain.connect(masterGain);
+            pop.type = 'sine';
+            pop.frequency.setValueAtTime(800, audioContext.currentTime);
+            pop.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+            popGain.gain.setValueAtTime(0.5, audioContext.currentTime);
+            popGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            pop.start();
+            pop.stop(audioContext.currentTime + 0.1);
 
+            // Layer 2: Shimmering Arpeggio
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; // C5 to G6
             notes.forEach((freq, i) => {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+                const osc = audioContext.createOscillator();
+                const node = audioContext.createGain();
 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                // Use triangle for a softer, more bell-like sound
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
 
-                oscillator.frequency.value = freq;
-                oscillator.type = 'sine';
+                osc.connect(node);
+                node.connect(masterGain);
 
-                const startTime = audioContext.currentTime + (i * 0.1);
-                const duration = 0.2;
+                const startTime = audioContext.currentTime + (i * 0.08) + 0.05;
+                const duration = 0.4;
 
-                gainNode.gain.setValueAtTime(0.1, startTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                node.gain.setValueAtTime(0, startTime);
+                node.gain.linearRampToValueAtTime(0.2, startTime + 0.02);
+                node.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
-                oscillator.start(startTime);
-                oscillator.stop(startTime + duration);
+                osc.start(startTime);
+                osc.stop(startTime + duration);
             });
+
+            // Layer 3: Natural Crowd Cheer
+            // Loading the higher-quality natural sound effect we downloaded
+            fetch('./src/assets/sounds/celebration.mp3')
+                .then(response => response.arrayBuffer())
+                .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+                .then(audioBuffer => {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+
+                    const cheerGain = audioContext.createGain();
+                    cheerGain.gain.setValueAtTime(0.4, audioContext.currentTime);
+                    cheerGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + audioBuffer.duration);
+
+                    source.connect(cheerGain);
+                    cheerGain.connect(masterGain);
+                    source.start(audioContext.currentTime);
+                })
+                .catch(err => console.warn('Could not play celebration MP3:', err));
+
+            // Layer 4: High Sparkle harmonics
+            const sparkle = audioContext.createOscillator();
+            const sparkleGain = audioContext.createGain();
+            sparkle.type = 'sine';
+            sparkle.frequency.value = 3135.96; // G7
+            sparkle.connect(sparkleGain);
+            sparkleGain.connect(masterGain);
+
+            const sparkleStart = audioContext.currentTime + 0.5;
+            sparkleGain.gain.setValueAtTime(0, sparkleStart);
+            sparkleGain.gain.linearRampToValueAtTime(0.05, sparkleStart + 0.05);
+            sparkleGain.gain.exponentialRampToValueAtTime(0.001, sparkleStart + 0.3);
+
+            sparkle.start(sparkleStart);
+            sparkle.stop(sparkleStart + 0.4);
+
         } catch (e) {
-            // Audio not available, silently ignore
+            // Silently ignore if audio fails
         }
     },
 

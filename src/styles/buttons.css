@@ -29,6 +29,16 @@
     transform: translateY(0);
 }
 
+.btn:disabled,
+.btn.btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: saturate(0.5);
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 /* Primary Button - Gradient */
 .btn-primary {
     background: var(--accent-gradient);

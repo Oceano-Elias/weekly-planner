@@ -296,6 +296,11 @@ export const FocusMode = {
             floatBtn.addEventListener('click', () => this.openFloatingTimer());
         }
 
+        // Request notification permission if not yet decided
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
         checklistItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 if (e.target.closest('.delete-minitask')) return;
@@ -348,6 +353,11 @@ export const FocusMode = {
                 // Don't close if typing in an input
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 this.close();
+            } else if (e.key === ' ' || e.code === 'Space') {
+                // Space to start/pause timer
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                e.preventDefault();
+                this.startPauseTimer();
             }
         };
         document.addEventListener('keydown', this.activeKeyHandler);
@@ -478,9 +488,25 @@ export const FocusMode = {
                 if (remaining <= 0) {
                     this.switchMode();
                 }
+                this.updateAppBadge();
             }, 1000);
             this.persistTimerState();
             this.updateFloatingTimer();
+            this.updateAppBadge();
+        }
+    },
+
+    /**
+     * Update the App Badge (dock/taskbar icon) with remaining minutes
+     */
+    updateAppBadge() {
+        if ('setAppBadge' in navigator) {
+            if (this.pomodoroRunning && this.pomodoroSeconds > 0) {
+                const mins = Math.ceil(this.pomodoroSeconds / 60);
+                navigator.setAppBadge(mins).catch(() => { });
+            } else {
+                navigator.clearAppBadge().catch(() => { });
+            }
         }
     },
 
@@ -504,6 +530,7 @@ export const FocusMode = {
         this.updateTimerDisplay();
         this.persistTimerState();
         this.updateFloatingTimer();
+        this.updateAppBadge();
     },
 
     /**
@@ -516,17 +543,26 @@ export const FocusMode = {
         if (this.pomodoroMode === 'work') {
             this.pomodoroMode = 'break';
             this.pomodoroSeconds = this.breakDuration;
+            this.playTransitionSound();
             // Play notification sound or show notification
             if (Notification.permission === 'granted') {
-                new Notification('🎉 Focus session complete!', { body: 'Time for a break.' });
+                new Notification('🎉 Focus session complete!', {
+                    body: 'Time for a break. Excellent work!',
+                    icon: './icon.png'
+                });
             }
         } else {
             this.pomodoroMode = 'work';
             this.pomodoroSeconds = this.workDuration;
+            this.playTransitionSound();
             if (Notification.permission === 'granted') {
-                new Notification('💪 Break over!', { body: 'Ready to focus again?' });
+                new Notification('💪 Break over!', {
+                    body: 'Ready to focus again? Your timer is reset.',
+                    icon: './icon.png'
+                });
             }
         }
+        this.updateAppBadge();
 
         const btn = document.getElementById('pomodoroStartPause');
         if (btn) {
@@ -567,14 +603,14 @@ export const FocusMode = {
         };
         try {
             localStorage.setItem('focusModeTimerState', JSON.stringify(state));
-        } catch {}
+        } catch { }
     },
 
     restoreTimerState() {
         let state = null;
         try {
             state = JSON.parse(localStorage.getItem('focusModeTimerState') || 'null');
-        } catch {}
+        } catch { }
         if (!state) {
             this.pomodoroMode = 'work';
             this.pomodoroSeconds = this.workDuration;
@@ -631,7 +667,7 @@ export const FocusMode = {
             pip.resetTimer = () => this.resetTimer();
             doc.getElementById('pipStartPause').addEventListener('click', () => pip.startPause());
             doc.getElementById('pipReset').addEventListener('click', () => pip.resetTimer());
-        pip.addEventListener('pagehide', () => { this.pipWindow = null; });
+            pip.addEventListener('pagehide', () => { this.pipWindow = null; });
             this.updateFloatingTimer();
             this.hideBadge();
         } catch {
@@ -657,7 +693,7 @@ export const FocusMode = {
 
     closeFloatingTimer() {
         if (this.pipWindow) {
-            try { this.pipWindow.close(); } catch {}
+            try { this.pipWindow.close(); } catch { }
             this.pipWindow = null;
         }
     },
@@ -685,7 +721,7 @@ export const FocusMode = {
         `;
         document.body.appendChild(el);
         this.badgeEl = el;
-        const savedPos = (() => { try { return JSON.parse(localStorage.getItem('floatingPomodoroBadgePos')||'null'); } catch { return null; } })();
+        const savedPos = (() => { try { return JSON.parse(localStorage.getItem('floatingPomodoroBadgePos') || 'null'); } catch { return null; } })();
         if (savedPos && typeof savedPos.left === 'number' && typeof savedPos.top === 'number') {
             el.style.left = `${savedPos.left}px`;
             el.style.top = `${savedPos.top}px`;
@@ -716,7 +752,7 @@ export const FocusMode = {
             try {
                 const rect = el.getBoundingClientRect();
                 localStorage.setItem('floatingPomodoroBadgePos', JSON.stringify({ left: rect.left, top: rect.top }));
-            } catch {}
+            } catch { }
         };
         el.addEventListener('mousedown', (e) => {
             if (e.target && e.target.tagName === 'BUTTON') return;
@@ -748,9 +784,42 @@ export const FocusMode = {
 
     hideBadge() {
         if (this.badgeEl) {
-            try { this.badgeEl.remove(); } catch {}
+            try { this.badgeEl.remove(); } catch { }
             this.badgeEl = null;
         }
+    },
+
+    /**
+     * Play a gentle chime for session transitions
+     */
+    playTransitionSound() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+
+            const ctx = new AudioCtx();
+            const masterGain = ctx.createGain();
+            masterGain.connect(ctx.destination);
+            masterGain.gain.setValueAtTime(0.3, ctx.currentTime);
+
+            // Gentle Sine Wave Chime
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.type = 'sine';
+            const freq = this.pomodoroMode === 'break' ? 880 : 1320; // A5 for break, E6 for work
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq * 0.8, ctx.currentTime + 0.5);
+
+            gain.gain.setValueAtTime(0, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+
+            osc.start();
+            osc.stop(ctx.currentTime + 1);
+        } catch (e) { }
     },
 
 };
