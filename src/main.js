@@ -194,6 +194,13 @@ const App = {
 
         document.querySelector('.modal-title').textContent = 'Edit Task';
         document.getElementById('saveTask').textContent = 'Update Task';
+
+        // Populate steps from notes
+        this.pendingSteps = [];
+        if (task.notes) {
+            this.pendingSteps = task.notes.split('\n').filter(line => line.trim() !== '');
+        }
+        this.renderStepsList();
     },
 
     /**
@@ -298,17 +305,23 @@ const App = {
         const list = document.getElementById('stepsList');
         if (!list) return;
 
-        list.innerHTML = this.pendingSteps.map((step, index) => `
-            <li class="step-item">
-                <span class="step-checkbox"></span>
-                <span class="step-text">${PlannerService.escapeHtml(step)}</span>
+        list.innerHTML = this.pendingSteps.map((step, index) => {
+            const isCompleted = step.startsWith('[x] ');
+            const cleanText = step.replace(/^\[[ x]\]\s*/, '');
+
+            return `
+            <li class="step-item ${isCompleted ? 'completed' : ''}">
+                <span class="step-checkbox ${isCompleted ? 'checked' : ''}">
+                    ${isCompleted ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' : ''}
+                </span>
+                <span class="step-text">${PlannerService.escapeHtml(cleanText)}</span>
                 <button type="button" class="step-remove" data-index="${index}">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12"/>
                     </svg>
                 </button>
             </li>
-        `).join('');
+        `}).join('');
 
         // Add remove handlers
         list.querySelectorAll('.step-remove').forEach(btn => {
@@ -451,6 +464,15 @@ const App = {
         // Auto-generate title from deepest hierarchy level
         const title = hierarchy[hierarchy.length - 1];
 
+        // Build notes from pending steps
+        let notes = '';
+        if (this.pendingSteps.length > 0) {
+            notes = this.pendingSteps.map(step => {
+                if (step.startsWith('[ ] ') || step.startsWith('[x] ')) return step;
+                return `[ ] ${step}`;
+            }).join('\n');
+        }
+
         if (this.editingTaskId) {
             // Check for overlap if this is a scheduled task and duration changed
             const existingTask = Store.getTask(this.editingTaskId);
@@ -470,14 +492,8 @@ const App = {
                 }
             }
 
-            Store.updateTask(this.editingTaskId, { title, hierarchy, duration });
+            Store.updateTask(this.editingTaskId, { title, hierarchy, duration, notes });
         } else {
-            // Build notes from pending steps
-            let notes = '';
-            if (this.pendingSteps.length > 0) {
-                notes = this.pendingSteps.map(step => `[ ] ${step}`).join('\n');
-            }
-
             const task = Store.addTask({ title, hierarchy, duration, notes });
 
             if (this.scheduledData) {

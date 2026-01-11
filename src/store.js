@@ -392,7 +392,7 @@ export const Store = {
                 hierarchy: [...task.hierarchy],
                 duration: task.duration,
                 completed: false,
-                notes: '',
+                notes: task.notes || '',
                 scheduledDay: day,
                 scheduledTime: time
             });
