@@ -824,21 +824,56 @@ export const Store = {
      * TaskId format: templateId_weekId (e.g., "template_1_2026-W01")
      */
     toggleCompleteForWeek(taskId) {
-        const [templateId, weekId] = taskId.split('_').length >= 3 ?
-            [taskId.split('_').slice(0, 2).join('_'), taskId.split('_')[2]] :
-            [null, null];
+        if (!taskId) return null;
 
-        if (!templateId || !weekId || !state.weeklyInstances[weekId]) {
-            console.warn('Invalid task ID or week not found:', taskId);
+        // 1. Handle legacy tasks (no underscore or not matching new patterns)
+        if (!taskId.includes('_')) {
+            return this.toggleComplete(taskId);
+        }
+
+        // 2. Handle standalone week task IDs (format: week_weekId_instanceId)
+        if (taskId.startsWith('week_')) {
+            const parts = taskId.split('_');
+            const weekId = parts[1]; // "2026-W01"
+            const weekInstances = state.weeklyInstances[weekId];
+            if (!weekInstances) return null;
+
+            const suffix = parts.slice(2).join('_');
+            let instance = null;
+
+            if (suffix.startsWith('inst_')) {
+                instance = weekInstances.tasks.find(t => t.instanceId === suffix);
+            } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
+                const taskIndex = parseInt(suffix.split('_')[1]);
+                instance = weekInstances.tasks[taskIndex];
+            }
+
+            if (instance) {
+                instance.completed = !instance.completed;
+                this.save();
+                return instance;
+            }
             return null;
         }
 
-        const instance = state.weeklyInstances[weekId].tasks.find(t => t.templateId === templateId);
-        if (instance) {
-            instance.completed = !instance.completed;
-            this.save();
+        // 3. Handle template-based week-specific IDs (format: template_X_weekId)
+        const parts = taskId.split('_');
+        if (parts.length >= 3) {
+            const weekId = parts[parts.length - 1]; // Last part is weekId
+            const templateId = parts.slice(0, -1).join('_'); // Everything before is templateId
+
+            const weekInstances = state.weeklyInstances[weekId];
+            if (weekInstances) {
+                const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+                if (instance) {
+                    instance.completed = !instance.completed;
+                    this.save();
+                    return instance;
+                }
+            }
         }
-        return instance;
+
+        return null;
     },
 
     /**

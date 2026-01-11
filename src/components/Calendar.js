@@ -348,8 +348,8 @@ export const Calendar = {
             e.stopPropagation();
 
             // Play animation before toggling
-            const updatedTask = Store.getTask(task.id);
-            if (updatedTask && !updatedTask.completed) {
+            const taskState = Store.getTask(task.id);
+            if (taskState && !taskState.completed) {
                 // About to complete - play animation
                 if (window.App && window.App.playCompletionAnimation) {
                     window.App.playCompletionAnimation(taskEl);
@@ -357,11 +357,10 @@ export const Calendar = {
             }
 
             // Use per-week toggle method
-            Store.toggleCompleteForWeek(task.id);
+            const updatedTask = Store.toggleCompleteForWeek(task.id);
 
             // Check if all tasks for the day are now complete
-            const updatedTaskCheck = Store.getTask(task.id);
-            if (updatedTaskCheck && updatedTaskCheck.completed) {
+            if (updatedTask && updatedTask.completed) {
                 this.checkDailyCelebration(task.scheduledDay);
             }
 
@@ -695,11 +694,16 @@ export const Calendar = {
         const weekId = Store.getWeekIdentifier(this.currentWeekStart);
         const dayTasks = Store.getTasksForWeek(weekId).filter(t => t.scheduledDay === day);
 
+        console.log('Checking celebration for', day, '- Tasks:', dayTasks.length, 'Completed:', dayTasks.filter(t => t.completed).length);
+
         if (dayTasks.length === 0) return;
 
         const allComplete = dayTasks.every(t => t.completed);
 
+        console.log('All complete?', allComplete);
+
         if (allComplete && window.Confetti) {
+            console.log('🎊 Triggering confetti celebration!');
             // Small delay to let the completion animation finish
             setTimeout(() => {
                 window.Confetti.celebrate();

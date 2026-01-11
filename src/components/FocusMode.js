@@ -249,13 +249,16 @@ export const FocusMode = {
 
         doneBtn.addEventListener('click', () => {
             const task = Store.getTask(this.activeTaskId);
-            const wasCompleted = task && task.completed;
+            if (!task) return;
 
-            Store.toggleCompleteForWeek(this.activeTaskId);
+            const wasCompleted = task.completed;
+            const scheduledDay = task.scheduledDay;
+
+            const updatedTask = Store.toggleCompleteForWeek(this.activeTaskId);
 
             // Check for daily celebration if we just completed the task
-            if (!wasCompleted && task && window.Calendar) {
-                window.Calendar.checkDailyCelebration(task.scheduledDay);
+            if (!wasCompleted && updatedTask && updatedTask.completed && window.Calendar) {
+                window.Calendar.checkDailyCelebration(scheduledDay);
             }
 
             if (window.Calendar) window.Calendar.refresh();
