@@ -37,7 +37,7 @@ export const Confetti = {
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            z-index: 9999;
+            z-index: 2147483647;
         `;
         document.body.appendChild(this.canvas);
         this.ctx = this.canvas.getContext('2d');
@@ -51,8 +51,12 @@ export const Confetti = {
      */
     resize() {
         if (!this.canvas) return;
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+
+        // Handle High DPI screens
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = window.innerWidth * dpr;
+        this.canvas.height = window.innerHeight * dpr;
+        this.ctx.scale(dpr, dpr);
     },
 
     /**
@@ -60,30 +64,30 @@ export const Confetti = {
      */
     createParticle(x, y) {
         const color = this.colors[Math.floor(Math.random() * this.colors.length)];
-        const size = Math.random() * 10 + 5;
+        const size = Math.random() * 12 + 6;
         const shape = Math.random() > 0.5 ? 'rect' : 'circle';
 
         return {
             x,
             y,
-            vx: (Math.random() - 0.5) * 15,
-            vy: Math.random() * -15 - 5,
+            vx: (Math.random() - 0.5) * 20,
+            vy: Math.random() * -20 - 10,
             color,
             size,
             shape,
             rotation: Math.random() * 360,
-            rotationSpeed: (Math.random() - 0.5) * 10,
-            gravity: 0.3,
-            friction: 0.99,
+            rotationSpeed: (Math.random() - 0.5) * 15,
+            gravity: 0.4,
+            friction: 0.98,
             opacity: 1,
-            decay: 0.005 + Math.random() * 0.01
+            decay: 0.01 + Math.random() * 0.01 // Fade slightly faster but with more particles
         };
     },
 
     /**
      * Burst confetti from a point
      */
-    burst(x, y, count = 50) {
+    burst(x, y, count = 100) {
         this.init();
 
         for (let i = 0; i < count; i++) {
@@ -101,24 +105,25 @@ export const Confetti = {
      */
     celebrate() {
         this.init();
+        console.log('✨ [Confetti] Grand Celebration started!');
 
         const width = window.innerWidth;
         const height = window.innerHeight;
 
-        // Burst from bottom corners and center
-        this.burst(width * 0.2, height, 40);
-        this.burst(width * 0.5, height * 0.8, 60);
-        this.burst(width * 0.8, height, 40);
+        // Spread across the whole bottom area
+        this.burst(width * 0.15, height, 80);
+        this.burst(width * 0.5, height, 120);
+        this.burst(width * 0.85, height, 80);
 
         // Additional bursts after delay
         setTimeout(() => {
-            this.burst(width * 0.3, height, 30);
-            this.burst(width * 0.7, height, 30);
-        }, 200);
+            this.burst(width * 0.35, height, 70);
+            this.burst(width * 0.65, height, 70);
+        }, 300);
 
         setTimeout(() => {
-            this.burst(width * 0.5, height * 0.6, 40);
-        }, 400);
+            this.burst(width * 0.5, height * 0.4, 100);
+        }, 500);
 
         // Play celebration sound if available
         this.playSound();
@@ -130,10 +135,13 @@ export const Confetti = {
     playSound() {
         // Create a simple celebration sound using Web Audio API
         try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+
+            const audioContext = new AudioCtx();
 
             // Create a cheerful arpeggio
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
 
             notes.forEach((freq, i) => {
                 const oscillator = audioContext.createOscillator();
@@ -145,11 +153,11 @@ export const Confetti = {
                 oscillator.frequency.value = freq;
                 oscillator.type = 'sine';
 
-                const startTime = audioContext.currentTime + (i * 0.08);
-                const duration = 0.15;
+                const startTime = audioContext.currentTime + (i * 0.1);
+                const duration = 0.2;
 
-                gainNode.gain.setValueAtTime(0.15, startTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                gainNode.gain.setValueAtTime(0.1, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
                 oscillator.start(startTime);
                 oscillator.stop(startTime + duration);
@@ -165,7 +173,7 @@ export const Confetti = {
     animate() {
         if (!this.ctx || !this.canvas) return;
 
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
@@ -220,12 +228,14 @@ export const Confetti = {
         this.particles = [];
         this.isActive = false;
         if (this.ctx && this.canvas) {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         }
     }
 };
 
-// Make globally available
+// Make globally available and add debug helper
 if (typeof window !== 'undefined') {
     window.Confetti = Confetti;
+    window.celebrate = () => Confetti.celebrate();
+    console.log('🎊 Confetti loaded. Type celebrate() in console to trigger manually.');
 }

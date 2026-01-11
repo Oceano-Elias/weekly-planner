@@ -18,6 +18,9 @@ export const FocusMode = {
     pomodoroMode: 'work', // 'work' or 'break'
     workDuration: 25 * 60,
     breakDuration: 5 * 60,
+    pomodoroTargetEpoch: null,
+    pipWindow: null,
+    badgeEl: null,
 
     /**
      * Count the number of steps in the notes
@@ -47,9 +50,11 @@ export const FocusMode = {
     close() {
         this.isOpen = false;
         this.activeTaskId = null;
-
-        // Stop the pomodoro timer
-        this.stopTimer();
+        if (this.pomodoroRunning) {
+            this.openFloatingTimer();
+        } else {
+            this.stopTimer();
+        }
 
         // Remove the keyboard listener to prevent leaks
         if (this.activeKeyHandler) {
@@ -69,10 +74,7 @@ export const FocusMode = {
         const container = document.getElementById('focusModeContainer');
         const color = Departments.getColor(task.hierarchy);
 
-        // Reset timer state when opening
-        this.pomodoroSeconds = this.workDuration;
-        this.pomodoroRunning = false;
-        this.pomodoroMode = 'work';
+        this.restoreTimerState();
 
         container.innerHTML = `
             <div class="focus-overlay" id="focusOverlay">
@@ -110,6 +112,12 @@ export const FocusMode = {
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                                     <path d="M3 3v5h5"/>
+                                </svg>
+                            </button>
+                            <button class="pomodoro-btn" id="pomodoroFloat" title="Float Timer">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M4 4h10v10H4z"/>
+                                    <path d="M14 10h6v10h-6z"/>
                                 </svg>
                             </button>
                         </div>
@@ -256,6 +264,13 @@ export const FocusMode = {
 
             const updatedTask = Store.toggleCompleteForWeek(this.activeTaskId);
 
+            // Trigger individual task celebration
+            if (!wasCompleted && updatedTask && updatedTask.completed && window.Confetti) {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                window.Confetti.burst(width / 2, height / 2, 60);
+            }
+
             // Check for daily celebration if we just completed the task
             if (!wasCompleted && updatedTask && updatedTask.completed && window.Calendar) {
                 window.Calendar.checkDailyCelebration(scheduledDay);
@@ -275,6 +290,10 @@ export const FocusMode = {
         }
         if (resetBtn) {
             resetBtn.addEventListener('click', () => this.resetTimer());
+        }
+        const floatBtn = document.getElementById('pomodoroFloat');
+        if (floatBtn) {
+            floatBtn.addEventListener('click', () => this.openFloatingTimer());
         }
 
         checklistItems.forEach(item => {
@@ -440,6 +459,9 @@ export const FocusMode = {
             btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5,3 19,12 5,21"/>
             </svg>`;
+            this.pomodoroTargetEpoch = null;
+            this.persistTimerState();
+            this.updateFloatingTimer();
         } else {
             // Start
             this.pomodoroRunning = true;
@@ -447,16 +469,18 @@ export const FocusMode = {
                 <rect x="5" y="4" width="4" height="16"/>
                 <rect x="15" y="4" width="4" height="16"/>
             </svg>`;
-
+            this.pomodoroTargetEpoch = Date.now() + this.pomodoroSeconds * 1000;
             this.pomodoroTimer = setInterval(() => {
-                if (this.pomodoroSeconds > 0) {
-                    this.pomodoroSeconds--;
-                    this.updateTimerDisplay();
-                } else {
-                    // Timer complete - switch mode
+                const remaining = Math.max(0, Math.round((this.pomodoroTargetEpoch - Date.now()) / 1000));
+                this.pomodoroSeconds = remaining;
+                this.updateTimerDisplay();
+                this.updateFloatingTimer();
+                if (remaining <= 0) {
                     this.switchMode();
                 }
             }, 1000);
+            this.persistTimerState();
+            this.updateFloatingTimer();
         }
     },
 
@@ -468,6 +492,7 @@ export const FocusMode = {
         this.pomodoroRunning = false;
         this.pomodoroMode = 'work';
         this.pomodoroSeconds = this.workDuration;
+        this.pomodoroTargetEpoch = null;
 
         const btn = document.getElementById('pomodoroStartPause');
         if (btn) {
@@ -477,6 +502,8 @@ export const FocusMode = {
         }
 
         this.updateTimerDisplay();
+        this.persistTimerState();
+        this.updateFloatingTimer();
     },
 
     /**
@@ -509,6 +536,9 @@ export const FocusMode = {
         }
 
         this.updateTimerDisplay();
+        this.pomodoroTargetEpoch = null;
+        this.persistTimerState();
+        this.updateFloatingTimer();
     },
 
     /**
@@ -520,6 +550,207 @@ export const FocusMode = {
             this.pomodoroTimer = null;
         }
         this.pomodoroRunning = false;
+        this.pomodoroTargetEpoch = null;
+        this.persistTimerState();
+        this.updateFloatingTimer();
+    },
+
+    persistTimerState() {
+        const state = {
+            mode: this.pomodoroMode,
+            running: this.pomodoroRunning,
+            remaining: this.pomodoroSeconds,
+            targetEpoch: this.pomodoroTargetEpoch,
+            work: this.workDuration,
+            break: this.breakDuration,
+            updatedAt: Date.now()
+        };
+        try {
+            localStorage.setItem('focusModeTimerState', JSON.stringify(state));
+        } catch {}
+    },
+
+    restoreTimerState() {
+        let state = null;
+        try {
+            state = JSON.parse(localStorage.getItem('focusModeTimerState') || 'null');
+        } catch {}
+        if (!state) {
+            this.pomodoroMode = 'work';
+            this.pomodoroSeconds = this.workDuration;
+            this.pomodoroRunning = false;
+            this.pomodoroTargetEpoch = null;
+            return;
+        }
+        this.workDuration = state.work || this.workDuration;
+        this.breakDuration = state.break || this.breakDuration;
+        this.pomodoroMode = state.mode || 'work';
+        if (state.targetEpoch && state.running) {
+            const remaining = Math.max(0, Math.round((state.targetEpoch - Date.now()) / 1000));
+            this.pomodoroSeconds = remaining;
+            this.pomodoroRunning = remaining > 0;
+            this.pomodoroTargetEpoch = state.targetEpoch;
+            if (this.pomodoroRunning && !this.pomodoroTimer) {
+                this.pomodoroTimer = setInterval(() => {
+                    const r = Math.max(0, Math.round((this.pomodoroTargetEpoch - Date.now()) / 1000));
+                    this.pomodoroSeconds = r;
+                    this.updateTimerDisplay();
+                    this.updateFloatingTimer();
+                    if (r <= 0) {
+                        this.switchMode();
+                    }
+                }, 1000);
+            }
+        } else {
+            this.pomodoroSeconds = state.remaining || (this.pomodoroMode === 'work' ? this.workDuration : this.breakDuration);
+            this.pomodoroRunning = false;
+            this.pomodoroTargetEpoch = null;
+        }
+    },
+
+    async openFloatingTimer() {
+        const api = document.documentPictureInPicture;
+        if (this.pipWindow) return;
+        try {
+            if (!api) throw new Error('pip');
+            const pip = await api.requestWindow({ initialWidth: 220, initialHeight: 160 });
+            this.pipWindow = pip;
+            const doc = pip.document;
+            doc.body.style.margin = '0';
+            doc.body.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
+            doc.body.innerHTML = `
+                <div id="pipRoot" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;background:#111;color:#fff;height:100%;box-sizing:border-box;">
+                    <div id="pipMode" style="font-size:12px;font-weight:600;opacity:0.8"></div>
+                    <div id="pipTime" style="font-size:32px;font-weight:700;letter-spacing:-1px"></div>
+                    <div style="display:flex;gap:8px;">
+                        <button id="pipStartPause" style="padding:6px 10px;border:none;border-radius:8px;background:#2563eb;color:#fff">Start</button>
+                        <button id="pipReset" style="padding:6px 10px;border:1px solid #333;border-radius:8px;background:#222;color:#ddd">Reset</button>
+                    </div>
+                </div>`;
+            pip.startPause = () => this.startPauseTimer();
+            pip.resetTimer = () => this.resetTimer();
+            doc.getElementById('pipStartPause').addEventListener('click', () => pip.startPause());
+            doc.getElementById('pipReset').addEventListener('click', () => pip.resetTimer());
+        pip.addEventListener('pagehide', () => { this.pipWindow = null; });
+            this.updateFloatingTimer();
+            this.hideBadge();
+        } catch {
+            this.showBadge();
+        }
+    },
+
+    updateFloatingTimer() {
+        const pip = this.pipWindow;
+        if (pip) {
+            const doc = pip.document;
+            const timeEl = doc.getElementById('pipTime');
+            const modeEl = doc.getElementById('pipMode');
+            const startPauseEl = doc.getElementById('pipStartPause');
+            if (timeEl && modeEl && startPauseEl) {
+                timeEl.textContent = this.formatTime(this.pomodoroSeconds);
+                modeEl.textContent = this.pomodoroMode === 'work' ? 'Focus' : 'Break';
+                startPauseEl.textContent = this.pomodoroRunning ? 'Pause' : 'Start';
+            }
+        }
+        this.updateBadge();
+    },
+
+    closeFloatingTimer() {
+        if (this.pipWindow) {
+            try { this.pipWindow.close(); } catch {}
+            this.pipWindow = null;
+        }
+    },
+
+    showBadge() {
+        if (this.badgeEl) return;
+        const el = document.createElement('div');
+        el.id = 'floatingPomodoroBadge';
+        el.style.position = 'fixed';
+        el.style.zIndex = '9999';
+        el.style.background = '#111';
+        el.style.color = '#fff';
+        el.style.border = '1px solid #333';
+        el.style.borderRadius = '12px';
+        el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+        el.style.padding = '10px 12px';
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.gap = '10px';
+        el.innerHTML = `
+            <span id="badgeMode" style="font-size:12px;opacity:0.8"></span>
+            <span id="badgeTime" style="font-size:18px;font-weight:700;letter-spacing:-0.5px"></span>
+            <button id="badgeStartPause" style="padding:6px 10px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:12px">Start</button>
+            <button id="badgeReset" style="padding:6px 10px;border:1px solid #333;border-radius:8px;background:#222;color:#ddd;font-size:12px">Reset</button>
+        `;
+        document.body.appendChild(el);
+        this.badgeEl = el;
+        const savedPos = (() => { try { return JSON.parse(localStorage.getItem('floatingPomodoroBadgePos')||'null'); } catch { return null; } })();
+        if (savedPos && typeof savedPos.left === 'number' && typeof savedPos.top === 'number') {
+            el.style.left = `${savedPos.left}px`;
+            el.style.top = `${savedPos.top}px`;
+        } else {
+            const defaultLeft = Math.max(0, window.innerWidth - el.offsetWidth - 16);
+            const defaultTop = Math.max(0, window.innerHeight - el.offsetHeight - 16);
+            el.style.left = `${defaultLeft}px`;
+            el.style.top = `${defaultTop}px`;
+        }
+        el.querySelector('#badgeStartPause').addEventListener('click', () => this.startPauseTimer());
+        el.querySelector('#badgeReset').addEventListener('click', () => this.resetTimer());
+        let dragging = false;
+        let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+        const onMouseMove = (e) => {
+            if (!dragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            const newLeft = Math.min(Math.max(0, startLeft + dx), window.innerWidth - el.offsetWidth);
+            const newTop = Math.min(Math.max(0, startTop + dy), window.innerHeight - el.offsetHeight);
+            el.style.left = `${newLeft}px`;
+            el.style.top = `${newTop}px`;
+        };
+        const endDrag = () => {
+            if (!dragging) return;
+            dragging = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', endDrag);
+            try {
+                const rect = el.getBoundingClientRect();
+                localStorage.setItem('floatingPomodoroBadgePos', JSON.stringify({ left: rect.left, top: rect.top }));
+            } catch {}
+        };
+        el.addEventListener('mousedown', (e) => {
+            if (e.target && e.target.tagName === 'BUTTON') return;
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            const rect = el.getBoundingClientRect();
+            startLeft = rect.left;
+            startTop = rect.top;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', endDrag);
+        });
+        this.updateBadge();
+    },
+
+    updateBadge() {
+        if (!this.badgeEl) return;
+        const timeEl = this.badgeEl.querySelector('#badgeTime');
+        const modeEl = this.badgeEl.querySelector('#badgeMode');
+        const spEl = this.badgeEl.querySelector('#badgeStartPause');
+        if (!timeEl || !modeEl || !spEl) return;
+        timeEl.textContent = this.formatTime(this.pomodoroSeconds);
+        modeEl.textContent = this.pomodoroMode === 'work' ? 'Focus' : 'Break';
+        spEl.textContent = this.pomodoroRunning ? 'Pause' : 'Start';
+        if (!this.pomodoroRunning && this.pomodoroSeconds <= 0) {
+            this.hideBadge();
+        }
+    },
+
+    hideBadge() {
+        if (this.badgeEl) {
+            try { this.badgeEl.remove(); } catch {}
+            this.badgeEl = null;
+        }
     },
 
 };

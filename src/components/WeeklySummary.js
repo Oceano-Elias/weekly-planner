@@ -59,9 +59,12 @@ export const WeeklySummary = {
         let bestDay = null;
         let bestDayRate = 0;
         dailyStats.forEach((day, index) => {
-            if (day.totalTasks > 0) {
-                const rate = day.completedTasks / day.totalTasks;
-                if (rate > bestDayRate || (rate === bestDayRate && day.completedTasks > (dailyStats[bestDay]?.completedTasks || 0))) {
+            const total = day.tasks.total;
+            const completed = day.tasks.completed;
+            if (total > 0) {
+                const rate = completed / total;
+                const bestCompleted = bestDay !== null ? dailyStats[bestDay].tasks.completed : 0;
+                if (rate > bestDayRate || (rate === bestDayRate && completed > bestCompleted)) {
                     bestDayRate = rate;
                     bestDay = index;
                 }
@@ -85,9 +88,11 @@ export const WeeklySummary = {
         let currentStreak = 0;
         for (let i = dailyStats.length - 1; i >= 0; i--) {
             const day = dailyStats[i];
-            if (day.totalTasks > 0 && day.completedTasks === day.totalTasks) {
+            const total = day.tasks.total;
+            const completed = day.tasks.completed;
+            if (total > 0 && completed === total) {
                 currentStreak++;
-            } else if (day.totalTasks > 0) {
+            } else if (total > 0) {
                 break;
             }
         }
@@ -123,7 +128,7 @@ export const WeeklySummary = {
      * Generate sparkline SVG for daily completion
      */
     generateSparkline(dailyStats) {
-        const values = dailyStats.map(d => d.taskCompletionPct);
+        const values = dailyStats.map(d => d.tasks.percent);
         const max = Math.max(...values, 1);
         const width = 200;
         const height = 40;
@@ -240,9 +245,9 @@ export const WeeklySummary = {
                             <div class="daily-bars">
                                 ${stats.dailyStats.map((day, i) => `
                                     <div class="daily-bar-item ${stats.bestDay === ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][i] ? 'best' : ''}">
-                                        <div class="daily-bar-fill" style="height: ${day.taskCompletionPct}%"></div>
+                                        <div class="daily-bar-fill" style="height: ${day.tasks.percent}%"></div>
                                         <span class="daily-bar-label">${days[i]}</span>
-                                        <span class="daily-bar-value">${day.completedTasks}/${day.totalTasks}</span>
+                                        <span class="daily-bar-value">${day.tasks.completed}/${day.tasks.total}</span>
                                     </div>
                                 `).join('')}
                             </div>

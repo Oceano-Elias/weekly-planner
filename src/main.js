@@ -53,6 +53,43 @@ const App = {
     scheduledData: null,
     editingTaskId: null,
     pendingSteps: [],
+    updateScheduleValidation() {
+        const saveBtn = document.getElementById('saveTask');
+        const infoEl = document.getElementById('scheduleMaxInfo');
+        if (!saveBtn) return;
+
+        // Only validate when opened from a calendar cell
+        if (!this.scheduledData) {
+            saveBtn.disabled = false;
+            if (infoEl) infoEl.textContent = '';
+            return;
+        }
+
+        const { day, time, maxDuration } = this.scheduledData;
+        if (maxDuration <= 0) {
+            saveBtn.disabled = true;
+            if (infoEl) infoEl.textContent = 'No available time in this slot';
+            return;
+        }
+
+        const duration = this.getSelectedDuration();
+        if (duration > maxDuration) {
+            saveBtn.disabled = true;
+            if (infoEl) infoEl.textContent = `Max: ${PlannerService.formatDuration(maxDuration)} — reduce duration`;
+            return;
+        }
+
+        const dayTasks = Store.getTasksForDay(day);
+        const available = PlannerService.isSlotAvailable(time, duration, dayTasks);
+        if (!available) {
+            saveBtn.disabled = true;
+            if (infoEl) infoEl.textContent = `Max: ${PlannerService.formatDuration(maxDuration)} — overlaps, adjust duration`;
+            return;
+        }
+
+        saveBtn.disabled = false;
+        if (infoEl) infoEl.textContent = `Max: ${PlannerService.formatDuration(maxDuration)}`;
+    },
 
     /**
      * Initialize the application
@@ -74,6 +111,12 @@ const App = {
         this.updateBadgeCounts();
         this.setupFavicon();
         this.displayVersion();
+        if (window.FocusMode && typeof window.FocusMode.restoreTimerState === 'function') {
+            window.FocusMode.restoreTimerState();
+            if (window.FocusMode.pomodoroRunning && !window.FocusMode.isOpen) {
+                window.FocusMode.showBadge();
+            }
+        }
     },
 
     /**
@@ -238,6 +281,7 @@ const App = {
         }
 
         document.getElementById('dept1').focus();
+        this.updateScheduleValidation();
     },
 
     /**
@@ -268,6 +312,20 @@ const App = {
 
         // Setup steps input
         this.setupStepsInput();
+
+        // Custom duration input live validation
+        const customInput = document.getElementById('customMinutes');
+        if (customInput) {
+            customInput.addEventListener('input', () => {
+                // Clamp to allowed range
+                const val = parseInt(customInput.value || '0');
+                const clamped = Math.max(15, Math.min(480, isNaN(val) ? 60 : val));
+                if (val !== clamped) {
+                    customInput.value = clamped;
+                }
+                this.updateScheduleValidation();
+            });
+        }
     },
 
     /**
@@ -420,6 +478,7 @@ const App = {
      * Handle duration selection
      */
     onDurationSelect(btn) {
+        if (btn.classList.contains('disabled')) return;
         document.querySelectorAll('.duration-option').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
 
@@ -433,6 +492,7 @@ const App = {
             customContainer.style.display = 'none';
             this.selectedDuration = parseInt(duration);
         }
+        this.updateScheduleValidation();
     },
 
     /**
@@ -504,7 +564,13 @@ const App = {
             const task = Store.addTask({ title, hierarchy, duration, notes });
 
             if (this.scheduledData) {
-                Store.scheduleTask(task.id, this.scheduledData.day, this.scheduledData.time);
+                const dayTasks = Store.getTasksForDay(this.scheduledData.day);
+                const available = PlannerService.isSlotAvailable(this.scheduledData.time, duration, dayTasks);
+                if (available) {
+                    Store.scheduleTask(task.id, this.scheduledData.day, this.scheduledData.time);
+                } else {
+                    alert(`Cannot schedule at ${this.scheduledData.time} for ${PlannerService.formatDuration(duration)} - it overlaps another task.`);
+                }
                 this.scheduledData = null;
             }
         }
@@ -535,6 +601,10 @@ const App = {
         document.getElementById('scheduleInfo').style.display = 'none';
         this.scheduledData = null;
         document.querySelectorAll('.duration-option').forEach(btn => btn.classList.remove('disabled'));
+        const saveBtn = document.getElementById('saveTask');
+        if (saveBtn) saveBtn.disabled = false;
+        const infoEl = document.getElementById('scheduleMaxInfo');
+        if (infoEl) infoEl.textContent = '';
 
         this.editingTaskId = null;
         document.querySelector('.modal-title').textContent = 'Create New Task';

@@ -18,6 +18,7 @@ export const Calendar = {
     viewMode: 'week',
     selectedDayIndex: 0,
     progressTimer: null,
+    gridClickHandler: null,
 
     /**
      * Set the view mode
@@ -359,6 +360,14 @@ export const Calendar = {
             // Use per-week toggle method
             const updatedTask = Store.toggleCompleteForWeek(task.id);
 
+            // Trigger individual task celebration
+            if (updatedTask && updatedTask.completed && window.Confetti) {
+                const rect = block.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                window.Confetti.burst(x, y, 40);
+            }
+
             // Check if all tasks for the day are now complete
             if (updatedTask && updatedTask.completed) {
                 this.checkDailyCelebration(task.scheduledDay);
@@ -471,12 +480,11 @@ export const Calendar = {
         this.updateTimeMarker();
 
         this.progressTimer = setInterval(() => {
-            const scheduledTasks = Store.getScheduledTasks();
             document.querySelectorAll('.calendar-task').forEach(taskEl => {
                 const taskBlock = taskEl.querySelector('.task-block');
                 if (!taskBlock) return;
                 const taskId = taskBlock.dataset.taskId;
-                const task = scheduledTasks.find(t => t.id === taskId);
+                const task = Store.getTask(taskId);
                 if (task) this.updateTaskProgress(taskEl, task);
             });
             this.updateTimeMarker();
@@ -616,19 +624,23 @@ export const Calendar = {
      * Setup cell click to open form
      */
     setupCellClick() {
-        document.querySelectorAll('.calendar-cell').forEach(cell => {
-            const newCell = cell.cloneNode(true);
-            cell.parentNode.replaceChild(newCell, cell);
-            newCell.addEventListener('click', (e) => {
-                if (e.target.closest('.calendar-task') || e.target.closest('.task-block')) return;
-                const day = newCell.dataset.day;
-                const time = newCell.dataset.time;
-                const maxDuration = this.getMaxDurationForSlot(day, time);
-                if (window.App && window.App.openModalWithSchedule) {
-                    window.App.openModalWithSchedule(day, time, maxDuration);
-                }
-            });
-        });
+        const grid = document.getElementById('calendarGrid');
+        if (!grid) return;
+        if (this.gridClickHandler) {
+            grid.removeEventListener('click', this.gridClickHandler);
+        }
+        this.gridClickHandler = (e) => {
+            const cell = e.target.closest('.calendar-cell');
+            if (!cell) return;
+            if (e.target.closest('.calendar-task') || e.target.closest('.task-block')) return;
+            const day = cell.dataset.day;
+            const time = cell.dataset.time;
+            const maxDuration = this.getMaxDurationForSlot(day, time);
+            if (window.App && window.App.openModalWithSchedule) {
+                window.App.openModalWithSchedule(day, time, maxDuration);
+            }
+        };
+        grid.addEventListener('click', this.gridClickHandler);
     },
 
     /**
@@ -638,15 +650,21 @@ export const Calendar = {
         const [startHour, startMin] = time.split(':').map(Number);
         const startTotalMins = startHour * 60 + startMin;
         const endOfDayMins = this.endHour * 60;
+        if (startTotalMins >= endOfDayMins) return 0;
         const dayTasks = Store.getTasksForDay(day);
         let nextTaskStart = endOfDayMins;
         dayTasks.forEach(task => {
             if (!task.scheduledTime) return;
             const [taskHour, taskMin] = task.scheduledTime.split(':').map(Number);
             const taskStart = taskHour * 60 + taskMin;
+            const taskEnd = taskStart + (task.duration || 0);
+            if (taskStart <= startTotalMins && taskEnd > startTotalMins) {
+                nextTaskStart = startTotalMins;
+                return;
+            }
             if (taskStart > startTotalMins && taskStart < nextTaskStart) nextTaskStart = taskStart;
         });
-        return nextTaskStart - startTotalMins;
+        return Math.max(0, nextTaskStart - startTotalMins);
     },
 
     /**

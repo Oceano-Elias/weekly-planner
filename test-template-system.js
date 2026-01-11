@@ -40,7 +40,7 @@ function testTemplateSystem() {
             duration: 60,
             notes: '',
             completed: false,
-            scheduledDay: 'Monday',
+            scheduledDay: 'monday',
             scheduledTime: '08:00',
             createdAt: Date.now()
         },
@@ -52,7 +52,7 @@ function testTemplateSystem() {
             duration: 90,
             notes: '',
             completed: false,
-            scheduledDay: 'Wednesday',
+            scheduledDay: 'wednesday',
             scheduledTime: '10:00',
             createdAt: Date.now()
         },
@@ -64,7 +64,7 @@ function testTemplateSystem() {
             duration: 120,
             notes: '',
             completed: false,
-            scheduledDay: 'Friday',
+            scheduledDay: 'friday',
             scheduledTime: '14:00',
             createdAt: Date.now()
         }

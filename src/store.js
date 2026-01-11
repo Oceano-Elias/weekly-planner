@@ -514,7 +514,7 @@ export const Store = {
                 goal: instance.goal || '',
                 hierarchy: [...(instance.hierarchy || [])],
                 duration: instance.duration,
-                notes: '',
+                notes: instance.notes || '',
                 completed: false,
                 scheduledDay: null,
                 scheduledTime: null,
@@ -544,7 +544,7 @@ export const Store = {
                 goal: template.goal || '',
                 hierarchy: [...template.hierarchy],
                 duration: template.duration,
-                notes: '',
+                notes: template.notes || '',
                 completed: false,
                 scheduledDay: null,
                 scheduledTime: null,
@@ -667,35 +667,8 @@ export const Store = {
      * Reset current week to template
      */
     resetWeekToTemplate() {
-        if (!state.defaultTemplate) return;
-
-        // Remove all current tasks
-        const scheduledIds = state.tasks.filter(t => t.scheduledDay).map(t => t.id);
-        state.tasks = state.tasks.filter(t => !scheduledIds.includes(t.id));
-
-        // Recreate from template
-        state.defaultTemplate.scheduled.forEach(t => {
-            this.addTask({
-                title: t.title,
-                hierarchy: t.hierarchy,
-                duration: t.duration,
-                notes: t.notes
-            });
-            const newTask = state.tasks[state.tasks.length - 1];
-            newTask.scheduledDay = t.scheduledDay;
-            newTask.scheduledTime = t.scheduledTime;
-        });
-
-        state.defaultTemplate.queue.forEach(t => {
-            this.addTask({
-                title: t.title,
-                hierarchy: t.hierarchy,
-                duration: t.duration,
-                notes: t.notes
-            });
-        });
-
-        this.save();
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        this.createWeekFromTemplate(currentWeekId);
     },
 
     /**
@@ -1266,5 +1239,4 @@ export const Store = {
         });
     }
 };
-
 
