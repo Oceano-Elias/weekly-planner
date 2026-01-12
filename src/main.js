@@ -600,9 +600,6 @@ const App = {
             }
         }
 
-        TaskQueue.refresh();
-        Calendar.refresh();
-        Filters.refresh();
         this.closeModal();
     },
 
@@ -789,25 +786,16 @@ const App = {
                 case 't':
                     e.preventDefault();
                     Calendar.setCurrentWeek(new Date());
-                    Calendar.renderHeader();
-                    Calendar.renderGrid();
-                    TaskQueue.refresh();
                     break;
                 case 'arrowleft':
                     e.preventDefault();
                     Calendar.currentWeekStart.setDate(Calendar.currentWeekStart.getDate() - 7);
                     Store.setCurrentWeek(Calendar.currentWeekStart);
-                    Calendar.renderHeader();
-                    Calendar.renderGrid();
-                    TaskQueue.refresh();
                     break;
                 case 'arrowright':
                     e.preventDefault();
                     Calendar.currentWeekStart.setDate(Calendar.currentWeekStart.getDate() + 7);
                     Store.setCurrentWeek(Calendar.currentWeekStart);
-                    Calendar.renderHeader();
-                    Calendar.renderGrid();
-                    TaskQueue.refresh();
                     break;
                 case 'w':
                     e.preventDefault();

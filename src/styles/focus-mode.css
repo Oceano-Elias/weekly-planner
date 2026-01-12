@@ -123,17 +123,19 @@
 }
 
 .focus-title {
-    font-size: 18px;
+    font-family: var(--font-display);
+    font-size: 20px;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 4px;
     color: var(--task-color);
-    font-weight: 700;
+    font-weight: 800;
     display: inline-block;
-    margin-bottom: 16px;
-    padding: 8px 18px;
-    background: color-mix(in srgb, var(--task-color) 15%, transparent);
-    border-radius: 24px;
-    border: 1px solid color-mix(in srgb, var(--task-color) 25%, transparent);
+    margin-bottom: 20px;
+    padding: 10px 24px;
+    background: color-mix(in srgb, var(--task-color) 12%, transparent);
+    border-radius: var(--radius-full);
+    border: 1px solid color-mix(in srgb, var(--task-color) 30%, transparent);
+    box-shadow: 0 0 30px color-mix(in srgb, var(--task-color) 15%, transparent);
 }
 
 .focus-goal {

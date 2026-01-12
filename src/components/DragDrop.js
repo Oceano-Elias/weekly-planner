@@ -179,8 +179,6 @@ export const DragDrop = {
 
                 if (this.isSlotAvailable(day, time, draggedTask.duration, taskId)) {
                     Store.rescheduleTaskInWeek(taskId, day, time);
-                    if (window.TaskQueue) window.TaskQueue.refresh();
-                    if (window.Calendar) window.Calendar.refresh();
                 } else {
                     // Rebound animation
                     if (this.draggedElement) {
@@ -190,8 +188,6 @@ export const DragDrop = {
                 }
             } else if (queue) {
                 Store.unscheduleTask(taskId);
-                if (window.TaskQueue) window.TaskQueue.refresh();
-                if (window.Calendar) window.Calendar.refresh();
             }
         });
     },

@@ -276,8 +276,6 @@ export const FocusMode = {
                 window.Calendar.checkDailyCelebration(scheduledDay);
             }
 
-            if (window.Calendar) window.Calendar.refresh();
-            if (window.TaskQueue) window.TaskQueue.refresh();
             this.close();
         });
 
@@ -376,7 +374,6 @@ export const FocusMode = {
 
         Store.updateTaskNotesForWeek(this.activeTaskId, updatedNotes);
         this.updateChecklist();
-        if (window.Calendar) window.Calendar.refresh();
     },
 
     /**

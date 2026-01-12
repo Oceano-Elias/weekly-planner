@@ -23,13 +23,16 @@ export const Calendar = {
     /**
      * Set the view mode
      */
-    setViewMode(mode) {
+    setViewMode(mode, index = null) {
         this.viewMode = mode;
         if (mode === 'day') {
-            const today = new Date();
-            const weekDates = this.getWeekDates();
-            const todayIndex = weekDates.findIndex(d => this.isToday(d));
-            this.selectedDayIndex = todayIndex !== -1 ? todayIndex : 0;
+            if (index !== null) {
+                this.selectedDayIndex = index;
+            } else if (this.selectedDayIndex === undefined || this.selectedDayIndex === null) {
+                const weekDates = this.getWeekDates();
+                const todayIndex = weekDates.findIndex(d => this.isToday(d));
+                this.selectedDayIndex = todayIndex !== -1 ? todayIndex : 0;
+            }
         }
         this.renderHeader();
         this.renderGrid();
@@ -45,6 +48,12 @@ export const Calendar = {
         this.setupNavigation();
         this.setupViewToggle();
         this.setupProgressTimer();
+
+        // Subscribe to store changes for automatic UI updates
+        Store.subscribe(() => {
+            console.log('Calendar: Store updated, refreshing UI...');
+            this.refresh();
+        });
     },
 
     /**
@@ -138,7 +147,7 @@ export const Calendar = {
                 const progress = total > 0 ? (completed / total) * 100 : 0;
 
                 html += `
-                    <div class="calendar-header-cell">
+                    <div class="calendar-header-cell day-header-clickable" data-index="${index}">
                         <div class="calendar-day-name">${this.dayLabels[index]}</div>
                         <div class="calendar-day-date ${isToday ? 'today' : ''}">${date.getDate()}</div>
                         <div class="calendar-day-progress-container">
@@ -209,6 +218,32 @@ export const Calendar = {
         const weekDisplay = document.getElementById('weekDisplay');
         if (weekDisplay) weekDisplay.textContent = this.formatWeekDisplay();
         this.setupGoalListeners();
+        this.setupHeaderClickListeners();
+    },
+
+    /**
+     * Setup click listeners for date headers in week view
+     */
+    setupHeaderClickListeners() {
+        if (this.viewMode !== 'week') return;
+
+        const headerCells = document.querySelectorAll('.day-header-clickable');
+        headerCells.forEach(cell => {
+            cell.addEventListener('click', (e) => {
+                // Don't trigger if clicking the goal input
+                if (e.target.classList.contains('calendar-day-goal')) return;
+
+                const index = parseInt(cell.dataset.index);
+
+                // Sync UI buttons
+                const viewBtns = document.querySelectorAll('.view-btn');
+                viewBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.view === 'day');
+                });
+
+                this.setViewMode('day', index);
+            });
+        });
     },
 
     /**
@@ -399,10 +434,8 @@ export const Calendar = {
                 this.checkDailyCelebration(task.scheduledDay);
             }
 
-            // Delay refresh to allow animation to play
             setTimeout(() => {
                 this.renderScheduledTasks();
-                if (window.TaskQueue) window.TaskQueue.refresh();
             }, 500);
         });
 
@@ -414,8 +447,6 @@ export const Calendar = {
                 if (confirmed) {
                     Store.deleteTask(task.id);
                     this.renderScheduledTasks();
-                    if (window.TaskQueue) window.TaskQueue.refresh();
-                    if (window.Filters) window.Filters.refresh();
                 }
             });
         }

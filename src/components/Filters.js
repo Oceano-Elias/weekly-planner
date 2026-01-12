@@ -3,6 +3,7 @@
  */
 
 import { Departments } from '../departments.js';
+import { Store } from '../store.js';
 
 export const Filters = {
     selectedDepts: [],
@@ -12,6 +13,12 @@ export const Filters = {
      */
     init() {
         this.render();
+
+        // Subscribe to store changes to update task counts
+        Store.subscribe(() => {
+            console.log('Filters: Store updated, refreshing task counts...');
+            this.refresh();
+        });
     },
 
     /**

@@ -16,6 +16,12 @@ export const TaskQueue = {
         this.render();
         this.setupTabs();
         this.setupSearch();
+
+        // Subscribe to store changes for automatic UI updates
+        Store.subscribe(() => {
+            console.log('TaskQueue: Store updated, refreshing UI...');
+            this.refresh();
+        });
     },
 
     /**
@@ -185,7 +191,6 @@ export const TaskQueue = {
                 e.stopPropagation();
                 Store.toggleComplete(taskId);
                 this.refresh();
-                if (window.Calendar) window.Calendar.refresh();
             });
 
             if (deleteBtn) {
@@ -197,9 +202,6 @@ export const TaskQueue = {
                     if (confirmed) {
                         console.log('User confirmed delete');
                         Store.deleteTask(taskId);
-                        this.refresh();
-                        if (window.Calendar) window.Calendar.refresh();
-                        if (window.Filters) window.Filters.refresh();
                     } else {
                         console.log('User canceled delete');
                     }

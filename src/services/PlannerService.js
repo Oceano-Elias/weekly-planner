@@ -28,6 +28,28 @@ export const PlannerService = {
     },
 
     /**
+     * Get the 7 days of the week starting from the given Monday
+     */
+    getWeekDays(monday) {
+        return Array.from({ length: 7 }, (_, i) => {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + i);
+            return date;
+        });
+    },
+
+    /**
+     * Format a date to YYYY-MM-DD
+     */
+    formatDate(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    },
+
+    /**
      * Format duration for display
      */
     formatDuration(minutes) {

@@ -22,7 +22,34 @@ let state = {
     goals: {}
 };
 
+let listeners = [];
+
 export const Store = {
+    /**
+     * Get the current state (primarily for testing)
+     */
+    getState() {
+        return state;
+    },
+
+    /**
+     * Reset store (primarily for testing)
+     */
+    reset() {
+        state = {
+            tasks: [],
+            nextId: 1,
+            currentWeekStart: null,
+            templates: [],
+            weeklyInstances: {},
+            migrated: false,
+            weeklyData: {},
+            defaultTemplate: null,
+            goals: {}
+        };
+        listeners = [];
+    },
+
     /**
      * Initialize store
      */
@@ -36,6 +63,32 @@ export const Store = {
         }
 
         this.setCurrentWeek(new Date());
+        this.notify();
+    },
+
+    /**
+     * Subscribe to store changes
+     * @param {Function} callback 
+     * @returns {Function} Unsubscribe function
+     */
+    subscribe(callback) {
+        listeners.push(callback);
+        return () => {
+            listeners = listeners.filter(l => l !== callback);
+        };
+    },
+
+    /**
+     * Notify all listeners of a change
+     */
+    notify() {
+        listeners.forEach(callback => {
+            try {
+                callback();
+            } catch (e) {
+                console.error('Error in store listener:', e);
+            }
+        });
     },
 
     /**
@@ -92,6 +145,7 @@ export const Store = {
      */
     setCurrentWeek(date) {
         state.currentWeekStart = PlannerService.getWeekStart(date);
+        this.notify();
     },
 
     /**
@@ -119,6 +173,7 @@ export const Store = {
         };
         state.tasks.push(task);
         this.save();
+        this.notify();
         return task;
     },
 
@@ -131,6 +186,7 @@ export const Store = {
         if (legacyTask) {
             Object.assign(legacyTask, updates);
             this.save();
+            this.notify();
             return legacyTask;
         }
 
@@ -159,6 +215,7 @@ export const Store = {
             if (instance) {
                 Object.assign(instance, updates);
                 this.save();
+                this.notify();
                 return this.getTask(taskId);
             }
             return null;
@@ -188,6 +245,7 @@ export const Store = {
             }
 
             this.save();
+            this.notify();
             return this.getTask(taskId);
         }
 
@@ -204,6 +262,7 @@ export const Store = {
 
         if (legacyDeleted) {
             this.save();
+            this.notify();
             return;
         }
 
@@ -232,6 +291,7 @@ export const Store = {
                     if (instanceIndex >= 0 && weekInstances.tasks[instanceIndex]) {
                         weekInstances.tasks.splice(instanceIndex, 1);
                         this.save();
+                        this.notify();
                         return;
                     }
                 }
@@ -246,6 +306,7 @@ export const Store = {
                 if (weekInstances) {
                     weekInstances.tasks = weekInstances.tasks.filter(t => t.templateId !== templateId);
                     this.save();
+                    this.notify();
                     return;
                 }
             }
@@ -408,6 +469,7 @@ export const Store = {
         }
 
         this.save();
+        this.notify();
         return task;
     },
 
@@ -442,6 +504,7 @@ export const Store = {
                 instance.scheduledDay = day;
                 instance.scheduledTime = time;
                 this.save();
+                this.notify();
                 return this.getTask(taskId);
             }
             return null;
@@ -461,6 +524,7 @@ export const Store = {
                 instance.scheduledDay = day;
                 instance.scheduledTime = time;
                 this.save();
+                this.notify();
                 return this.getTask(taskId);
             }
         }
@@ -526,6 +590,7 @@ export const Store = {
             weekInstances.tasks.splice(instanceIndex, 1);
 
             this.save();
+            this.notify();
             return queueTask;
         }
 
@@ -560,6 +625,7 @@ export const Store = {
             state.templates = state.templates.filter(t => t.id !== templateId);
 
             this.save();
+            this.notify();
             return queueTask;
         }
 
@@ -574,6 +640,7 @@ export const Store = {
         if (task) {
             task.completed = !task.completed;
             this.save();
+            this.notify();
         }
         return task;
     },
@@ -592,6 +659,7 @@ export const Store = {
         if (!state.goals) state.goals = {};
         state.goals[day] = goal;
         this.save();
+        this.notify();
     },
 
     /**
@@ -669,6 +737,7 @@ export const Store = {
     resetWeekToTemplate() {
         const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
         this.createWeekFromTemplate(currentWeekId);
+        this.notify();
     },
 
     /**
@@ -834,6 +903,7 @@ export const Store = {
             if (instance) {
                 instance.completed = !instance.completed;
                 this.save();
+                this.notify();
                 return instance;
             }
             return null;
@@ -851,6 +921,7 @@ export const Store = {
                 if (instance) {
                     instance.completed = !instance.completed;
                     this.save();
+                    this.notify();
                     return instance;
                 }
             }
@@ -897,6 +968,7 @@ export const Store = {
             if (instance) {
                 instance.notes = notes;
                 this.save();
+                this.notify();
                 return instance;
             }
             return null;
@@ -915,6 +987,7 @@ export const Store = {
             if (instance) {
                 instance.notes = notes;
                 this.save();
+                this.notify();
                 return instance;
             }
         }
@@ -1208,6 +1281,7 @@ export const Store = {
             }
 
             this.save();
+            this.notify();
             return true;
         } catch (error) {
             console.error('Import failed:', error);

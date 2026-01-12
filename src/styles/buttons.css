@@ -7,108 +7,77 @@
     align-items: center;
     justify-content: center;
     gap: var(--space-sm);
-    padding: 8px 16px;
-    height: 36px;
+    padding: 8px 18px;
+    height: 40px;
     font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-secondary);
+    font-weight: 600;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
     cursor: pointer;
-    transition: all var(--transition-normal);
-    background-color: var(--bg-elevated);
+    transition: all var(--transition-spring);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn:hover {
-    background-color: var(--bg-hover);
-    border-color: var(--border-primary);
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--glass-border-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .btn:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.98);
 }
 
-.btn:disabled,
-.btn.btn-disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-    filter: saturate(0.5);
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-/* Primary Button - Gradient */
+/* Primary Button - Premium Glow Overlay */
 .btn-primary {
     background: var(--accent-gradient);
     color: white;
-    border: none;
-    font-weight: var(--font-weight-semibold);
-    box-shadow: var(--shadow-md), 0 0 20px rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3), 0 0 20px rgba(99, 102, 241, 0.2);
 }
 
 .btn-primary:hover {
-    box-shadow: var(--shadow-lg), 0 0 30px rgba(59, 130, 246, 0.3);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4), 0 0 30px rgba(99, 102, 241, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Secondary Button */
-.btn-secondary {
-    background: var(--bg-tertiary);
-    border-color: var(--border-secondary);
+/* View Toggle - Premium Segmented Control */
+.view-toggle {
+    display: flex;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 4px;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--glass-border);
 }
 
-/* Navigation Buttons */
-.nav-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-md);
+.view-btn {
+    padding: 6px 16px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
     color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: all var(--transition-normal);
 }
 
-.nav-btn:hover {
-    background-color: var(--bg-elevated);
-    color: var(--text-primary);
-    border-color: var(--border-secondary);
-}
-
-/* View Toggle */
-.view-toggle {
-    display: flex;
-    background: var(--bg-secondary);
-    padding: 3px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-primary);
-}
-
-.view-btn {
-    padding: 6px 14px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-tertiary);
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
 .view-btn:hover {
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 .view-btn.active {
-    background: var(--accent-gradient);
-    color: white;
-    font-weight: var(--font-weight-semibold);
+    background: rgba(255, 255, 255, 0.9);
+    color: #0f172a !important;
+    /* Deep dark for contrast on light background */
+    box-shadow: var(--shadow-sm);
+    border: 1px solid white;
 }
 
 /* Sidebar Toggle */
@@ -131,44 +100,64 @@
     background: var(--bg-hover);
 }
 
-/* =========================================
-   BUTTON GROUPS & LABELS
-   ========================================= */
+/* Base Nav Button Style - Ensuring visibility across the app */
+.nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary) !important;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.nav-btn svg {
+    color: var(--text-primary);
+    stroke: currentColor;
+    transition: all var(--transition-normal);
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--glass-border-light);
+    transform: translateY(-1px);
+    color: white !important;
+}
+
+.nav-btn:hover svg {
+    color: var(--accent-secondary);
+    transform: scale(1.1);
+}
 
 /* Button Group - Groups related buttons */
 .btn-group {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px;
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid var(--border-tertiary);
+    gap: 2px;
+    padding: 3px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
+    backdrop-filter: blur(8px);
 }
 
 .btn-group .nav-btn {
-    width: auto;
-    padding: 0 10px;
-    gap: 6px;
     background: transparent;
     border: none;
-}
-
-.btn-group .nav-btn:hover {
-    background: var(--bg-elevated);
+    height: 30px;
     border-radius: var(--radius-md);
 }
 
-/* Header Divider */
-.header-divider {
-    width: 1px;
-    height: 24px;
-    background: linear-gradient(to bottom,
-            transparent 0%,
-            var(--border-secondary) 30%,
-            var(--border-secondary) 70%,
-            transparent 100%);
-    margin: 0 8px;
+.btn-group .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: none;
 }
 
 /* Button Labels */
