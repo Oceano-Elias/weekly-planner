@@ -7,11 +7,20 @@ import { Store } from '../store.js';
 
 export const Filters = {
     selectedDepts: [],
+    selectedPaths: [],
+
+    // Callback for App integration
+    onFilterChange: null,
 
     /**
      * Initialize filters
      */
     init() {
+        // Default to all selected
+        const topLevel = Departments.getTopLevel();
+        this.selectedDepts = [...topLevel];
+        this.selectedPaths = this.selectedDepts.map(d => [d]);
+
         this.render();
 
         // Subscribe to store changes to update task counts
@@ -73,7 +82,7 @@ export const Filters = {
      * Get task count for a department
      */
     getTaskCount(deptName) {
-        const allTasks = window.Store ? window.Store.getAllTasks() : [];
+        const allTasks = Store ? Store.getAllTasks() : [];
         return allTasks.filter(t => t.hierarchy && t.hierarchy[0] === deptName).length;
     },
 
@@ -99,8 +108,7 @@ export const Filters = {
                 // Convert to path format for Calendar filtering
                 filters.selectedPaths = filters.selectedDepts.map(d => [d]);
 
-                if (window.TaskQueue) window.TaskQueue.refresh();
-                if (window.Calendar) window.Calendar.refresh();
+                if (filters.onFilterChange) filters.onFilterChange();
             });
         });
 
@@ -129,8 +137,7 @@ export const Filters = {
         this.selectedDepts = [...topLevel];
         this.selectedPaths = this.selectedDepts.map(d => [d]);
         this.render();
-        if (window.TaskQueue) window.TaskQueue.refresh();
-        if (window.Calendar) window.Calendar.refresh();
+        if (this.onFilterChange) this.onFilterChange();
     },
 
     /**
@@ -140,8 +147,7 @@ export const Filters = {
         this.selectedDepts = [];
         this.selectedPaths = [];
         this.render();
-        if (window.TaskQueue) window.TaskQueue.refresh();
-        if (window.Calendar) window.Calendar.refresh();
+        if (this.onFilterChange) this.onFilterChange();
     },
 
     /**
@@ -151,6 +157,4 @@ export const Filters = {
         this.render();
     },
 
-    // Keep selectedPaths for Calendar compatibility
-    selectedPaths: []
 };

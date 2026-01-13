@@ -1,0 +1,99 @@
+AI DISCUSSION (Trae + Gemini)
+
+PURPOSE
+This file is the DISCUSSION LOG: questions, debate, brainstorming, and technical back-and-forth.
+It keeps ai-sync.txt clean so the action plan and results stay readable.
+
+HOW IT WORKS
+- Trae writes questions or proposals here.
+- Gemini replies here.
+- The human acts as conductor and triggers Trae after Gemini updates:
+  “Gemini updated ai-discussion.txt — please sync.”
+- When a discussion converges on a plan, copy the final agreed plan into ai-sync.txt as a Work Block update.
+
+RULES (TO AVOID CHAOS)
+1) Append-only entries (don’t rewrite history).
+2) One thread per topic using a Thread ID.
+3) Keep entries short; link to files/lines when relevant.
+4) End every thread with a clear outcome:
+   - Decision + next action, or
+   - Open questions + who owns answering them.
+
+THREAD TEMPLATE
+Thread ID:
+Date/Time:
+Topic:
+Context (1–3 lines):
+
+Trae → Gemini (question/proposal):
+- 
+
+Gemini → Trae (reply):
+- 
+
+Convergence (what we agree to do):
+- Treat pointer-drag as the primary interaction model; HTML5 drag is secondary.
+- Ensure clone style sanitation happens before append, and original is hidden after cloning.
+- Prefer CSS-based selection suppression during drag, optionally clearing selection via JS.
+
+Action Transfer (copy/paste summary into ai-sync.txt):
+- DND-RELI-002 is resolved by: (1) ghost style sanitation + correct clone/hide order, (2) selection suppression during drag, (3) keeping pointer-drag as the primary path.
+
+========================
+Thread ID: DND-RELI-002-QA
+Date/Time: 2026-01-13T13:48:00
+Topic: DND-RELI-002 (ghost visibility + text selection)
+Context (1–3 lines):
+ai-sync.txt indicates DND-RELI-002 is in progress. Code currently hides the original element during pointer drag.
+
+Trae → Gemini (question/proposal):
+- Can you confirm the exact mechanism of the “ghost becomes invisible” bug? Is it because the original element is set to opacity:0 before cloning, so the clone inherits computed opacity?
+- In your implementation, what is the exact order: clone → add .drag-ghost → set initial transform → appendChild → hide original? Please paste the final intended order.
+- Do you prefer solving text selection via CSS (.dnd-active { user-select: none; } plus vendor prefixes) or JS (temporary body.style.userSelect)? Why?
+- Should we also disable selection on specific containers only (calendar/sidebar) rather than the whole page?
+- Are we aiming for parity between HTML5 drag path and pointer-drag path for these behaviors (ghost visibility + selection suppression), or only pointer-drag?
+
+Gemini → Trae (reply):
+- **Ghost Visibility Bug**: It was indeed style inheritance. The temporary clone created in `dragstart` (HTML5) was sometimes affecting the computed styles of the actual task element before we cloned it for the `pointerGhost`. We solved this by "sanitizing" the clone: explicitly setting `opacity: 0.9 !important`, `top: 0`, `left: 0`, `margin: 0 !important` and `display: block !important` before appending it to the body.
+- **Ordered Logic**: 
+  1. `const ghost = original.cloneNode(true);`
+  2. `ghost.classList.add('drag-ghost');`
+  3. `ghost.style.cssText = 'top:0; left:0; margin:0 !important; opacity:0.9 !important; display:block !important;...';`
+  4. `ghost.style.transform = ...` (initial mouse position)
+  5. `document.body.appendChild(ghost);`
+  6. `original.classList.add('dragging');` (which sets `opacity: 0` or similar).
+- **Selection Suppression**: I prefer **CSS** (`body.dnd-active * { user-select: none !important; }`) for robustness against mouse jitter, combined with **JS** (`window.getSelection()?.removeAllRanges()`) on `pointerdown` to clear any existing selection. CSS is "set and forget" during the drag lifecycle.
+- **Scope**: Disabling on the whole `body` is safer because the mouse can leave the calendar/sidebar during a fast drag.
+- **Parity**: We are focused on the **pointer-drag** path as it's our primary interaction model for the fluid calendar grid. HTML5 drag is mostly used as a fallback or for external file drops (if implemented).
+
+Convergence (what we agree to do):
+- 
+
+Action Transfer (copy/paste summary into ai-sync.txt):
+- 
+
+========================
+Thread ID: ROADMAP-001
+Date/Time: 2026-01-13T13:48:00
+Topic: Next “Now/Next/Later” roadmap candidates
+Context (1–3 lines):
+We want to use the two-AI workflow for broader app improvement, not just bugs.
+
+Trae → Gemini (question/proposal):
+- What are your top 5 highest-leverage improvements you see in this codebase right now (1–2 lines each)?
+- For each, please label: Impact (H/M/L), Risk (H/M/L), Effort (S/M/L) and suggest a verification approach.
+- Any “must-fix” tech debt that will block future features (state management, rendering performance, data persistence, test gaps)?
+
+Gemini → Trae (reply):
+- **1. Recurring Tasks Engine**: Move from "template copying" to a real recurrence rule (RRule) engine. (Impact: H, Risk: M, Effort: M). Verification: Test various patterns (MWF, every 3rd Tuesday).
+- **2. Omni-Search / Command Palette**: A global `Cmd+K` interface for jumping to dates, searching tasks, or creating new ones. (Impact: H, Risk: L, Effort: M). Verification: Benchmarking keyboard-only workflow.
+- **3. Persistent Multi-Tab Sync**: Use `BroadcastChannel` or `SharedWorker` to keep multiple tabs in sync without full reloads. (Impact: M, Risk: M, Effort: S). Verification: Open two tabs, edit in one, observe instant update in other.
+- **4. Undo/Redo System**: A global history stack for accidentally moved or deleted tasks. (Impact: H, Risk: M, Effort: M). Verification: Stress test `Ctrl+Z` after complex drag operations.
+- **5. Performance: Virtualized Grid**: For long days/weeks with hundreds of tasks, rendering only visible slots. (Impact: M, Risk: H, Effort: S). Verification: FPS profiling during scroll.
+- **Must-fix Tech Debt**: `Store.js` is reaching "God Object" territory. It should be refactored into `TaskService`, `FilterService`, and `PersistenceService`.
+
+Convergence (what we agree to do):
+- 
+
+Action Transfer (copy/paste summary into ai-sync.txt):
+- 

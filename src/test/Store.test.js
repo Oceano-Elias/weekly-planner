@@ -70,4 +70,28 @@ describe('Store', () => {
         expect(Store.getState().currentWeekStart).toBeDefined();
         expect(callback).toHaveBeenCalled();
     });
+
+    it('should persist drag-and-drop scheduling changes immediately when requested', () => {
+        vi.useFakeTimers();
+        const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+
+        Store.addTask({ title: 'DnD Task', duration: 60, dept1: 'WORK' });
+        const task = Store.getState().tasks[0];
+        setItemSpy.mockClear();
+
+        Store.scheduleTask(task.id, 'monday', '08:00');
+        expect(setItemSpy).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1000);
+        expect(setItemSpy).toHaveBeenCalled();
+
+        setItemSpy.mockClear();
+        Store.scheduleTask(task.id, 'monday', '09:00', true);
+        expect(setItemSpy).toHaveBeenCalled();
+
+        setItemSpy.mockClear();
+        Store.unscheduleTask(task.id, true);
+        expect(setItemSpy).toHaveBeenCalled();
+
+        vi.useRealTimers();
+    });
 });

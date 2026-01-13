@@ -5,9 +5,14 @@
 import { Store } from '../store.js';
 import { TaskCard } from './TaskCard.js';
 import { ConfirmModal } from './ConfirmModal.js';
+import { Filters } from './Filters.js';
+import { Analytics } from './Analytics.js';
 
 export const TaskQueue = {
     searchTerm: '',
+
+    // Callbacks for App integration
+    onEditTask: null,
 
     /**
      * Initialize the task queue
@@ -70,11 +75,11 @@ export const TaskQueue = {
 
                 searchBar.style.display = tabName === 'queue' ? 'block' : 'none';
 
-                if (tabName === 'analytics' && window.Analytics) {
-                    window.Analytics.render();
+                if (tabName === 'analytics' && Analytics) {
+                    Analytics.render();
                 }
-                if (tabName === 'filters' && window.Filters) {
-                    window.Filters.refresh();
+                if (tabName === 'filters' && Filters) {
+                    Filters.refresh();
                 }
             });
         });
@@ -88,17 +93,18 @@ export const TaskQueue = {
         let tasks = Store.getQueueTasks();
 
         // Get active filters
-        const activeFilters = window.Filters ? window.Filters.selectedPaths : [];
+        const activeFilters = Filters ? Filters.selectedPaths : [];
 
         // Apply filters
-        if (activeFilters.length > 0 || this.searchTerm) {
+        if (Filters || this.searchTerm) {
             tasks = tasks.filter(task => {
                 if (this.searchTerm && !task.title.toLowerCase().includes(this.searchTerm)) {
                     return false;
                 }
 
-                if (activeFilters.length > 0) {
-                    return activeFilters.some(filterPath => {
+                if (Filters && Filters.selectedPaths) {
+                    if (Filters.selectedPaths.length === 0) return false;
+                    return Filters.selectedPaths.some(filterPath => {
                         if (!task.hierarchy) return false;
                         for (let i = 0; i < filterPath.length; i++) {
                             if (task.hierarchy[i] !== filterPath[i]) return false;
@@ -181,10 +187,19 @@ export const TaskQueue = {
 
             block.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
-                if (window.App && window.App.editTask) {
-                    window.App.editTask(taskId);
+                if (this.onEditTask) {
+                    this.onEditTask(taskId);
                 }
             });
+
+            // Focus button listener
+            const focusBtn = block.querySelector('.task-focus-trigger');
+            if (focusBtn) {
+                focusBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (window.FocusMode) window.FocusMode.open(taskId);
+                });
+            }
 
             block.addEventListener('contextmenu', (e) => {
                 e.preventDefault();

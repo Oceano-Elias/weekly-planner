@@ -10,7 +10,7 @@ export const UpdateNotification = {
      */
     init() {
         this.createContainer();
-        this.setupListeners();
+        if (import.meta.env.PROD) this.setupListeners();
     },
 
     /**

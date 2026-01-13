@@ -1,10 +1,10 @@
-{
+{ 
     "name": "weekly-planner-v3",
     "private": true,
     "version": "1.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite --port 5174",
+        "dev": "vite --port 5174 --strictPort",
         "build": "vite build",
         "build-single": "VITE_SINGLEFILE=true vite build",
         "export": "npm run build-single && node patch-portable.js && echo 'Exported to dist/index.html'",

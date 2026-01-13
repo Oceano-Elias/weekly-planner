@@ -241,8 +241,11 @@
             </div>
             <div class="modal-body">
                 <form id="taskForm">
-                    <!-- Task Title is auto-generated from department selection -->
-                    <input type="hidden" id="taskTitle">
+                    <!-- Task Title -->
+                    <div class="form-group">
+                        <label class="form-label" for="taskTitle">Task Title *</label>
+                        <input type="text" class="form-input" id="taskTitle" placeholder="Enter task title..." required>
+                    </div>
 
 
 
@@ -353,7 +356,7 @@
                 <div class="shortcut-group">
                     <h4>Tasks</h4>
                     <div class="shortcut-item"><kbd>N</kbd> <span>New Task</span></div>
-                    <div class="shortcut-item"><kbd>F</kbd> <span>Focus Mode</span></div>
+                    <div class="shortcut-item"><kbd>F</kbd> <span>Focus</span></div>
                     <div class="shortcut-item"><kbd>⌘</kbd> + <kbd>Enter</kbd> <span>Save Task</span></div>
                 </div>
                 <div class="shortcut-group">

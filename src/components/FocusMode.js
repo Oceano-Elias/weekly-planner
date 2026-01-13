@@ -124,26 +124,32 @@ export const FocusMode = {
                     </div>
 
                     <div class="focus-section">
+                        <div class="section-label">Quest Steps</div>
                         <ul class="focus-checklist">
                             ${this.renderChecklist(task.notes || '')}
                         </ul>
                         <div class="add-minitask-container">
                             <button class="add-minitask-btn" id="addMiniTaskBtn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 5v14M5 12h14"/>
-                                </svg>
-                                Add Step ${this.getStepCount(task.notes) + 1}
+                                <div class="add-icon-plus">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M12 5v14M5 12h14"/>
+                                    </svg>
+                                </div>
+                                <span>Add Quest Step ${this.getStepCount(task.notes) + 1}</span>
                             </button>
                             <div class="add-minitask-input-wrap" id="addMiniTaskInput" style="display: none;">
-                                <input type="text" class="add-minitask-input" id="miniTaskInput" placeholder="What needs to be done?">
-                                <button class="add-minitask-confirm" id="confirmMiniTask">Add</button>
+                                <input type="text" class="add-minitask-input" id="miniTaskInput" placeholder="Enter quest step...">
+                                <button class="add-minitask-confirm" id="confirmMiniTask">Commit</button>
                             </div>
                         </div>
                     </div>
 
                     <div class="focus-footer">
-                        <button class="btn btn-primary focus-complete-btn" id="focusDoneBtn">
-                            ${task.completed ? 'Re-open Task' : 'Mark as Complete'}
+                        <button class="focus-commit-btn" id="focusDoneBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <span>${task.completed ? 'Re-open Quest' : 'Complete Quest'}</span>
                         </button>
                     </div>
                 </div>
@@ -196,12 +202,13 @@ export const FocusMode = {
             addInput.style.display = 'none';
             miniTaskInput.value = '';
             // Update button text to show next step number
-            const stepCount = this.getStepCount(task.notes);
             addBtn.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5v14M5 12h14"/>
-                </svg>
-                Add Step ${stepCount + 1}
+                <div class="add-icon-plus">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </div>
+                <span>Add Quest Step ${stepCount + 1}</span>
             `;
         }
     },
@@ -218,18 +225,29 @@ export const FocusMode = {
         return lines.map((line, index) => {
             const isCompleted = line.includes('[x]');
             const cleanText = line.replace(/\[[ x]\]\s*/, '').trim();
+            const isLast = index === lines.length - 1;
 
             return `
-                <li class="checklist-item ${isCompleted ? 'done' : ''}" data-index="${index}">
-                    <div class="checkbox ${isCompleted ? 'checked' : ''}">
-                        ${isCompleted ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' : ''}
+                <li class="checklist-item ${isCompleted ? 'done' : ''} ${isLast ? 'last-item' : ''}" data-index="${index}">
+                    <div class="quest-connector">
+                        <div class="quest-icon">
+                            ${isCompleted ?
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>' :
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>'
+                }
+                        </div>
                     </div>
-                    <span class="step-text">${PlannerService.escapeHtml(cleanText)}</span>
-                    <button class="delete-minitask" data-index="${index}" title="Delete">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12"/>
-                        </svg>
-                    </button>
+                    <div class="quest-card-content">
+                        <div class="checkbox ${isCompleted ? 'checked' : ''}">
+                            ${isCompleted ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' : ''}
+                        </div>
+                        <span class="step-text">${PlannerService.escapeHtml(cleanText)}</span>
+                        <button class="delete-minitask" data-index="${index}" title="Remove Step">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
                 </li>
             `;
         }).join('');
@@ -276,6 +294,8 @@ export const FocusMode = {
                 window.Calendar.checkDailyCelebration(scheduledDay);
             }
 
+            if (window.Calendar) window.Calendar.refresh();
+            if (window.TaskQueue) window.TaskQueue.refresh();
             this.close();
         });
 
@@ -292,11 +312,6 @@ export const FocusMode = {
         const floatBtn = document.getElementById('pomodoroFloat');
         if (floatBtn) {
             floatBtn.addEventListener('click', () => this.openFloatingTimer());
-        }
-
-        // Request notification permission if not yet decided
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
         }
 
         checklistItems.forEach(item => {
@@ -351,11 +366,6 @@ export const FocusMode = {
                 // Don't close if typing in an input
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 this.close();
-            } else if (e.key === ' ' || e.code === 'Space') {
-                // Space to start/pause timer
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-                e.preventDefault();
-                this.startPauseTimer();
             }
         };
         document.addEventListener('keydown', this.activeKeyHandler);
@@ -374,6 +384,7 @@ export const FocusMode = {
 
         Store.updateTaskNotesForWeek(this.activeTaskId, updatedNotes);
         this.updateChecklist();
+        if (window.Calendar) window.Calendar.refresh();
     },
 
     /**
@@ -485,25 +496,9 @@ export const FocusMode = {
                 if (remaining <= 0) {
                     this.switchMode();
                 }
-                this.updateAppBadge();
             }, 1000);
             this.persistTimerState();
             this.updateFloatingTimer();
-            this.updateAppBadge();
-        }
-    },
-
-    /**
-     * Update the App Badge (dock/taskbar icon) with remaining minutes
-     */
-    updateAppBadge() {
-        if ('setAppBadge' in navigator) {
-            if (this.pomodoroRunning && this.pomodoroSeconds > 0) {
-                const mins = Math.ceil(this.pomodoroSeconds / 60);
-                navigator.setAppBadge(mins).catch(() => { });
-            } else {
-                navigator.clearAppBadge().catch(() => { });
-            }
         }
     },
 
@@ -527,7 +522,6 @@ export const FocusMode = {
         this.updateTimerDisplay();
         this.persistTimerState();
         this.updateFloatingTimer();
-        this.updateAppBadge();
     },
 
     /**
@@ -540,26 +534,17 @@ export const FocusMode = {
         if (this.pomodoroMode === 'work') {
             this.pomodoroMode = 'break';
             this.pomodoroSeconds = this.breakDuration;
-            this.playTransitionSound();
             // Play notification sound or show notification
             if (Notification.permission === 'granted') {
-                new Notification('🎉 Focus session complete!', {
-                    body: 'Time for a break. Excellent work!',
-                    icon: './icon.png'
-                });
+                new Notification('🎉 Focus session complete!', { body: 'Time for a break.' });
             }
         } else {
             this.pomodoroMode = 'work';
             this.pomodoroSeconds = this.workDuration;
-            this.playTransitionSound();
             if (Notification.permission === 'granted') {
-                new Notification('💪 Break over!', {
-                    body: 'Ready to focus again? Your timer is reset.',
-                    icon: './icon.png'
-                });
+                new Notification('💪 Break over!', { body: 'Ready to focus again?' });
             }
         }
-        this.updateAppBadge();
 
         const btn = document.getElementById('pomodoroStartPause');
         if (btn) {
@@ -784,39 +769,6 @@ export const FocusMode = {
             try { this.badgeEl.remove(); } catch { }
             this.badgeEl = null;
         }
-    },
-
-    /**
-     * Play a gentle chime for session transitions
-     */
-    playTransitionSound() {
-        try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (!AudioCtx) return;
-
-            const ctx = new AudioCtx();
-            const masterGain = ctx.createGain();
-            masterGain.connect(ctx.destination);
-            masterGain.gain.setValueAtTime(0.3, ctx.currentTime);
-
-            // Gentle Sine Wave Chime
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(masterGain);
-
-            osc.type = 'sine';
-            const freq = this.pomodoroMode === 'break' ? 880 : 1320; // A5 for break, E6 for work
-            osc.frequency.setValueAtTime(freq, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(freq * 0.8, ctx.currentTime + 0.5);
-
-            gain.gain.setValueAtTime(0, ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-
-            osc.start();
-            osc.stop(ctx.currentTime + 1);
-        } catch (e) { }
     },
 
 };

@@ -30,6 +30,10 @@
    DRAG AND DROP STATES
    ========================================= */
 
+.dnd-active .calendar-task {
+    pointer-events: none;
+}
+
 .drag-over {
     background: var(--bg-active) !important;
 }

@@ -71,11 +71,18 @@ export class TaskCard {
         : '';
 
       el.innerHTML = `
-        <button class="task-delete" title="Delete">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
+        <div class="task-actions">
+          <button class="task-action-btn task-focus-trigger" title="Focus (F)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+            </svg>
+          </button>
+          <button class="task-delete" title="Delete">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
         <div class="task-header task-header-row">
           <div class="task-header-left">
             <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>
@@ -113,11 +120,18 @@ export class TaskCard {
       const headerStepProgress = isDayView ? stepProgressHtml : '';
 
       el.innerHTML = `
-        <button class="task-delete" title="Delete">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
+        <div class="task-actions">
+          <button class="task-action-btn task-focus-trigger" title="Focus (F)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+            </svg>
+          </button>
+          <button class="task-delete" title="Delete">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
         <div class="task-header task-header-row">
           <div class="task-header-left">
             <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>

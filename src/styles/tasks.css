@@ -715,3 +715,32 @@
 .task-queue .task-block:hover .task-title {
     color: var(--text-primary);
 }
+
+/* =========================================
+   DRAG GHOST - Smoother Pointer Dragging
+   ========================================= */
+.drag-ghost {
+    position: fixed !important;
+    pointer-events: none !important;
+    z-index: 2147483647 !important;
+    margin: 0 !important;
+    transition: none !important;
+    animation: none !important;
+    will-change: transform;
+    opacity: 0.9 !important;
+    display: block !important;
+    visibility: visible !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+    border: 2px solid var(--task-color) !important;
+    background: var(--bg-secondary) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    overflow: hidden;
+}
+
+/* Prevent selection during drag globally */
+body.dnd-active,
+body.dnd-active * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}

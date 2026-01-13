@@ -35,18 +35,8 @@ import './styles/modal.css';
 import './styles/confirm-modal.css';
 import './styles/settings.css';
 
-// Make modules available globally for cross-module communication
-window.Store = Store;
-window.Calendar = Calendar;
-window.TaskQueue = TaskQueue;
-window.DragDrop = DragDrop;
-window.Filters = Filters;
-window.Analytics = Analytics;
-window.Departments = Departments;
-window.FocusMode = FocusMode;
-window.DepartmentSettings = DepartmentSettings;
-window.Confetti = Confetti;
-window.WeeklySummary = WeeklySummary;
+// Export modules for use in other components without window pollution
+export { App };
 
 const App = {
     selectedDuration: 60,
@@ -116,31 +106,88 @@ const App = {
     },
 
     /**
-     * Initialize the application
+     * Initialize the application with Error Boundary
      */
     init() {
-        Store.init();
-        Calendar.init();
-        TaskQueue.init();
-        DragDrop.init();
-        Filters.init();
+        try {
+            // Expose for debugging
+            window.Store = Store;
+            window.Calendar = Calendar;
+            window.DragDrop = DragDrop;
+            window.Filters = Filters;
+            window.FocusMode = FocusMode;
+            window.Confetti = Confetti;
 
-        this.setupModal();
-        this.setupForm();
-        this.setupSidebar();
-        this.setupTemplateActions();
-        this.setupPrintActions();
-        this.setupSettings();
-        this.setupKeyboardShortcuts();
-        this.updateBadgeCounts();
-        this.setupFavicon();
-        this.displayVersion();
-        if (window.FocusMode && typeof window.FocusMode.restoreTimerState === 'function') {
-            window.FocusMode.restoreTimerState();
-            if (window.FocusMode.pomodoroRunning && !window.FocusMode.isOpen) {
-                window.FocusMode.showBadge();
+            console.log('App initialized successfully');
+            Store.init();
+
+            // Wire up callbacks to avoid global pollution
+            Calendar.onEditTask = (id) => this.editTask(id);
+            Calendar.onOpenModalWithSchedule = (d, t, m) => this.openModalWithSchedule(d, t, m);
+            Calendar.onPlayCompletionAnimation = (el) => this.playCompletionAnimation(el);
+
+            TaskQueue.onEditTask = (id) => this.editTask(id);
+
+            Filters.onFilterChange = () => {
+                Calendar.refresh();
+                TaskQueue.refresh();
+            };
+
+            FocusMode.onCelebration = () => {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                Confetti.burst(width / 2, height / 2, 60);
+            };
+            FocusMode.onDailyCelebration = (day) => Calendar.checkDailyCelebration(day);
+            FocusMode.onRefresh = () => Calendar.refresh();
+
+            Calendar.init();
+            TaskQueue.init();
+            DragDrop.init();
+            Filters.init();
+
+            this.setupModal();
+            this.setupForm();
+            this.setupSidebar();
+            this.setupTemplateActions();
+            this.setupPrintActions();
+            this.setupSettings();
+            this.setupKeyboardShortcuts();
+            this.updateBadgeCounts();
+            this.setupFavicon();
+            this.displayVersion();
+
+            if (FocusMode && typeof FocusMode.restoreTimerState === 'function') {
+                FocusMode.restoreTimerState();
+                if (FocusMode.pomodoroRunning && !FocusMode.isOpen) {
+                    FocusMode.showBadge();
+                }
             }
+
+            console.log('[App] Initialization complete');
+        } catch (error) {
+            console.error('[App] CRITICAL ERROR DURING INIT:', error);
+            this.handleCriticalError(error);
         }
+    },
+
+    /**
+     * Fallback UI for critical failures
+     */
+    handleCriticalError(error) {
+        document.body.innerHTML = `
+            <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0f172a; color: white; font-family: sans-serif; text-align: center; padding: 2rem;">
+                <h1 style="color: #ef4444; font-size: 2rem; margin-bottom: 1rem;">System Error</h1>
+                <p style="color: #94a3b8; max-width: 500px; line-height: 1.6;">The Weekly Planner failed to start. This might be due to corrupted data in your browser's storage.</p>
+                <div style="margin: 2rem 0; padding: 1rem; background: #1e293b; border-radius: 8px; text-align: left; font-family: monospace; font-size: 0.8rem; width: 100%; max-width: 600px; overflow: auto; border: 1px solid #334155;">
+                    ${error.stack || error.message}
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="localStorage.clear(); location.reload();" style="background: #ef4444; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Clear Data & Reset App</button>
+                    <button onclick="location.reload();" style="background: #334155; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Try Reloading</button>
+                </div>
+            </div>
+        `;
     },
 
     /**
@@ -462,6 +509,12 @@ const App = {
         }
 
         this.updateHierarchyPreview();
+
+        // Auto-fill title if empty or matches previous auto-gen
+        const titleInput = document.getElementById('taskTitle');
+        if (titleInput && hierarchy.length > 0) {
+            titleInput.value = hierarchy[hierarchy.length - 1];
+        }
     },
 
     /**
@@ -553,8 +606,9 @@ const App = {
             return;
         }
 
-        // Auto-generate title from deepest hierarchy level
-        const title = hierarchy[hierarchy.length - 1];
+        // Use manual title or auto-generate from deepest hierarchy level
+        const titleInput = document.getElementById('taskTitle');
+        const title = titleInput.value.trim() || hierarchy[hierarchy.length - 1];
 
         // Build notes from pending steps
         let notes = '';
@@ -949,9 +1003,6 @@ const App = {
     }
 };
 
-// Make App global
-window.App = App;
-
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
@@ -959,15 +1010,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Update Notification component
     UpdateNotification.init();
 
-    // Register Service Worker (works on HTTPS and localhost)
-    if ('serviceWorker' in navigator) {
+    if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations()
+            .then(registrations => Promise.all(registrations.map(r => r.unregister())))
+            .catch(() => { });
+
+        if (typeof caches !== 'undefined') {
+            caches.keys()
+                .then(names => Promise.all(names.map(name => caches.delete(name))))
+                .catch(() => { });
+        }
+    }
+
+    if (import.meta.env.PROD && 'serviceWorker' in navigator) {
         const isLocalhost = window.location.hostname === 'localhost' ||
             window.location.hostname === '127.0.0.1';
         const isHttps = window.location.protocol === 'https:';
 
         if (isHttps || isLocalhost) {
             window.addEventListener('load', () => {
-                // Detect base path from current URL (works on GitHub Pages and localhost)
                 const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
                 const swPath = basePath + 'sw.js';
 
@@ -975,7 +1036,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     .then(registration => {
                         console.log('[App] Service Worker registered at:', swPath);
 
-                        // Check for updates every 60 seconds when online
                         setInterval(() => {
                             if (navigator.onLine) {
                                 registration.update();

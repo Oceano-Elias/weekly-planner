@@ -23,16 +23,13 @@ export const Calendar = {
     /**
      * Set the view mode
      */
-    setViewMode(mode, index = null) {
+    setViewMode(mode) {
         this.viewMode = mode;
-        if (mode === 'day') {
-            if (index !== null) {
-                this.selectedDayIndex = index;
-            } else if (this.selectedDayIndex === undefined || this.selectedDayIndex === null) {
-                const weekDates = this.getWeekDates();
-                const todayIndex = weekDates.findIndex(d => this.isToday(d));
-                this.selectedDayIndex = todayIndex !== -1 ? todayIndex : 0;
-            }
+        // Only set today if index is null OR we want to reset to today
+        if (mode === 'day' && (this.selectedDayIndex === null || this.selectedDayIndex === undefined)) {
+            const weekDates = this.getWeekDates();
+            const todayIndex = weekDates.findIndex(d => this.isToday(d));
+            this.selectedDayIndex = todayIndex !== -1 ? todayIndex : 0;
         }
         this.renderHeader();
         this.renderGrid();
@@ -48,12 +45,6 @@ export const Calendar = {
         this.setupNavigation();
         this.setupViewToggle();
         this.setupProgressTimer();
-
-        // Subscribe to store changes for automatic UI updates
-        Store.subscribe(() => {
-            console.log('Calendar: Store updated, refreshing UI...');
-            this.refresh();
-        });
     },
 
     /**
@@ -125,12 +116,8 @@ export const Calendar = {
      */
     renderHeader() {
         const header = document.getElementById('calendarHeader');
-        if (!header) return;
-
         const dates = this.getWeekDates();
         const goals = Store.getGoals();
-        const weekId = Store.getWeekIdentifier(this.currentWeekStart);
-        const weekTasks = Store.getTasksForWeek(weekId);
 
         let html = '<div class="calendar-header-cell"></div>';
 
@@ -140,25 +127,16 @@ export const Calendar = {
                 const dayName = this.days[index];
                 const goal = goals[dayName] || '';
 
-                // Calculate day progress
-                const dayTasks = weekTasks.filter(t => t.scheduledDay === dayName);
-                const total = dayTasks.length;
-                const completed = dayTasks.filter(t => t.completed).length;
-                const progress = total > 0 ? (completed / total) * 100 : 0;
-
                 html += `
-                    <div class="calendar-header-cell day-header-clickable" data-index="${index}">
-                        <div class="calendar-day-name">${this.dayLabels[index]}</div>
-                        <div class="calendar-day-date ${isToday ? 'today' : ''}">${date.getDate()}</div>
-                        <div class="calendar-day-progress-container">
-                            <div class="calendar-day-progress-bar" style="width: ${progress}%"></div>
-                        </div>
-                        <input type="text" class="calendar-day-goal" 
-                               placeholder="Add goal..." 
-                               data-day="${dayName}"
-                               value="${goal.replace(/"/g, '&quot;')}">
-                    </div>
-                `;
+          <div class="calendar-header-cell day-header-nav" data-index="${index}">
+            <div class="calendar-day-name">${this.dayLabels[index]}</div>
+            <div class="calendar-day-date ${isToday ? 'today' : ''}">${date.getDate()}</div>
+            <input type="text" class="calendar-day-goal" 
+                   placeholder="Add goal..." 
+                   data-day="${dayName}"
+                   value="${goal.replace(/"/g, '&quot;')}">
+          </div>
+        `;
             });
             header.style.gridTemplateColumns = `var(--calendar-time-col, 60px) repeat(7, 1fr)`;
         } else {
@@ -167,12 +145,6 @@ export const Calendar = {
             const isToday = this.isToday(date);
             const dayName = this.days[index];
             const goal = goals[dayName] || '';
-
-            // Calculate day progress
-            const dayTasks = weekTasks.filter(t => t.scheduledDay === dayName);
-            const total = dayTasks.length;
-            const completed = dayTasks.filter(t => t.completed).length;
-            const progress = total > 0 ? (completed / total) * 100 : 0;
 
             // Format date nicely
             const dateStr = date.toLocaleDateString('en-US', {
@@ -190,24 +162,21 @@ export const Calendar = {
             });
 
             html += `
-                <div class="calendar-header-cell day-view-header-new">
-                    <div class="day-header-left">
-                        <span class="day-header-date ${isToday ? 'today' : ''}">${dateStr}</span>
-                        <div class="calendar-day-progress-container day-view-progress">
-                            <div class="calendar-day-progress-bar" style="width: ${progress}%"></div>
-                        </div>
-                    </div>
-                    <div class="day-header-center">
-                        <input type="text" class="day-header-goal" 
-                               placeholder="🎯 Set today's goal..." 
-                               data-day="${dayName}"
-                               value="${goal.replace(/"/g, '&quot;')}">
-                    </div>
-                    <div class="day-header-right">
-                        <span class="day-header-clock" id="dayHeaderClock">${timeStr}</span>
-                    </div>
-                </div>
-            `;
+        <div class="calendar-header-cell day-view-header-new">
+          <div class="day-header-left">
+            <span class="day-header-date ${isToday ? 'today' : ''}">${dateStr}</span>
+          </div>
+          <div class="day-header-center">
+            <input type="text" class="day-header-goal" 
+                   placeholder="🎯 Set today's goal..." 
+                   data-day="${dayName}"
+                   value="${goal.replace(/"/g, '&quot;')}">
+          </div>
+          <div class="day-header-right">
+            <span class="day-header-clock" id="dayHeaderClock">${timeStr}</span>
+          </div>
+        </div>
+      `;
             header.style.gridTemplateColumns = `var(--calendar-time-col, 60px) 1fr`;
 
             // Start clock update timer
@@ -215,33 +184,29 @@ export const Calendar = {
         }
 
         header.innerHTML = html;
-        const weekDisplay = document.getElementById('weekDisplay');
-        if (weekDisplay) weekDisplay.textContent = this.formatWeekDisplay();
+        document.getElementById('weekDisplay').textContent = this.formatWeekDisplay();
         this.setupGoalListeners();
-        this.setupHeaderClickListeners();
+        this.setupHeaderNavigation();
     },
 
     /**
-     * Setup click listeners for date headers in week view
+     * Setup navigation when clicking day headers
      */
-    setupHeaderClickListeners() {
-        if (this.viewMode !== 'week') return;
-
-        const headerCells = document.querySelectorAll('.day-header-clickable');
-        headerCells.forEach(cell => {
+    setupHeaderNavigation() {
+        const header = document.getElementById('calendarHeader');
+        header.querySelectorAll('.day-header-nav').forEach(cell => {
             cell.addEventListener('click', (e) => {
                 // Don't trigger if clicking the goal input
-                if (e.target.classList.contains('calendar-day-goal')) return;
+                if (e.target.tagName === 'INPUT') return;
 
                 const index = parseInt(cell.dataset.index);
+                this.selectedDayIndex = index;
+                this.setViewMode('day');
 
-                // Sync UI buttons
-                const viewBtns = document.querySelectorAll('.view-btn');
-                viewBtns.forEach(btn => {
+                // Update UI buttons
+                document.querySelectorAll('.view-btn').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.view === 'day');
                 });
-
-                this.setViewMode('day', index);
             });
         });
     },
@@ -335,8 +300,9 @@ export const Calendar = {
         document.querySelectorAll('.calendar-task').forEach(el => el.remove());
 
         // Apply filter if any filters are selected
-        if (window.Filters && window.Filters.selectedPaths.length > 0) {
+        if (window.Filters) {
             tasks = tasks.filter(task => {
+                if (window.Filters.selectedPaths.length === 0) return false;
                 if (!task.hierarchy || task.hierarchy.length === 0) return false;
                 return window.Filters.selectedPaths.some(filterPath => {
                     if (filterPath.length > task.hierarchy.length) return false;
@@ -348,9 +314,6 @@ export const Calendar = {
         tasks.forEach(task => {
             this.renderTask(task);
         });
-
-        // Also update the day progress bars in the header
-        this.renderHeader();
     },
 
     /**
@@ -377,7 +340,9 @@ export const Calendar = {
         taskEl.style.height = `${height}px`;
 
         const card = new TaskCard(task);
-        taskEl.appendChild(card.render({ isDayView: this.viewMode === 'day', isCompact }));
+        const taskBlockEl = card.render({ isDayView: this.viewMode === 'day', isCompact });
+        taskBlockEl.draggable = false;
+        taskEl.appendChild(taskBlockEl);
 
         // Add progress overlay
         if (!task.completed) {
@@ -404,6 +369,15 @@ export const Calendar = {
                 window.App.editTask(task.id);
             }
         });
+
+        // Focus button listener
+        const focusBtn = taskEl.querySelector('.task-focus-trigger');
+        if (focusBtn) {
+            focusBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (window.FocusMode) window.FocusMode.open(task.id);
+            });
+        }
 
         block.addEventListener('contextmenu', (e) => {
             e.preventDefault();
@@ -434,8 +408,10 @@ export const Calendar = {
                 this.checkDailyCelebration(task.scheduledDay);
             }
 
+            // Delay refresh to allow animation to play
             setTimeout(() => {
                 this.renderScheduledTasks();
+                if (window.TaskQueue) window.TaskQueue.refresh();
             }, 500);
         });
 
@@ -447,6 +423,8 @@ export const Calendar = {
                 if (confirmed) {
                     Store.deleteTask(task.id);
                     this.renderScheduledTasks();
+                    if (window.TaskQueue) window.TaskQueue.refresh();
+                    if (window.Filters) window.Filters.refresh();
                 }
             });
         }
