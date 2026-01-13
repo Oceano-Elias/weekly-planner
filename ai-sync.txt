@@ -160,5 +160,31 @@ Assignments:
 - Gemini: Audit `main.js`, `Calendar.js`, and `index.html` to find and fix reverts.
 
 Outcome:
-- Status: In Progress
-- Next move: Investigating `Calendar.js` for date clicks and `main.js` for filters/modal.
+- Status: Done
+- Verification: Validated Focus Mode (Quest-style), Date Navigation (clicks open correct day), and Filters (Clear All hides tasks).
+- Next move: Proceed to Roadmap 2026 execution.
+
+========================
+WORK BLOCK: ROADMAP 2026 - PRIORITIZATION
+========================
+ID: ROADMAP-2026-001
+Date/Time: 2026-01-13T13:42:00
+Owner (overall): Gemini
+Type: Planning | Architecture
+Priority: P1
+
+Goal: 
+1) Prioritize high-leverage improvements for the 2026 cycle.
+2) Identify and mitigate structural tech debt in state management.
+
+Decisions (Converged in ROADMAP-001):
+- Prioritize **Recurring Tasks Engine** (RRule) and **Undo/Redo System**.
+- Refactor `Store.js` into specialized services (`TaskService`, `FilterService`, `PersistenceService`).
+- Secondary focus: Omni-Search (Cmd+K) and Multi-Tab sync.
+
+Assignments:
+- Trae/Gemini: Design the `TaskService` interface to decouple business logic from `Store.js`.
+
+Outcome:
+- Status: Done
+- Next move: Await human trigger to start the first refined architecture block (Store refactoring).
