@@ -103,9 +103,9 @@ export const TaskQueue = {
                 }
 
                 if (Filters && Filters.selectedPaths) {
-                    if (Filters.selectedPaths.length === 0) return false;
+                    if (Filters.selectedPaths.length === 0) return true;
                     return Filters.selectedPaths.some(filterPath => {
-                        if (!task.hierarchy) return false;
+                        if (!task.hierarchy || task.hierarchy.length === 0) return true;
                         for (let i = 0; i < filterPath.length; i++) {
                             if (task.hierarchy[i] !== filterPath[i]) return false;
                         }
@@ -177,6 +177,7 @@ export const TaskQueue = {
         tasks.forEach(task => {
             const card = new TaskCard(task);
             const el = card.render({ isDayView: false, isCompact: false });
+            el.draggable = false;
             container.appendChild(el);
         });
 

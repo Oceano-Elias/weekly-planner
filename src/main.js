@@ -111,6 +111,7 @@ const App = {
     init() {
         try {
             // Expose for debugging
+            window.App = this;
             window.Store = Store;
             window.Calendar = Calendar;
             window.DragDrop = DragDrop;
@@ -289,6 +290,10 @@ const App = {
             }
         });
         this.updateHierarchyPreview();
+
+        // Set title explicitly for edit mode
+        const titleInput = document.getElementById('taskTitle');
+        if (titleInput) titleInput.value = task.title;
 
         // Set duration
         const durationStr = task.duration.toString();
@@ -510,10 +515,10 @@ const App = {
 
         this.updateHierarchyPreview();
 
-        // Auto-fill title if empty or matches previous auto-gen
+        // Auto-fill title from the most specific hierarchy level
         const titleInput = document.getElementById('taskTitle');
-        if (titleInput && hierarchy.length > 0) {
-            titleInput.value = hierarchy[hierarchy.length - 1];
+        if (titleInput) {
+            titleInput.value = hierarchy.length > 0 ? hierarchy[hierarchy.length - 1] : '';
         }
     },
 
@@ -655,6 +660,10 @@ const App = {
         }
 
         this.closeModal();
+        if (window.Calendar) window.Calendar.refresh();
+        if (window.TaskQueue) window.TaskQueue.refresh();
+        if (window.Analytics) window.Analytics.render();
+        this.updateBadgeCounts();
     },
 
     /**

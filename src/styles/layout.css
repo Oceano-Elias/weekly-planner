@@ -659,6 +659,23 @@ header {
     outline-offset: -2px;
 }
 
+.drop-indicator {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 10px;
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.35);
+    pointer-events: none;
+    z-index: 50;
+    will-change: top, height;
+}
+
+.drop-indicator.invalid {
+    background: rgba(239, 68, 68, 0.12);
+    box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.35);
+}
+
 /* Time Slot Labels */
 .time-slot-label {
     height: 60px;
@@ -690,7 +707,7 @@ header {
         0 0 24px rgba(255, 45, 85, 0.3);
 }
 
-# currentTimeMarker::before {
+#currentTimeMarker::before {
     content: '';
     position: absolute;
     left: -6px;

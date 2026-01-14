@@ -19,6 +19,9 @@ export const Calendar = {
     selectedDayIndex: 0,
     progressTimer: null,
     gridClickHandler: null,
+    onEditTask: null,
+    onOpenModalWithSchedule: null,
+    onPlayCompletionAnimation: null,
 
     /**
      * Set the view mode
@@ -302,8 +305,8 @@ export const Calendar = {
         // Apply filter if any filters are selected
         if (window.Filters) {
             tasks = tasks.filter(task => {
-                if (window.Filters.selectedPaths.length === 0) return false;
-                if (!task.hierarchy || task.hierarchy.length === 0) return false;
+                if (window.Filters.selectedPaths.length === 0) return true;
+                if (!task.hierarchy || task.hierarchy.length === 0) return true;
                 return window.Filters.selectedPaths.some(filterPath => {
                     if (filterPath.length > task.hierarchy.length) return false;
                     return filterPath.every((item, index) => task.hierarchy[index] === item);
@@ -365,9 +368,8 @@ export const Calendar = {
 
         block.addEventListener('dblclick', (e) => {
             e.stopPropagation();
-            if (window.App && window.App.editTask) {
-                window.App.editTask(task.id);
-            }
+            if (this.onEditTask) this.onEditTask(task.id);
+            else if (window.App && window.App.editTask) window.App.editTask(task.id);
         });
 
         // Focus button listener
@@ -387,9 +389,8 @@ export const Calendar = {
             const taskState = Store.getTask(task.id);
             if (taskState && !taskState.completed) {
                 // About to complete - play animation
-                if (window.App && window.App.playCompletionAnimation) {
-                    window.App.playCompletionAnimation(taskEl);
-                }
+                if (this.onPlayCompletionAnimation) this.onPlayCompletionAnimation(taskEl);
+                else if (window.App && window.App.playCompletionAnimation) window.App.playCompletionAnimation(taskEl);
             }
 
             // Use per-week toggle method
@@ -671,9 +672,8 @@ export const Calendar = {
             const day = cell.dataset.day;
             const time = cell.dataset.time;
             const maxDuration = this.getMaxDurationForSlot(day, time);
-            if (window.App && window.App.openModalWithSchedule) {
-                window.App.openModalWithSchedule(day, time, maxDuration);
-            }
+            if (this.onOpenModalWithSchedule) this.onOpenModalWithSchedule(day, time, maxDuration);
+            else if (window.App && window.App.openModalWithSchedule) window.App.openModalWithSchedule(day, time, maxDuration);
         };
         grid.addEventListener('click', this.gridClickHandler);
     },

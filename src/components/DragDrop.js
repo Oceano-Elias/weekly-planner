@@ -15,12 +15,19 @@ export const DragDrop = {
     lastHoverCell: null,
     lastHoverQueue: null,
     isDraggingTask: false,
+    hitTestCache: null,
+    dropIndicatorEl: null,
+    lastIndicatorKey: '',
 
     getCellFromPointerEvent(e) {
         if (!e) return null;
 
         if (!Number.isFinite(e.clientX) || !Number.isFinite(e.clientY)) return null;
         if (e.clientX === 0 && e.clientY === 0) return null;
+
+        if (this.hitTestCache) {
+            return this.getCellFromHitTestCache(e.clientX, e.clientY);
+        }
 
         const fromPoint = typeof document !== 'undefined' ? document.elementFromPoint(e.clientX, e.clientY) : null;
         if (fromPoint?.closest?.('.time-column') || e.target?.closest?.('.time-column')) return null;
@@ -36,6 +43,204 @@ export const DragDrop = {
         const rawIndex = Math.floor((e.clientY - firstCellRect.top) / cellHeight);
         const index = Math.min(Math.max(0, rawIndex), cells.length - 1);
         return cells[index] || null;
+    },
+
+    ensureDropIndicator() {
+        if (this.dropIndicatorEl) return this.dropIndicatorEl;
+        const el = document.createElement('div');
+        el.className = 'drop-indicator';
+        el.style.display = 'none';
+        this.dropIndicatorEl = el;
+        return el;
+    },
+
+    hideDropIndicator() {
+        if (!this.dropIndicatorEl) return;
+        this.dropIndicatorEl.style.display = 'none';
+        this.dropIndicatorEl.classList.remove('invalid');
+        this.lastIndicatorKey = '';
+    },
+
+    showDropIndicator(column, startIndex, slotsToShow, isAvailable) {
+        const el = this.ensureDropIndicator();
+        if (!column) {
+            this.hideDropIndicator();
+            return;
+        }
+
+        const cache = this.hitTestCache?.columnsByEl?.get(column);
+        const cellHeight = cache?.cellHeight || PlannerService.CELL_HEIGHT;
+
+        const top = startIndex * cellHeight + 2;
+        const height = Math.max(0, slotsToShow * cellHeight - 4);
+        const key = `${cache?.day || column.dataset.day}|${top}|${height}|${isAvailable ? 'ok' : 'bad'}`;
+
+        if (this.lastIndicatorKey !== key) {
+            if (el.parentElement !== column) column.appendChild(el);
+            el.style.top = `${top}px`;
+            el.style.height = `${height}px`;
+            el.classList.toggle('invalid', !isAvailable);
+            el.style.display = 'block';
+            this.lastIndicatorKey = key;
+        } else if (el.style.display !== 'block') {
+            el.style.display = 'block';
+        }
+    },
+
+    prepareHitTestCache() {
+        if (this.hitTestCache) return;
+
+        const grid = document.getElementById('calendarGrid');
+        const timeColumn = grid?.querySelector?.('.time-column') || document.querySelector('.time-column');
+        const timeColumnRect = timeColumn?.getBoundingClientRect?.();
+
+        const columns = [];
+        const columnsByEl = new Map();
+
+        document.querySelectorAll('.day-column').forEach((column) => {
+            const firstCell = column.querySelector('.calendar-cell');
+            if (!firstCell) return;
+
+            const columnRect = column.getBoundingClientRect();
+            const firstCellRect = firstCell.getBoundingClientRect();
+            const cellHeight = firstCell.offsetHeight || PlannerService.CELL_HEIGHT;
+            const cells = column.querySelectorAll('.calendar-cell');
+            const cellCount = cells.length;
+
+            const entry = {
+                el: column,
+                day: column.dataset.day || '',
+                left: columnRect.left,
+                right: columnRect.right,
+                firstCellTop: firstCellRect.top,
+                cellHeight,
+                cellCount,
+                cells
+            };
+            columns.push(entry);
+            columnsByEl.set(column, entry);
+        });
+
+        const updateVertical = () => {
+            columns.forEach((entry) => {
+                const firstCell = entry.el.querySelector('.calendar-cell');
+                if (!firstCell) return;
+                entry.firstCellTop = firstCell.getBoundingClientRect().top;
+                entry.cellHeight = firstCell.offsetHeight || entry.cellHeight;
+            });
+        };
+
+        let scheduled = false;
+        const onScroll = () => {
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(() => {
+                scheduled = false;
+                updateVertical();
+            });
+        };
+
+        if (grid) grid.addEventListener('scroll', onScroll, { passive: true });
+
+        this.hitTestCache = {
+            grid,
+            columns,
+            columnsByEl,
+            timeColumnRight: timeColumnRect ? timeColumnRect.right : 0,
+            onScroll
+        };
+    },
+
+    clearHitTestCache() {
+        const cache = this.hitTestCache;
+        if (!cache) return;
+        if (cache.grid && cache.onScroll) cache.grid.removeEventListener('scroll', cache.onScroll);
+        this.hitTestCache = null;
+    },
+
+    getCellFromHitTestCache(clientX, clientY) {
+        const cache = this.hitTestCache;
+        if (!cache) return null;
+        if (cache.timeColumnRight && clientX < cache.timeColumnRight) return null;
+
+        let columnEntry = null;
+        for (const entry of cache.columns) {
+            if (clientX >= entry.left && clientX < entry.right) {
+                columnEntry = entry;
+                break;
+            }
+        }
+        if (!columnEntry) return null;
+
+        const rawIndex = Math.floor((clientY - columnEntry.firstCellTop) / columnEntry.cellHeight);
+        const index = Math.min(Math.max(0, rawIndex), columnEntry.cellCount - 1);
+        if (!Number.isFinite(index) || index < 0) return null;
+
+        const cell = columnEntry.cells?.[index] || null;
+        return cell;
+    },
+
+    getSlotIndexFromTime(timeStr) {
+        if (!timeStr) return null;
+        const [hStr, mStr] = timeStr.split(':');
+        const hours = Number(hStr);
+        const minutes = Number(mStr);
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+
+        const slotsPerHour = 60 / PlannerService.SLOT_DURATION;
+        const hourOffset = hours - PlannerService.START_HOUR;
+        const slotOffset = Math.floor(minutes / PlannerService.SLOT_DURATION);
+        const index = hourOffset * slotsPerHour + slotOffset;
+        return Number.isFinite(index) ? index : null;
+    },
+
+    getTimeFromSlotIndex(slotIndex) {
+        if (!Number.isFinite(slotIndex)) return null;
+        const minutesFromStart = slotIndex * PlannerService.SLOT_DURATION;
+        const totalMinutes = PlannerService.START_HOUR * 60 + minutesFromStart;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const h = String(hours).padStart(2, '0');
+        const m = String(minutes).padStart(2, '0');
+        return `${h}:${m}`;
+    },
+
+    findNearestAvailableStart(day, desiredTime, duration, excludeTaskId) {
+        const desiredIndex = this.getSlotIndexFromTime(desiredTime);
+        if (desiredIndex === null) return null;
+
+        const weekGrid = document.getElementById('calendarGrid');
+        const column = weekGrid?.querySelector?.(`.day-column[data-day="${day}"]`) || document.querySelector(`.day-column[data-day="${day}"]`);
+        const cellCount = column?.querySelectorAll?.('.calendar-cell')?.length ?? 0;
+        if (!cellCount) return null;
+
+        const slotsNeeded = Math.ceil(duration / PlannerService.SLOT_DURATION);
+        const maxStart = Math.max(0, cellCount - slotsNeeded);
+        const clampedDesired = Math.min(Math.max(0, desiredIndex), maxStart);
+
+        const tryIndex = (idx) => {
+            const time = this.getTimeFromSlotIndex(idx);
+            if (!time) return null;
+            return this.isSlotAvailable(day, time, duration, excludeTaskId) ? time : null;
+        };
+
+        let time = tryIndex(clampedDesired);
+        if (time) return time;
+
+        for (let step = 1; step <= maxStart; step++) {
+            const up = clampedDesired - step;
+            if (up >= 0) {
+                time = tryIndex(up);
+                if (time) return time;
+            }
+            const down = clampedDesired + step;
+            if (down <= maxStart) {
+                time = tryIndex(down);
+                if (time) return time;
+            }
+        }
+
+        return null;
     },
 
     /**
@@ -57,74 +262,21 @@ export const DragDrop = {
         let pointerGhost = null;
         let pointerGhostOffsetX = 0;
         let pointerGhostOffsetY = 0;
-
-        // Drag start
-        document.addEventListener('dragstart', (e) => {
-            const taskBlock = e.target?.closest?.('.task-block');
-            if (!taskBlock) return;
-
-            document.body.classList.add('dnd-active');
-            this.dayTasksCache = {};
-            this.lastHoverCell = null;
-            this.lastHoverQueue = null;
-            this.isDraggingTask = true;
-
-            const taskId = taskBlock.dataset.taskId;
-            this.draggedTask = Store.getTask(taskId);
-            this.draggedElement = taskBlock;
-
-            if (!this.draggedTask) {
-                this.isDraggingTask = false;
-                e.preventDefault();
-                return;
-            }
-
-            taskBlock.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', taskId);
-            e.dataTransfer.setData('text', taskId);
-
-            // Create custom drag image with compact size
-            const clone = taskBlock.cloneNode(true);
-            const rect = taskBlock.getBoundingClientRect();
-
-            // Use compact dimensions - max 250px wide, 80px tall
-            const maxWidth = 250;
-            const maxHeight = 80;
-            const actualWidth = Math.min(rect.width, maxWidth);
-            const actualHeight = Math.min(rect.height, maxHeight);
-
-            clone.style.width = actualWidth + 'px';
-            clone.style.height = actualHeight + 'px';
-            clone.style.maxHeight = actualHeight + 'px';
-            clone.style.minHeight = actualHeight + 'px';
-            clone.style.maxWidth = actualWidth + 'px';
-            clone.style.opacity = '0.9';
-            clone.style.position = 'absolute';
-            clone.style.top = '-9999px';
-            clone.style.left = '-9999px';
-            clone.style.pointerEvents = 'none';
-            clone.style.transform = 'scale(1)';
-            clone.style.overflow = 'hidden';
-
-            // If the original is too tall, add visual cue that it's been scaled
-            if (rect.height > maxHeight) {
-                clone.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
-            }
-
-            document.body.appendChild(clone);
-            e.dataTransfer.setDragImage(clone, actualWidth / 2, 20);
-            setTimeout(() => clone.remove(), 0);
-
-        }, { capture: true });
+        let pointerContextMenuBlocked = false;
+        let pointerMoveRaf = 0;
+        let pointerLatestX = 0;
+        let pointerLatestY = 0;
 
         document.addEventListener('pointerdown', (e) => {
             if (e.button !== 0) return;
             const taskBlock = e.target?.closest?.('.task-block');
             if (!taskBlock) return;
-            if (!taskBlock.closest('.calendar-task')) return;
+            const inCalendar = !!taskBlock.closest('.calendar-task');
+            const inQueue = !!taskBlock.closest('#taskQueue');
+            if (!inCalendar && !inQueue) return;
             if (e.target?.closest?.('.task-delete')) return;
             if (e.target?.closest?.('input, textarea, select, button')) return;
+            if (e.detail && e.detail > 1) return;
 
             const taskId = taskBlock.dataset.taskId;
             const task = Store.getTask(taskId);
@@ -134,11 +286,15 @@ export const DragDrop = {
             pointerGhostOffsetX = e.clientX - rect.left;
             pointerGhostOffsetY = e.clientY - rect.top;
 
+            // We skip immediate setPointerCapture here to allow the browser
+            // to detect standard 'dblclick' sequences.
+
             pointerCandidate = { taskId, taskBlock };
             pointerStartX = e.clientX;
             pointerStartY = e.clientY;
             pointerId = e.pointerId;
             pointerDragging = false;
+            pointerContextMenuBlocked = false;
         }, { capture: true });
 
         document.addEventListener('pointermove', (e) => {
@@ -147,10 +303,15 @@ export const DragDrop = {
 
             const dx = e.clientX - pointerStartX;
             const dy = e.clientY - pointerStartY;
-            const movedEnough = (dx * dx + dy * dy) >= 36;
+            const movedEnough = (dx * dx + dy * dy) >= 144;
 
             if (!pointerDragging) {
                 if (!movedEnough) return;
+
+                // Capture pointer only when drag threshold is met
+                try {
+                    pointerCandidate.taskBlock.setPointerCapture(pointerId);
+                } catch (err) { }
 
                 pointerDragging = true;
                 this.isDraggingTask = true;
@@ -158,6 +319,8 @@ export const DragDrop = {
                 this.dayTasksCache = {};
                 this.lastHoverCell = null;
                 this.lastHoverQueue = null;
+                this.prepareHitTestCache();
+                this.ensureDropIndicator();
 
                 const task = Store.getTask(pointerCandidate.taskId);
                 this.draggedTask = task;
@@ -166,6 +329,7 @@ export const DragDrop = {
 
                 const ghost = pointerCandidate.taskBlock.cloneNode(true);
                 ghost.classList.add('drag-ghost');
+                ghost.style.zIndex = '9999';
 
                 // CRITICAL style sanitation: Strip any inherited off-screen positioning
                 // which might have been set by native dragstart or previous states.
@@ -200,16 +364,20 @@ export const DragDrop = {
 
                 document.body.appendChild(ghost);
                 pointerGhost = ghost;
+
+                if (!pointerContextMenuBlocked) {
+                    pointerContextMenuBlocked = true;
+                    document.addEventListener('contextmenu', (evt) => evt.preventDefault(), { once: true, capture: true });
+                }
             }
 
-            e.preventDefault();
+            if (pointerDragging) e.preventDefault();
 
             const fromPoint = document.elementFromPoint(e.clientX, e.clientY);
             const queue = fromPoint?.closest?.('#taskQueue') || fromPoint?.closest?.('#queuePanel') || fromPoint?.closest?.('.sidebar');
             const cell = this.getCellFromPointerEvent(e);
 
             if (pointerGhost) {
-                // Prevent text selection during drag - aggressive approach
                 if (window.getSelection) {
                     const selection = window.getSelection();
                     if (selection.removeAllRanges) {
@@ -219,18 +387,17 @@ export const DragDrop = {
                     }
                 }
 
-                // Suppress context menu during active pointer drag to prevent right-click interference
-                const preventDefault = (e) => e.preventDefault();
-                document.addEventListener('contextmenu', preventDefault, { once: true, capture: true });
-
-                // Use requestAnimationFrame for smooth movement
-                requestAnimationFrame(() => {
-                    if (pointerGhost) {
-                        const x = e.clientX - pointerGhostOffsetX;
-                        const y = e.clientY - pointerGhostOffsetY;
+                pointerLatestX = e.clientX;
+                pointerLatestY = e.clientY;
+                if (!pointerMoveRaf) {
+                    pointerMoveRaf = requestAnimationFrame(() => {
+                        pointerMoveRaf = 0;
+                        if (!pointerGhost) return;
+                        const x = pointerLatestX - pointerGhostOffsetX;
+                        const y = pointerLatestY - pointerGhostOffsetY;
                         pointerGhost.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-                    }
-                });
+                    });
+                }
             }
 
             if (cell) {
@@ -243,21 +410,44 @@ export const DragDrop = {
             if (queue) {
                 this.lastHoverQueue = queue;
                 this.lastHoverCell = null; // Clear stale cell state
-                document.querySelectorAll('.drop-target, .drop-invalid').forEach(el => {
-                    el.classList.remove('drop-target', 'drop-invalid');
-                });
+                this.hideDropIndicator();
                 const queueEl = document.getElementById('taskQueue');
                 if (queueEl) queueEl.classList.add('drag-over');
             }
             if (!cell && !queue) {
-                // If we are in the "dead zone", keep the last hover states for visual persistence
-                // but we might want to clear them if we are far enough away.
+                if (this.lastHoverCell) this.highlightDropZone(this.lastHoverCell);
+                else this.hideDropIndicator();
+                const queueEl = document.getElementById('taskQueue');
+                if (queueEl) queueEl.classList.remove('drag-over');
             }
         }, { capture: true });
 
         const finishPointerDrag = (e) => {
             if (!pointerCandidate) return;
             if (pointerId !== e.pointerId) return;
+
+            const finishVisuals = () => {
+                if (pointerMoveRaf) {
+                    cancelAnimationFrame(pointerMoveRaf);
+                    pointerMoveRaf = 0;
+                }
+                if (pointerGhost) {
+                    pointerGhost.remove();
+                    pointerGhost = null;
+                }
+                document.body.classList.remove('dnd-active');
+                this.hideDropIndicator();
+                this.clearHitTestCache();
+                if (this.draggedElement) {
+                    this.draggedElement.classList.remove('dragging');
+                    this.draggedElement.style.opacity = '';
+                    this.draggedElement.style.pointerEvents = '';
+                } else if (pointerCandidate && pointerCandidate.taskBlock) {
+                    // Safety reset for visibility if drag didn't activate
+                    pointerCandidate.taskBlock.style.opacity = '';
+                    pointerCandidate.taskBlock.style.pointerEvents = '';
+                }
+            };
 
             if (pointerDragging && this.draggedTask && this.draggedElement) {
                 const fromPoint = document.elementFromPoint(e.clientX, e.clientY);
@@ -273,206 +463,41 @@ export const DragDrop = {
                 }
 
                 const taskId = this.draggedTask.id;
-                console.log(`[DragDrop] Pointer release: taskId=${taskId}, currentCell=${!!cell}, currentQueue=${!!queue}`);
+                const duration = this.draggedTask.duration;
 
-                document.querySelectorAll('.drop-target, .drag-over, .drop-invalid').forEach(el => {
-                    el.classList.remove('drop-target', 'drag-over', 'drop-invalid');
-                });
+                const day = cell?.dataset?.day || null;
+                const time = cell?.dataset?.time || null;
+
+                finishVisuals();
 
                 if (queue) {
-                    console.log(`[DragDrop] ⬅️ Unscheduling task ${taskId} (via sidebar drop)`);
                     Store.unscheduleTask(taskId, true);
-                } else if (cell) {
-                    const day = cell.dataset.day;
-                    const time = cell.dataset.time;
-                    console.log(`[DragDrop] 📅 Rescheduling task ${taskId} to ${day} ${time}`);
+                } else if (day && time) {
                     this.dayTasksCache = {};
-                    if (this.isSlotAvailable(day, time, this.draggedTask.duration, taskId)) {
-                        Store.rescheduleTaskInWeek(taskId, day, time);
-                    }
+                    const bestTime = this.findNearestAvailableStart(day, time, duration, taskId);
+                    if (bestTime) Store.rescheduleTaskInWeek(taskId, day, bestTime);
                 }
 
                 if (Calendar && typeof Calendar.refresh === 'function') Calendar.refresh();
                 if (TaskQueue && typeof TaskQueue.refresh === 'function') TaskQueue.refresh();
                 if (Analytics && typeof Analytics.render === 'function') Analytics.render();
+            } else {
+                finishVisuals();
             }
 
             pointerCandidate = null;
             pointerId = null;
             pointerDragging = false;
-            if (pointerGhost) {
-                pointerGhost.remove();
-                pointerGhost = null;
-            }
-
-            document.body.classList.remove('dnd-active');
-            if (this.draggedElement) {
-                this.draggedElement.classList.remove('dragging');
-                this.draggedElement.style.opacity = '';
-                this.draggedElement.style.pointerEvents = '';
-            }
             this.draggedTask = null;
             this.draggedElement = null;
             this.dayTasksCache = {};
             this.lastHoverCell = null;
             this.lastHoverQueue = null;
             this.isDraggingTask = false;
-
-            document.querySelectorAll('.drop-target, .drag-over, .drop-invalid').forEach(el => {
-                el.classList.remove('drop-target', 'drag-over', 'drop-invalid');
-            });
         };
 
         document.addEventListener('pointerup', finishPointerDrag, { capture: true });
         document.addEventListener('pointercancel', finishPointerDrag, { capture: true });
-
-        // Drag end
-        document.addEventListener('dragend', (e) => {
-            document.body.classList.remove('dnd-active');
-            const taskBlock = e.target?.closest?.('.task-block');
-            if (taskBlock) {
-                taskBlock.classList.remove('dragging');
-            }
-
-            document.querySelectorAll('.drop-target, .drag-over').forEach(el => {
-                el.classList.remove('drop-target', 'drag-over');
-            });
-
-            this.draggedTask = null;
-            this.draggedElement = null;
-            this.dayTasksCache = {};
-            this.lastHoverCell = null;
-            this.lastHoverQueue = null;
-            this.isDraggingTask = false;
-        }, { capture: true });
-
-        // Drag over
-        document.addEventListener('dragover', (e) => {
-            let cell = e.target.closest('.calendar-cell');
-            if (!cell) cell = this.getCellFromPointerEvent(e);
-            const queue = e.target.closest('#taskQueue') || e.target.closest('#queuePanel') || e.target.closest('.sidebar');
-
-            if (cell) this.lastHoverCell = cell;
-            if (queue) this.lastHoverQueue = queue;
-
-            if (this.isDraggingTask) {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-
-                if (cell) {
-                    this.highlightDropZone(cell);
-                }
-                if (queue) {
-                    const queueEl = document.getElementById('taskQueue');
-                    if (queueEl) queueEl.classList.add('drag-over');
-                }
-            }
-        }, { capture: true });
-
-        // Drag enter
-        document.addEventListener('dragenter', (e) => {
-            let cell = e.target.closest('.calendar-cell');
-            if (!cell) cell = this.getCellFromPointerEvent(e);
-            const queue = e.target.closest('#taskQueue') || e.target.closest('#queuePanel') || e.target.closest('.sidebar');
-
-            if (cell) {
-                this.lastHoverCell = cell;
-                cell.classList.add('drag-over');
-            }
-            if (queue) {
-                this.lastHoverQueue = queue;
-                const queueEl = document.getElementById('taskQueue');
-                if (queueEl) queueEl.classList.add('drag-over');
-            }
-        }, { capture: true });
-
-        // Drag leave
-        document.addEventListener('dragleave', (e) => {
-            let cell = e.target.closest('.calendar-cell');
-            if (!cell) cell = this.getCellFromPointerEvent(e);
-            const queue = e.target.closest('#taskQueue') || e.target.closest('#queuePanel') || e.target.closest('.sidebar');
-
-            if (cell && !cell.contains(e.relatedTarget)) {
-                cell.classList.remove('drag-over', 'drop-target');
-            }
-            if (queue) {
-                const queueEl = document.getElementById('taskQueue');
-                if (queueEl && !queueEl.contains(e.relatedTarget)) {
-                    queueEl.classList.remove('drag-over');
-                }
-            }
-        }, { capture: true });
-
-        // Drop
-        document.addEventListener('drop', (e) => {
-            e.preventDefault();
-
-            try {
-                let cell = e.target.closest('.calendar-cell');
-                if (!cell) cell = this.getCellFromPointerEvent(e);
-
-                let queue = e.target.closest('#taskQueue') || e.target.closest('#queuePanel') || e.target.closest('.sidebar');
-
-                if (!cell && !queue) {
-                    if (this.lastHoverCell) cell = this.lastHoverCell;
-                    else if (this.lastHoverQueue) queue = this.lastHoverQueue;
-                }
-
-                let taskId = e.dataTransfer.getData('text/plain');
-                if (!taskId) taskId = e.dataTransfer.getData('text');
-                if (!taskId && this.draggedElement?.dataset?.taskId) taskId = this.draggedElement.dataset.taskId;
-                if (!taskId && this.draggedTask?.id) taskId = this.draggedTask.id;
-                taskId = (taskId || '').trim();
-
-                if (!taskId) return;
-
-                const draggedTask = Store.getTask(taskId);
-                if (!draggedTask) return;
-
-                document.querySelectorAll('.drop-target, .drag-over, .drop-invalid').forEach(el => {
-                    el.classList.remove('drop-target', 'drag-over', 'drop-invalid');
-                });
-
-                if (queue) {
-                    Store.unscheduleTask(taskId, true);
-                    if (Calendar && typeof Calendar.refresh === 'function') Calendar.refresh();
-                    if (TaskQueue && typeof TaskQueue.refresh === 'function') TaskQueue.refresh();
-                    if (Analytics && typeof Analytics.render === 'function') Analytics.render();
-                } else if (cell) {
-                    const day = cell.dataset.day;
-                    const time = cell.dataset.time;
-
-                    this.dayTasksCache = {};
-
-                    if (this.isSlotAvailable(day, time, draggedTask.duration, taskId)) {
-                        const result = Store.rescheduleTaskInWeek(taskId, day, time);
-
-                        if (result) {
-                            if (Calendar && typeof Calendar.refresh === 'function') Calendar.refresh();
-                            if (TaskQueue && typeof TaskQueue.refresh === 'function') TaskQueue.refresh();
-                            if (Analytics && typeof Analytics.render === 'function') Analytics.render();
-                        }
-                    } else {
-                        if (this.draggedElement) {
-                            this.draggedElement.style.animation = 'rebound 0.4s ease';
-                            setTimeout(() => this.draggedElement.style.animation = '', 400);
-                        }
-                    }
-                } else if (queue) {
-                    Store.unscheduleTask(taskId, true);
-                    if (Calendar && typeof Calendar.refresh === 'function') Calendar.refresh();
-                    if (TaskQueue && typeof TaskQueue.refresh === 'function') TaskQueue.refresh();
-                    if (Analytics && typeof Analytics.render === 'function') Analytics.render();
-                }
-            } catch (err) {
-                console.error('[DragDrop] Drop handler error:', err);
-            } finally {
-                document.body.classList.remove('dnd-active');
-                this.isDraggingTask = false;
-                this.lastHoverCell = null;
-                this.lastHoverQueue = null;
-            }
-        }, { capture: true });
     },
 
     /**
@@ -492,24 +517,24 @@ export const DragDrop = {
      */
     highlightDropZone(startCell) {
         if (!this.draggedTask) return;
-
-        document.querySelectorAll('.drop-target, .drop-invalid').forEach(el => {
-            el.classList.remove('drop-target', 'drop-invalid');
-        });
-
-        const slotsNeeded = Math.ceil(this.draggedTask.duration / 30);
         const day = startCell.dataset.day;
+        const time = startCell.dataset.time;
         const column = startCell.closest('.day-column');
-        const cells = column.querySelectorAll('.calendar-cell');
 
-        const startIndex = Array.from(cells).indexOf(startCell);
-
-        // Clear cache for live availability check
-        this.dayTasksCache = {};
-        const isAvailable = this.isSlotAvailable(day, startCell.dataset.time, this.draggedTask.duration, this.draggedTask.id);
-
-        for (let i = 0; i < slotsNeeded && startIndex + i < cells.length; i++) {
-            cells[startIndex + i].classList.add(isAvailable ? 'drop-target' : 'drop-invalid');
+        const slotIndex = this.getSlotIndexFromTime(time);
+        if (slotIndex === null) {
+            this.hideDropIndicator();
+            return;
         }
+
+        const cache = this.hitTestCache?.columnsByEl?.get(column);
+        const cellCount = cache?.cellCount ?? column?.querySelectorAll?.('.calendar-cell')?.length ?? 0;
+
+        const slotsNeeded = Math.ceil(this.draggedTask.duration / PlannerService.SLOT_DURATION);
+        const slotsToShow = Math.max(0, Math.min(slotsNeeded, cellCount - slotIndex));
+        const fits = slotIndex + slotsNeeded <= cellCount;
+
+        const isAvailable = fits && this.isSlotAvailable(day, time, this.draggedTask.duration, this.draggedTask.id);
+        this.showDropIndicator(column, slotIndex, slotsToShow, isAvailable);
     }
 };
