@@ -35,6 +35,7 @@ export class TaskCard {
     const isStandard = task.duration >= 45 && task.duration < 90;
     const isFull = task.duration >= 90;
 
+    // Use a unified layout class for base styling
     el.className = `task-block ${task.completed ? 'completed' : ''} ${isDayView ? 'day-view' : ''} ${isCompact ? 'layout-compact' : isStandard ? 'layout-standard' : isFull ? 'layout-full' : ''}`;
     el.dataset.taskId = task.id;
     el.draggable = true;
@@ -43,7 +44,7 @@ export class TaskCard {
     // Escape HTML helper
     const esc = PlannerService.escapeHtml;
 
-    // Step progress - show in both Day View and Week View if task has steps
+    // Step progress
     const { completed, total } = this.getStepCounts();
     const progressPercent = total > 0 ? (completed / total) * 100 : 0;
     const isAllComplete = total > 0 && completed === total;
@@ -57,92 +58,45 @@ export class TaskCard {
          </span>`
       : '';
 
-    if (isCompact || task.duration <= 30) {
-      // COMPACT: Badge + Title + Steps + Duration — all in one row
-      // In Week View, show full-width progress below; in Day View, show inline
-      const compactProgress = isDayView ? stepProgressHtml : '';
-      const compactProgressRow = (!isDayView && total > 0)
-        ? `<div class="task-progress-row compact">
-             <span class="task-step-progress full-width ${completeClass}">
-               <span class="step-fill" style="width: ${progressPercent}%"></span>
-               <span class="step-text">${stepText}</span>
-             </span>
-           </div>`
-        : '';
+    // Unified Header Structure
+    const headerHtml = `
+      <div class="task-header task-header-row">
+        <div class="task-header-left">
+          <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>
+          <span class="task-title">${esc(task.title)}</span>
+        </div>
+        ${isDayView ? stepProgressHtml : ''}
+        <span class="task-duration">${PlannerService.formatDuration(task.duration)}</span>
+      </div>
+    `;
 
-      el.innerHTML = `
-        <div class="task-actions">
-          <button class="task-action-btn task-focus-trigger" title="Focus (F)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
-            </svg>
-          </button>
-          <button class="task-delete" title="Delete">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
+    // Additional Content (Progress Row or Hierarchy)
+    let additionalContent = '';
+    if (!isDayView && total > 0) {
+      // Week View Progress Row
+      additionalContent = `
+        <div class="task-progress-row ${isCompact ? 'compact' : ''}">
+          <span class="task-step-progress full-width ${completeClass}">
+            <span class="step-fill" style="width: ${progressPercent}%"></span>
+            <span class="step-text">${stepText}</span>
+          </span>
         </div>
-        <div class="task-header task-header-row">
-          <div class="task-header-left">
-            <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>
-            <span class="task-title">${esc(task.title)}</span>
-          </div>
-          ${compactProgress}
-          <span class="task-duration">${PlannerService.formatDuration(task.duration)}</span>
-        </div>
-        ${compactProgressRow}
       `;
-    } else {
-      // STANDARD/FULL: Header row + additional content below
-      let additionalContent = '';
-
-      if (isDayView) {
-        // DAY VIEW: Show hierarchy path for 60min+ tasks
-        if (task.duration >= 60 && (topDept || hierarchyPath)) {
-          const fullPath = [topDept, ...task.hierarchy.slice(1)].filter(Boolean).join(' › ');
-          additionalContent += `<div class="task-hierarchy-row">${esc(fullPath)}</div>`;
-        }
-      } else {
-        // WEEK VIEW: Show full-width progress bar instead of hierarchy
-        if (total > 0) {
-          additionalContent += `
-            <div class="task-progress-row">
-              <span class="task-step-progress full-width ${completeClass}">
-                <span class="step-fill" style="width: ${progressPercent}%"></span>
-                <span class="step-text">${stepText}</span>
-              </span>
-            </div>`;
-        }
-      }
-
-      // In Week View, hide the small header progress bar since we show full-width below
-      const headerStepProgress = isDayView ? stepProgressHtml : '';
-
-      el.innerHTML = `
-        <div class="task-actions">
-          <button class="task-action-btn task-focus-trigger" title="Focus (F)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
-            </svg>
-          </button>
-          <button class="task-delete" title="Delete">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="task-header task-header-row">
-          <div class="task-header-left">
-            <span class="task-dept-badge" style="background-color: ${color};">${abbr}</span>
-            <span class="task-title">${esc(task.title)}</span>
-          </div>
-          ${headerStepProgress}
-          <span class="task-duration">${PlannerService.formatDuration(task.duration)}</span>
-        </div>
-        ${additionalContent}
-      `;
+    } else if (isDayView && task.duration >= 60 && (topDept || hierarchyPath)) {
+      // Day View Hierarchy Path
+      const fullPath = [topDept, ...task.hierarchy.slice(1)].filter(Boolean).join(' › ');
+      additionalContent = `<div class="task-hierarchy-row">${esc(fullPath)}</div>`;
     }
+
+    el.innerHTML = `
+      <button class="task-delete" title="Delete">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+      ${headerHtml}
+      ${additionalContent}
+    `;
 
     return el;
   }

@@ -2,7 +2,7 @@
  * App - Main application initialization and task form handling
  */
 
-import iconUrl from '../public/icon.png';
+import iconUrl from '/icon.png';
 
 import { Store } from './store.js';
 import { Departments } from './departments.js';

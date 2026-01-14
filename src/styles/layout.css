@@ -12,19 +12,19 @@
     width: 100vw;
     height: 100vh;
     z-index: -1;
-    background-color: #0f172a;
+    background-color: #020617; /* Even darker slate */
     background-image:
-        radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%),
-        radial-gradient(at 0% 50%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-        radial-gradient(at 100% 50%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
-        radial-gradient(at 0% 100%, hsla(339, 49%, 30%, 1) 0, transparent 50%),
-        radial-gradient(at 50% 100%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-        radial-gradient(at 100% 100%, hsla(253, 16%, 7%, 1) 0, transparent 50%);
-    filter: blur(100px);
-    opacity: 0.6;
-    animation: mesh-rotate 60s linear infinite;
+        radial-gradient(at 0% 0%, hsla(250, 100%, 15%, 0.15) 0, transparent 50%),
+        radial-gradient(at 50% 0%, hsla(220, 100%, 20%, 0.15) 0, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(340, 100%, 20%, 0.15) 0, transparent 50%),
+        radial-gradient(at 0% 50%, hsla(220, 100%, 20%, 0.15) 0, transparent 50%),
+        radial-gradient(at 100% 50%, hsla(250, 100%, 15%, 0.15) 0, transparent 50%),
+        radial-gradient(at 0% 100%, hsla(340, 100%, 20%, 0.15) 0, transparent 50%),
+        radial-gradient(at 50% 100%, hsla(220, 100%, 20%, 0.15) 0, transparent 50%),
+        radial-gradient(at 100% 100%, hsla(250, 100%, 15%, 0.15) 0, transparent 50%);
+    filter: blur(120px);
+    opacity: 0.8;
+    animation: mesh-rotate 120s linear infinite;
 }
 
 @keyframes mesh-rotate {
@@ -77,6 +77,9 @@ header {
     box-shadow: var(--glass-shadow);
     z-index: 30;
     flex-shrink: 0;
+    margin: 12px;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--glass-border-light);
 }
 
 .header-left {
@@ -143,19 +146,21 @@ header {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    border-right: 1px solid var(--glass-border);
+    border: 1px solid var(--glass-border-light);
+    border-radius: var(--radius-xl);
     display: flex;
     flex-direction: column;
     z-index: 20;
     flex-shrink: 0;
-    transition: width var(--transition-normal);
+    transition: all var(--transition-spring);
+    margin: 0 0 12px 12px;
+    overflow: hidden;
 }
 
 .sidebar.collapsed {
-    width: 40px;
-    min-width: 40px;
-    border-right: 1px solid var(--border-primary);
-    overflow: hidden;
+    width: 60px;
+    min-width: 60px;
+    margin-right: 0;
 }
 
 .sidebar.collapsed .sidebar-inner {
@@ -234,23 +239,27 @@ header {
 
 .search-icon {
     position: absolute;
-    left: 8px;
+    left: 12px;
     color: var(--text-tertiary);
+    pointer-events: none;
 }
 
 .search-input {
     width: 100%;
-    padding: 6px 12px 6px 30px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-sm);
+    padding: 10px 14px 10px 36px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-full);
     color: var(--text-primary);
     font-size: var(--font-size-sm);
+    transition: all var(--transition-normal);
 }
 
 .search-input:focus {
     outline: none;
     border-color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
 }
 
 /* Search Clear Button */
@@ -313,12 +322,19 @@ header {
 
 .task-queue-empty {
     text-align: center;
-    padding: var(--space-xl) var(--space-md);
+    padding: var(--space-2xl) var(--space-lg);
     color: var(--text-tertiary);
-    border: 1px dashed var(--border-secondary);
+    border: 2px dashed var(--border-secondary);
     margin: var(--space-md);
-    border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03), rgba(139, 92, 246, 0.03));
+    border-radius: var(--radius-xl);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+    transition: all var(--transition-normal);
+}
+
+.task-queue-empty:hover {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+    transform: scale(0.98);
 }
 
 /* Empty State Illustration */
@@ -405,6 +421,12 @@ header {
     overflow: hidden;
     min-width: 0;
     animation: page-fade-in 0.3s ease-out;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    border-radius: var(--radius-xl);
+    margin: 0 12px 12px 12px;
 }
 
 @keyframes page-fade-in {
@@ -631,19 +653,23 @@ header {
     position: relative;
 }
 
-/* Calendar Cells */
+/* Grid Cell - Time Slot */
 .calendar-cell {
-    height: 60px;
-    border-bottom: 1px solid var(--border-tertiary);
+    height: var(--calendar-cell-height);
     border-right: 1px solid var(--border-tertiary);
+    border-bottom: 1px solid var(--border-tertiary);
     position: relative;
-    transition: background-color 0.1s;
+    transition: background-color var(--transition-fast);
     overflow: hidden;
 }
 
 .calendar-cell:hover {
-    background-color: var(--bg-hover);
+    background-color: rgba(255, 255, 255, 0.02);
     cursor: pointer;
+}
+
+.calendar-cell.active {
+    background-color: rgba(99, 102, 241, 0.05);
 }
 
 .calendar-cell.drop-target {
@@ -661,9 +687,9 @@ header {
 
 .drop-indicator {
     position: absolute;
-    left: 2px;
-    right: 2px;
-    border-radius: 10px;
+    left: 1px;
+    right: 1px;
+    border-radius: var(--radius-sm);
     background: rgba(16, 185, 129, 0.12);
     box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.35);
     pointer-events: none;
@@ -678,7 +704,7 @@ header {
 
 /* Time Slot Labels */
 .time-slot-label {
-    height: 60px;
+    height: var(--calendar-cell-height);
     display: flex;
     align-items: flex-start;
     justify-content: center;
@@ -689,36 +715,28 @@ header {
     border-bottom: 1px solid var(--border-tertiary);
 }
 
-/* Current Time Marker - "LASER" Glow Effect */
-#currentTimeMarker {
+/* Current Time Indicator */
+.current-time-line {
     position: absolute;
-    left: var(--calendar-time-col, 64px);
+    left: 0;
     right: 0;
-    height: 1px;
-    /* Sharper laser line */
-    background: #ff2d55;
-    /* Vivid laser red */
-    z-index: 100;
-    /* Above tasks */
+    height: 2px;
+    background: var(--accent-primary);
+    z-index: 10;
     pointer-events: none;
-    box-shadow:
-        0 0 4px #ff2d55,
-        0 0 12px rgba(255, 45, 85, 0.6),
-        0 0 24px rgba(255, 45, 85, 0.3);
+    box-shadow: 0 0 10px var(--accent-primary);
 }
 
-#currentTimeMarker::before {
+.current-time-line::before {
     content: '';
     position: absolute;
-    left: -6px;
-    top: -5px;
-    width: 12px;
-    height: 12px;
-    background-color: #ff2d55;
-    border-radius: 50%;
-    box-shadow: 0 0 15px #ff2d55, 0 0 30px rgba(255, 45, 85, 0.5);
-    animation: laser-pulse 2s ease-in-out infinite;
-    z-index: 101;
+    left: -4px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    background: var(--accent-primary);
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 15px var(--accent-primary);
 }
 
 @keyframes laser-pulse {

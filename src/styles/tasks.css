@@ -7,24 +7,24 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    padding: var(--space-sm) var(--space-md);
+    padding: 10px 12px;
 
     /* 1. PREMIUM REFRACTIVE DEPTH */
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
     background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.05) 0%,
-            rgba(255, 255, 255, 0) 100%);
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
 
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     cursor: grab;
 
     /* 2. DYNAMIC BORDER & RIM LIGHT */
     border: 1px solid var(--glass-border);
     border-left: 4px solid var(--task-color, var(--accent-primary));
     box-shadow:
-        inset 0 1px 1px rgba(255, 255, 255, 0.1),
-        0 4px 15px rgba(0, 0, 0, 0.2);
+            inset 0 1px 1px rgba(255, 255, 255, 0.1),
+            var(--shadow-task);
 
     overflow: hidden;
     transition: all var(--transition-spring);
@@ -35,13 +35,14 @@
     border-color: var(--glass-border-light);
     transform: translateY(-4px) scale(1.02);
     box-shadow:
-        0 15px 30px rgba(0, 0, 0, 0.3),
-        0 0 20px color-mix(in srgb, var(--task-color) 30%, transparent);
+        var(--shadow-lg),
+        0 0 25px color-mix(in srgb, var(--task-color) 35%, transparent);
+    z-index: 10;
 }
 
 /* DAY VIEW - Volumetric Glass Styling */
 .task-block.day-view {
-    padding: var(--space-xl) var(--space-lg);
+    padding: 16px 12px;
     margin: 4px 16px;
 
     /* 1. FROSTED DEPTH */
@@ -177,7 +178,8 @@
 .task-header-row {
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: space-between;
+    gap: 8px;
     width: 100%;
     overflow: hidden;
 }
@@ -185,8 +187,8 @@
 .task-header-left {
     display: flex;
     align-items: center;
-    gap: 4px;
-    flex-shrink: 1;
+    gap: 6px;
+    flex: 1;
     min-width: 0;
     overflow: hidden;
 }
@@ -198,7 +200,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 80px;
+    flex: 1;
 }
 
 /* Step progress bar with fill */
@@ -214,7 +216,6 @@
     overflow: hidden;
     padding: 2px 6px;
     min-width: 40px;
-    max-width: 70px;
     /* Background track */
     background: rgba(0, 0, 0, 0.25);
     border-radius: var(--radius-full);
@@ -300,7 +301,7 @@
     background: rgba(255, 255, 255, 0.15);
     padding: 2px 6px;
     border-radius: var(--radius-sm);
-    margin-left: auto;
+    transition: opacity var(--transition-fast);
 }
 
 /* Hierarchy row for standard/full layouts */
@@ -341,12 +342,13 @@
 /* Day view enhancements */
 .task-block.day-view .task-header-left .task-title {
     font-size: 16px;
-    max-width: 300px;
     font-weight: var(--font-weight-bold);
 }
 
 .task-block.day-view .task-header-row {
-    gap: 12px;
+    margin-bottom: var(--space-md);
+    gap: var(--space-md);
+    justify-content: space-between;
 }
 
 .task-block.day-view .task-duration {
@@ -358,15 +360,15 @@
 
 /* Layout-specific adjustments */
 .task-block.layout-compact {
-    padding: var(--space-xs) var(--space-sm);
+    padding: 6px 12px;
 }
 
 .task-block.layout-standard {
-    padding: var(--space-sm) var(--space-md);
+    padding: 10px 12px;
 }
 
 .task-block.layout-full {
-    padding: var(--space-md) var(--space-lg);
+    padding: 16px 12px;
 }
 
 /* Legacy header styles */
@@ -494,6 +496,11 @@
     display: flex;
 }
 
+.task-block:hover .task-duration {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .task-delete:hover {
     background-color: var(--accent-error);
     color: white;
@@ -503,39 +510,37 @@
 /* Calendar Task Positioning */
 .calendar-task {
     position: absolute;
-    left: 2px;
-    right: 2px;
+    left: 1px;
+    right: 1px;
     z-index: 10;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     overflow: visible;
+    padding-bottom: 1px; /* Gap between tasks */
 }
 
 .calendar-task .task-block {
     height: 100%;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
 }
 
 /* Compact mode for short tasks (30min = ~60px height) */
 .calendar-task.compact .task-block {
-    padding: 4px 8px;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
+    padding: 6px 12px;
 }
 
 .calendar-task.compact .task-header-row {
     display: flex;
     align-items: center;
     width: 100%;
-    gap: 6px;
+    gap: 8px;
     justify-content: space-between;
 }
 
 .calendar-task.compact .task-header-left {
     display: flex;
     align-items: center;
-    gap: 4px;
-    flex-shrink: 1;
+    gap: 6px;
+    flex: 1;
     min-width: 0;
     overflow: hidden;
 }
@@ -556,6 +561,7 @@
 .calendar-task.compact .task-title {
     font-size: 11px;
     line-height: 1.2;
+    flex: 1;
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -691,9 +697,10 @@
 .task-queue .task-block {
     background: transparent;
     border: 1px solid var(--border-tertiary);
-    border-left: 3px solid color-mix(in srgb, var(--task-color) 50%, transparent);
+    border-left: 4px solid color-mix(in srgb, var(--task-color) 50%, transparent);
     border-top: none;
     color: var(--text-tertiary);
+    padding: 10px 12px;
 }
 
 .task-queue .task-block .task-title {
@@ -709,7 +716,7 @@
 .task-queue .task-block:hover {
     background: color-mix(in srgb, var(--task-color) 15%, transparent);
     border-color: color-mix(in srgb, var(--task-color) 30%, transparent);
-    border-left: 3px solid var(--task-color);
+    border-left: 4px solid var(--task-color);
 }
 
 .task-queue .task-block:hover .task-title {

@@ -193,15 +193,6 @@ export const TaskQueue = {
                 }
             });
 
-            // Focus button listener
-            const focusBtn = block.querySelector('.task-focus-trigger');
-            if (focusBtn) {
-                focusBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (window.FocusMode) window.FocusMode.open(taskId);
-                });
-            }
-
             block.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();

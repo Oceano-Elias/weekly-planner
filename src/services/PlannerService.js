@@ -5,7 +5,7 @@
 export const PlannerService = {
     // Calendar time constants
     SLOT_DURATION: 30,      // minutes per slot
-    CELL_HEIGHT: 60,        // pixels per cell
+    CELL_HEIGHT: 52,        // pixels per cell (matching CSS --calendar-cell-height)
     DEFAULT_DURATION: 60,   // default task duration
     MIN_DURATION: 15,       // minimum task duration
     MAX_DURATION: 480,      // maximum task duration (8 hours)

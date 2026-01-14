@@ -333,8 +333,8 @@ export const Calendar = {
         const slotsCount = task.duration / PlannerService.SLOT_DURATION;
 
         const cellHeight = PlannerService.CELL_HEIGHT;
-        const top = slotIndex * cellHeight + 2;
-        const height = slotsCount * cellHeight - 4;
+        const top = slotIndex * cellHeight + 1;
+        const height = slotsCount * cellHeight - 2;
 
         const taskEl = document.createElement('div');
         const isCompact = task.duration <= PlannerService.SLOT_DURATION;
@@ -371,15 +371,6 @@ export const Calendar = {
             if (this.onEditTask) this.onEditTask(task.id);
             else if (window.App && window.App.editTask) window.App.editTask(task.id);
         });
-
-        // Focus button listener
-        const focusBtn = taskEl.querySelector('.task-focus-trigger');
-        if (focusBtn) {
-            focusBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (window.FocusMode) window.FocusMode.open(task.id);
-            });
-        }
 
         block.addEventListener('contextmenu', (e) => {
             e.preventDefault();

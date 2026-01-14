@@ -71,8 +71,8 @@ export const DragDrop = {
         const cache = this.hitTestCache?.columnsByEl?.get(column);
         const cellHeight = cache?.cellHeight || PlannerService.CELL_HEIGHT;
 
-        const top = startIndex * cellHeight + 2;
-        const height = Math.max(0, slotsToShow * cellHeight - 4);
+        const top = startIndex * cellHeight + 1;
+        const height = Math.max(0, slotsToShow * cellHeight - 2);
         const key = `${cache?.day || column.dataset.day}|${top}|${height}|${isAvailable ? 'ok' : 'bad'}`;
 
         if (this.lastIndicatorKey !== key) {
