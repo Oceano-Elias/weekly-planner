@@ -66,7 +66,9 @@ export class TaskCard {
           <span class="task-title">${esc(task.title)}</span>
         </div>
         ${isDayView ? stepProgressHtml : ''}
-        <span class="task-duration">${PlannerService.formatDuration(task.duration)}</span>
+        <div class="task-duration">
+          <span>${PlannerService.formatDuration(task.duration)}</span>
+        </div>
       </div>
     `;
 

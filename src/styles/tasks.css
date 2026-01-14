@@ -277,8 +277,9 @@
 
 /* Day view - WIDER step progress bar (stays in header, fills available space) */
 .task-block.day-view .task-step-progress {
-    flex: 1;
-    max-width: none;
+    flex: 0 1 auto; /* Don't force it to fill, but allow it to be the center piece */
+    max-width: 600px;
+    width: 100%;
     min-width: 100px;
     height: 28px;
     font-size: 14px;
@@ -286,6 +287,8 @@
     padding: 0 16px;
     border-radius: var(--radius-full);
     background: rgba(0, 0, 0, 0.35);
+    align-self: center;
+    margin: 0 auto; /* This helps with horizontal centering in some flex scenarios */
 }
 
 .task-block.day-view .task-step-progress .step-text {
@@ -340,6 +343,11 @@
 }
 
 /* Day view enhancements */
+.task-block.day-view .task-header-left {
+    flex: 1;
+    min-width: 0;
+}
+
 .task-block.day-view .task-header-left .task-title {
     font-size: 16px;
     font-weight: var(--font-weight-bold);
@@ -348,14 +356,25 @@
 .task-block.day-view .task-header-row {
     margin-bottom: var(--space-md);
     gap: var(--space-md);
+    display: flex;
+    align-items: center;
     justify-content: space-between;
 }
 
 .task-block.day-view .task-duration {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    background: transparent;
+    padding: 0;
+}
+
+.task-block.day-view .task-duration span {
     font-size: 13px;
     padding: 6px 12px;
     background: rgba(255, 255, 255, 0.15);
     font-weight: var(--font-weight-bold);
+    border-radius: var(--radius-sm);
 }
 
 /* Layout-specific adjustments */

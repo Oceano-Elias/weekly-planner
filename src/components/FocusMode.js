@@ -65,6 +65,10 @@ export const FocusMode = {
         const container = document.getElementById('focusModeContainer');
         container.innerHTML = '';
         document.body.style.overflow = '';
+
+        // Refresh UI to reflect changes made in Focus Mode (like checklist updates)
+        if (window.Calendar) window.Calendar.renderScheduledTasks();
+        if (window.TaskQueue) window.TaskQueue.refresh();
     },
 
     /**
