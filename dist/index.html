@@ -20,11 +20,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- CSS is bundled by Vite via main.js imports -->
-  <script type="module" crossorigin src="/weekly-planner/assets/index-BH43KNXD.js"></script>
-  <link rel="stylesheet" crossorigin href="/weekly-planner/assets/index-CRNKRcol.css">
+  <script type="module" crossorigin src="/weekly-planner/assets/index-DD2kve4F.js"></script>
+  <link rel="stylesheet" crossorigin href="/weekly-planner/assets/index-ox4tDW-5.css">
 </head>
 
 <body>
+    <!-- Premium Mesh Gradient Background -->
+    <div class="mesh-gradient"></div>
+
     <div class="app">
         <!-- Header -->
         <header class="header">
@@ -239,8 +242,12 @@
             </div>
             <div class="modal-body">
                 <form id="taskForm">
-                    <!-- Task Title is auto-generated from department selection -->
-                    <input type="hidden" id="taskTitle">
+                    <!-- Task Title -->
+                    <div class="form-group">
+                        <label class="form-label" for="taskTitle">Task Title *</label>
+                        <input type="text" class="form-input" id="taskTitle" placeholder="Choose department..." required
+                            readonly>
+                    </div>
 
 
 
@@ -351,7 +358,7 @@
                 <div class="shortcut-group">
                     <h4>Tasks</h4>
                     <div class="shortcut-item"><kbd>N</kbd> <span>New Task</span></div>
-                    <div class="shortcut-item"><kbd>F</kbd> <span>Focus Mode</span></div>
+                    <div class="shortcut-item"><kbd>F</kbd> <span>Focus</span></div>
                     <div class="shortcut-item"><kbd>⌘</kbd> + <kbd>Enter</kbd> <span>Save Task</span></div>
                 </div>
                 <div class="shortcut-group">
