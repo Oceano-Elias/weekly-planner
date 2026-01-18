@@ -15,6 +15,8 @@ export const FocusMode = {
     activeTaskId: null,
     activeKeyHandler: null,
     sessionInterval: null,
+    resizeHandler: null,
+    positionRaf: null,
     carouselAnimating: false,
     lastDoneStepIndex: null,
 
@@ -85,6 +87,10 @@ export const FocusMode = {
         if (this.activeKeyHandler) {
             document.removeEventListener('keydown', this.activeKeyHandler);
             this.activeKeyHandler = null;
+        }
+        if (this.resizeHandler) {
+            window.removeEventListener('resize', this.resizeHandler);
+            this.resizeHandler = null;
         }
 
         const container = document.getElementById('focusModeContainer');
@@ -159,21 +165,6 @@ export const FocusMode = {
                                         </button>
                                     ` : ''}
                                 </div>
-                                <!-- Step Action Buttons -->
-                                <div class="step-action-controls" id="stepActionControls">
-                                    <button class="step-action-btn skip-btn" id="skipStepBtn" title="Skip to next step (→)">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M5 4l10 8-10 8V4zM19 5v14"/>
-                                        </svg>
-                                        Skip
-                                    </button>
-                                    <button class="step-action-btn complete-btn" id="completeStepBtn" title="Mark step complete (Enter)">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M20 6L9 17l-5-5"/>
-                                        </svg>
-                                        Complete
-                                    </button>
-                                </div>
                             </div>
                             ${state.phase === 'decision' ? this.renderDecisionOverlay() : ''}
                         </div>
@@ -181,6 +172,24 @@ export const FocusMode = {
                         <!-- Quest Stack Moved Under Controls -->
                         <div class="quest-stack-container" id="questStack">
                             ${this.renderQuestStack(task, state.currentStepIndex)}
+                            <button class="step-action-btn complete-btn carousel-complete-btn" id="carouselCompleteBtn" title="Mark step complete (Enter)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 6L9 17l-5-5"/>
+                                </svg>
+                                Complete
+                            </button>
+                            <div class="carousel-nav" id="carouselNav" aria-label="Step navigation">
+                                <button class="carousel-nav-btn" id="carouselNavUpBtn" title="Previous step (↑)" aria-label="Previous step">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5l-7 7h14l-7-7z"/>
+                                    </svg>
+                                </button>
+                                <button class="carousel-nav-btn" id="carouselNavDownBtn" title="Next step (↓)" aria-label="Next step">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 19l7-7H5l7 7z"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -191,6 +200,12 @@ export const FocusMode = {
         this.updateRings();
         this.updateTimeDisplay();
         this.startSessionInterval();
+        this.schedulePositionCarouselCompleteButton();
+        const carousel = document.querySelector('#questStack .quest-carousel');
+        requestAnimationFrame(() => {
+            carousel?.classList.remove('no-initial-transition');
+            this.schedulePositionCarouselCompleteButton();
+        });
     },
 
     /**
@@ -254,7 +269,14 @@ export const FocusMode = {
             // If no carousel exists yet, do initial render
             if (!carousel) {
                 stackContainer.innerHTML = this.renderQuestStack(task, state.currentStepIndex);
+                this.ensureCarouselCompleteButton(stackContainer);
+                this.ensureCarouselNav(stackContainer);
                 this.setupCarouselListeners(stackContainer);
+                const newCarousel = stackContainer.querySelector('.quest-carousel');
+                requestAnimationFrame(() => {
+                    newCarousel?.classList.remove('no-initial-transition');
+                    this.schedulePositionCarouselCompleteButton();
+                });
             } else {
                 if (!this.carouselAnimating) {
                     this.syncCarousel(carousel, task, state.currentStepIndex);
@@ -265,6 +287,143 @@ export const FocusMode = {
         if (activeTitle) {
             activeTitle.textContent = this.getActiveStepTitle(task, state.currentStepIndex);
         }
+        this.schedulePositionCarouselCompleteButton();
+    },
+
+    schedulePositionCarouselCompleteButton() {
+        if (this.positionRaf) {
+            cancelAnimationFrame(this.positionRaf);
+        }
+        this.positionRaf = requestAnimationFrame(() => {
+            this.positionRaf = null;
+            this.positionCarouselCompleteButton();
+            this.positionCarouselNav();
+        });
+    },
+
+    ensureCarouselCompleteButton(stackContainer) {
+        if (!stackContainer) return;
+        if (stackContainer.querySelector('#carouselCompleteBtn')) return;
+        const btn = document.createElement('button');
+        btn.className = 'step-action-btn complete-btn carousel-complete-btn';
+        btn.id = 'carouselCompleteBtn';
+        btn.title = 'Mark step complete (Enter)';
+        btn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            Complete
+        `;
+        stackContainer.appendChild(btn);
+    },
+
+    ensureCarouselNav(stackContainer) {
+        if (!stackContainer) return;
+        if (stackContainer.querySelector('#carouselNav')) return;
+        const nav = document.createElement('div');
+        nav.className = 'carousel-nav';
+        nav.id = 'carouselNav';
+        nav.setAttribute('aria-label', 'Step navigation');
+        nav.innerHTML = `
+            <button class="carousel-nav-btn" id="carouselNavUpBtn" title="Previous step (↑)" aria-label="Previous step">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5l-7 7h14l-7-7z"/>
+                </svg>
+            </button>
+            <button class="carousel-nav-btn" id="carouselNavDownBtn" title="Next step (↓)" aria-label="Next step">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 19l7-7H5l7 7z"/>
+                </svg>
+            </button>
+        `;
+        stackContainer.appendChild(nav);
+    },
+
+    positionCarouselCompleteButton() {
+        const stackContainer = document.getElementById('questStack');
+        const btn = document.getElementById('carouselCompleteBtn');
+        if (!stackContainer || !btn) return;
+
+        const carousel = stackContainer.querySelector('.quest-carousel');
+        const activeCard = carousel?.querySelector('.carousel-card.active');
+        if (!carousel || !activeCard) {
+            btn.classList.add('hidden');
+            return;
+        }
+
+        const stackRect = stackContainer.getBoundingClientRect();
+        const cardRect = activeCard.getBoundingClientRect();
+        if (!stackRect.width || !stackRect.height || !cardRect.width || !cardRect.height) {
+            btn.classList.add('hidden');
+            return;
+        }
+
+        const scaleX = stackContainer.offsetWidth ? (stackRect.width / stackContainer.offsetWidth) : 1;
+        const scaleY = stackContainer.offsetHeight ? (stackRect.height / stackContainer.offsetHeight) : 1;
+        const cardLeft = (cardRect.left - stackRect.left) / scaleX;
+        const cardTop = (cardRect.top - stackRect.top) / scaleY;
+        const cardWidth = cardRect.width / scaleX;
+        const cardHeight = cardRect.height / scaleY;
+
+        const isNarrow = window.matchMedia('(max-width: 520px)').matches;
+        const inset = 16;
+
+        btn.classList.remove('hidden');
+
+        if (isNarrow) {
+            const width = Math.max(0, cardWidth - inset * 2);
+            btn.style.width = `${width}px`;
+            btn.style.setProperty('--complete-tx', `-50%`);
+            btn.style.setProperty('--complete-ty', `-100%`);
+            btn.style.setProperty('--complete-x', `${cardLeft + (cardWidth / 2)}px`);
+            btn.style.setProperty('--complete-y', `${cardTop + cardHeight - inset}px`);
+        } else {
+            btn.style.width = '';
+            btn.style.setProperty('--complete-tx', `-100%`);
+            btn.style.setProperty('--complete-ty', `-100%`);
+            btn.style.setProperty('--complete-x', `${cardLeft + cardWidth - inset}px`);
+            btn.style.setProperty('--complete-y', `${cardTop + cardHeight - inset}px`);
+        }
+    },
+
+    positionCarouselNav() {
+        const stackContainer = document.getElementById('questStack');
+        const nav = document.getElementById('carouselNav');
+        if (!stackContainer || !nav) return;
+
+        const carousel = stackContainer.querySelector('.quest-carousel');
+        const activeCard = carousel?.querySelector('.carousel-card.active');
+        if (!carousel || !activeCard) {
+            nav.classList.add('hidden');
+            return;
+        }
+
+        const stackRect = stackContainer.getBoundingClientRect();
+        const cardRect = activeCard.getBoundingClientRect();
+        if (!stackRect.width || !stackRect.height || !cardRect.width || !cardRect.height) {
+            nav.classList.add('hidden');
+            return;
+        }
+
+        const scaleX = stackContainer.offsetWidth ? (stackRect.width / stackContainer.offsetWidth) : 1;
+        const scaleY = stackContainer.offsetHeight ? (stackRect.height / stackContainer.offsetHeight) : 1;
+        const cardLeft = (cardRect.left - stackRect.left) / scaleX;
+        const cardTop = (cardRect.top - stackRect.top) / scaleY;
+        const cardWidth = cardRect.width / scaleX;
+        const cardHeight = cardRect.height / scaleY;
+
+        const isNarrow = window.matchMedia('(max-width: 520px)').matches;
+        const gap = isNarrow ? 10 : 14;
+        const navWidth = 36;
+        const edgePadding = isNarrow ? 8 : 10;
+        nav.classList.remove('hidden');
+
+        nav.style.setProperty('--nav-tx', `0%`);
+        nav.style.setProperty('--nav-ty', `-50%`);
+        const xRaw = cardLeft + cardWidth + gap;
+        const x = Math.max(edgePadding, Math.min(xRaw, stackContainer.offsetWidth - navWidth - edgePadding));
+        nav.style.setProperty('--nav-x', `${x}px`);
+        nav.style.setProperty('--nav-y', `${cardTop + (cardHeight / 2)}px`);
     },
 
     /**
@@ -301,14 +460,15 @@ export const FocusMode = {
     },
 
     buildCarouselCardInnerHtml(stateClass, index, cleanText) {
+        const visualState = stateClass === 'below' ? 'done' : stateClass;
         const stepLabel = index >= 0 ? `Step ${index + 1}` : '';
-        const icon = stateClass === 'active'
+        const icon = visualState === 'active'
             ? '<div class="carousel-icon active">●</div>'
-            : (stateClass === 'done'
+            : (visualState === 'done'
                 ? '<div class="carousel-icon done">✓</div>'
                 : '<div class="carousel-icon upcoming">○</div>');
 
-        const badge = stateClass === 'active' ? '<div class="carousel-badge">NOW</div>' : '';
+        const badge = visualState === 'active' ? '<div class="carousel-badge">NOW</div>' : '';
         const textHtml = `<div class="carousel-text">${PlannerService.escapeHtml(cleanText)}</div>`;
 
         return `
@@ -322,7 +482,7 @@ export const FocusMode = {
     },
 
     fillCarouselCard(cardEl, stateClass, index, lines) {
-        cardEl.classList.remove('active', 'upcoming', 'done', 'behind', 'empty', 'sliding-down', 'sliding-to-active', 'sliding-behind-to-upcoming', 'sliding-out');
+        cardEl.classList.remove('active', 'upcoming', 'done', 'behind', 'below', 'empty', 'sliding-down', 'sliding-to-active', 'sliding-behind-to-upcoming', 'sliding-out', 'sliding-done-to-active', 'sliding-active-to-upcoming', 'sliding-upcoming-to-behind', 'sliding-below-to-done');
         cardEl.classList.add(stateClass);
 
         if (index === -1) {
@@ -335,7 +495,7 @@ export const FocusMode = {
 
         const raw = lines[index] || '';
         const cleanText = raw.replace(/\[[ x]\]\s*/, '').trim();
-        const depth = stateClass === 'active' ? 0 : (stateClass === 'behind' ? 2 : 1);
+        const depth = stateClass === 'active' ? 0 : (stateClass === 'behind' || stateClass === 'below' ? 2 : 1);
         cardEl.dataset.index = String(index);
         cardEl.style.setProperty('--depth', depth);
         cardEl.innerHTML = this.buildCarouselCardInnerHtml(stateClass, index, cleanText);
@@ -391,6 +551,9 @@ export const FocusMode = {
         }
 
         this.carouselAnimating = true;
+        carousel.classList.add('carousel-rolling');
+        document.getElementById('carouselCompleteBtn')?.classList.add('hidden');
+        document.getElementById('carouselNav')?.classList.add('hidden');
 
         doneCard.classList.add('sliding-out');
         activeCard.classList.add('sliding-down');
@@ -427,7 +590,9 @@ export const FocusMode = {
                 activeTitle.textContent = this.getActiveStepTitle(taskAfter, state.currentStepIndex);
             }
             this.updateRings();
+            carousel.classList.remove('carousel-rolling');
             this.carouselAnimating = false;
+            this.schedulePositionCarouselCompleteButton();
         };
 
         const onAnimationEnd = (e) => {
@@ -436,6 +601,83 @@ export const FocusMode = {
         };
 
         upcomingCard.addEventListener('animationend', onAnimationEnd, { once: true });
+    },
+
+    animateCarouselRollReverse(toIndex) {
+        if (this.carouselAnimating) return;
+        const task = Store.getTask(this.activeTaskId);
+        const state = Store.getState().activeExecution;
+        const fromIndex = state.currentStepIndex;
+
+        if (toIndex === -1 || toIndex === fromIndex) return;
+
+        const stackContainer = document.getElementById('questStack');
+        const carousel = stackContainer?.querySelector('.quest-carousel');
+        if (!carousel) return;
+
+        const doneCard = carousel.querySelector('.carousel-card[data-role="done"]');
+        const activeCard = carousel.querySelector('.carousel-card[data-role="active"]');
+        const upcomingCard = carousel.querySelector('.carousel-card[data-role="upcoming"]');
+        const behindCard = carousel.querySelector('.carousel-card[data-role="behind"]');
+        if (!doneCard || !activeCard || !upcomingCard || !behindCard) return;
+
+        const oldUpcomingIndex = parseInt(upcomingCard.dataset.index);
+        const linesBefore = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        const prevDoneForTo = this.getPrevCompletedIndex(linesBefore, toIndex);
+        this.fillCarouselCard(behindCard, 'below', prevDoneForTo, linesBefore);
+
+        this.carouselAnimating = true;
+        carousel.classList.add('carousel-rolling');
+        document.getElementById('carouselCompleteBtn')?.classList.add('hidden');
+        document.getElementById('carouselNav')?.classList.add('hidden');
+
+        doneCard.classList.add('sliding-done-to-active');
+        activeCard.classList.add('sliding-active-to-upcoming');
+        upcomingCard.classList.add('sliding-upcoming-to-behind');
+        behindCard.classList.add('sliding-below-to-done');
+        void carousel.offsetHeight;
+
+        const finish = () => {
+            state.currentStepIndex = toIndex;
+            this.lastDoneStepIndex = null;
+
+            const taskAfter = Store.getTask(this.activeTaskId);
+            const linesAfter = (taskAfter.notes || '').split('\n').filter(l => l.trim() !== '');
+            const nextDone = this.getPrevCompletedIndex(linesAfter, toIndex);
+            const nextUpcoming = fromIndex;
+            const nextBehind = (!Number.isNaN(oldUpcomingIndex) && oldUpcomingIndex >= 0) ? oldUpcomingIndex : this.getNextIncompleteIndex(linesAfter, nextUpcoming);
+
+            const oldDone = doneCard;
+            const oldActive = activeCard;
+            const oldUpcoming = upcomingCard;
+            const oldBehind = behindCard;
+
+            oldDone.dataset.role = 'active';
+            oldActive.dataset.role = 'upcoming';
+            oldUpcoming.dataset.role = 'behind';
+            oldBehind.dataset.role = 'done';
+
+            this.fillCarouselCard(oldDone, 'active', toIndex, linesAfter);
+            this.fillCarouselCard(oldActive, 'upcoming', nextUpcoming, linesAfter);
+            this.fillCarouselCard(oldUpcoming, 'behind', nextBehind, linesAfter);
+            this.fillCarouselCard(oldBehind, 'done', nextDone, linesAfter);
+
+            const activeTitle = document.getElementById('activeStepTitle');
+            if (activeTitle) {
+                activeTitle.textContent = this.getActiveStepTitle(taskAfter, state.currentStepIndex);
+            }
+            this.updateRings();
+            carousel.classList.remove('carousel-rolling');
+            this.carouselAnimating = false;
+            this.schedulePositionCarouselCompleteButton();
+        };
+
+        const onAnimationEnd = (e) => {
+            if (e.animationName !== 'rollDoneToActive') return;
+            finish();
+        };
+
+        doneCard.addEventListener('animationend', onAnimationEnd, { once: true });
     },
 
     /**
@@ -461,7 +703,7 @@ export const FocusMode = {
         const behindInner = behindIndex === -1 ? '' : this.buildCarouselCardInnerHtml('behind', behindIndex, lines[behindIndex].replace(/\[[ x]\]\s*/, '').trim());
 
         return `
-            <div class="quest-carousel" data-carousel="drum">
+            <div class="quest-carousel no-initial-transition" data-carousel="drum">
                 <div class="carousel-card done ${prevDone === -1 ? 'empty' : ''}" data-role="done" data-index="${prevDone}" style="--depth: 1;">${doneInner}</div>
                 <div class="carousel-card active" data-role="active" data-index="${activeIndex}" style="--depth: 0;">${activeInner}</div>
                 <div class="carousel-card upcoming ${nextIndex === -1 ? 'empty' : ''}" data-role="upcoming" data-index="${nextIndex}" style="--depth: 1;">${upcomingInner}</div>
@@ -506,11 +748,19 @@ export const FocusMode = {
         document.getElementById('decisionContinue')?.addEventListener('click', () => this.handleDecision('continue'));
         document.getElementById('decisionModify')?.addEventListener('click', () => this.handleDecision('modify'));
 
-        // Step Action buttons (Skip / Complete)
-        document.getElementById('skipStepBtn')?.addEventListener('click', () => {
+        document.getElementById('carouselNavUpBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.navigateToPrevVisibleStep();
+        });
+        document.getElementById('carouselNavDownBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             this.skipToNextStep();
         });
-        document.getElementById('completeStepBtn')?.addEventListener('click', () => {
+        document.getElementById('carouselCompleteBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             this.completeCurrentStep();
         });
 
@@ -530,12 +780,24 @@ export const FocusMode = {
         }
 
         this.activeKeyHandler = (e) => {
+            if (e.key === 'Enter') {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
+                this.completeCurrentStep();
+                return;
+            }
             if (e.key === 'Escape' || e.key.toLowerCase() === 'f') {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 this.close();
             }
         };
         document.addEventListener('keydown', this.activeKeyHandler);
+
+        if (this.resizeHandler) {
+            window.removeEventListener('resize', this.resizeHandler);
+        }
+        this.resizeHandler = () => this.schedulePositionCarouselCompleteButton();
+        window.addEventListener('resize', this.resizeHandler);
     },
 
     /**
@@ -789,6 +1051,40 @@ export const FocusMode = {
             this.updateQuestStack();
         }
         if (window.Calendar) window.Calendar.refresh();
+    },
+
+    /**
+     * Navigate to previous step without marking completion
+     */
+    goToPreviousStep() {
+        const state = Store.getState().activeExecution;
+        const task = Store.getTask(this.activeTaskId);
+        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        if (lines.length === 0) return;
+
+        for (let i = state.currentStepIndex - 1; i >= 0; i--) {
+            if (lines[i] !== undefined) {
+                state.currentStepIndex = i;
+                this.lastDoneStepIndex = null;
+                this.updateQuestStack();
+                return;
+            }
+        }
+    },
+
+    navigateToPrevVisibleStep() {
+        if (this.carouselAnimating) return;
+        const state = Store.getState().activeExecution;
+        if (state.phase === 'execution') return;
+
+        const stackContainer = document.getElementById('questStack');
+        const carousel = stackContainer?.querySelector('.quest-carousel');
+        if (!carousel) return;
+        const doneCard = carousel.querySelector('.carousel-card[data-role="done"]');
+        if (!doneCard || doneCard.classList.contains('empty')) return;
+        const toIndex = parseInt(doneCard.dataset.index);
+        if (Number.isNaN(toIndex) || toIndex < 0) return;
+        this.animateCarouselRollReverse(toIndex);
     },
 
     /**

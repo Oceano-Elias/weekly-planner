@@ -502,6 +502,10 @@
     transform-style: preserve-3d;
 }
 
+.quest-carousel.no-initial-transition .carousel-card {
+    transition: none !important;
+}
+
 :root {
     --carousel-roll-duration: 420ms;
     --carousel-roll-ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -525,6 +529,81 @@
     align-items: stretch;
     gap: 14px;
     padding: 20px 24px;
+}
+
+.carousel-complete-btn {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translate3d(var(--complete-x, 0px), var(--complete-y, 0px), 0) translate(var(--complete-tx, -100%), var(--complete-ty, -100%));
+    z-index: 40;
+    transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.carousel-complete-btn:hover,
+.carousel-complete-btn:active,
+.carousel-complete-btn:focus,
+.carousel-complete-btn:focus-visible {
+    transform: translate3d(var(--complete-x, 0px), var(--complete-y, 0px), 0) translate(var(--complete-tx, -100%), var(--complete-ty, -100%));
+}
+
+.carousel-complete-btn.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.quest-carousel.carousel-rolling + .carousel-complete-btn {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.carousel-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translate3d(var(--nav-x, 0px), var(--nav-y, 0px), 0) translate(var(--nav-tx, 0%), var(--nav-ty, -50%));
+    z-index: 41;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.carousel-nav.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.quest-carousel.carousel-rolling ~ .carousel-nav {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.carousel-nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.82);
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.carousel-nav-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.94);
+}
+
+.carousel-nav-btn:active {
+    transform: translateY(0);
 }
 
 /* === ACTIVE CARD - Vertically centered === */
@@ -676,6 +755,24 @@
     box-shadow:
         0 -14px 46px rgba(0, 0, 0, 0.34),
         0 -1px 0 rgba(255, 255, 255, 0.18) inset;
+}
+
+.carousel-card.below {
+    top: 50%;
+    transform: translateX(-50%) translateY(calc(-50% + 220px)) scale(0.82) rotateX(-42deg);
+    z-index: 4;
+    opacity: 0;
+    background: linear-gradient(175deg,
+            color-mix(in srgb, var(--task-color) 20%, transparent) 0%,
+            color-mix(in srgb, var(--task-color) 10%, transparent) 100%);
+    border: 1px solid color-mix(in srgb, var(--task-color) 40%, transparent);
+    border-top: 2px solid color-mix(in srgb, var(--task-color) 50%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    pointer-events: none;
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.3),
+        0 2px 0 color-mix(in srgb, var(--task-color) 20%, transparent) inset;
 }
 
 /* === DONE CARDS - Stacked BELOW active (completed, sliding down) === */
@@ -858,6 +955,123 @@
     100% {
         transform: translateX(-50%) translateY(calc(-50% - 110px)) scale(0.88) rotateX(15deg);
         opacity: 0.7;
+    }
+}
+
+.carousel-card.sliding-done-to-active {
+    animation: rollDoneToActive var(--carousel-roll-duration) var(--carousel-roll-ease) forwards;
+    transition: none !important;
+    z-index: 30;
+}
+
+@keyframes rollDoneToActive {
+    0% {
+        transform: translateX(-50%) translateY(calc(-50% + 110px)) scale(0.88) rotateX(-25deg);
+        opacity: 0.5;
+    }
+
+    25% {
+        transform: translateX(-50%) translateY(calc(-50% + 70px)) scale(0.91) rotateX(-18deg);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(calc(-50% + 35px)) scale(0.95) rotateX(-10deg);
+        opacity: 0.85;
+    }
+
+    75% {
+        transform: translateX(-50%) translateY(calc(-50% + 10px)) scale(0.98) rotateX(-3deg);
+        opacity: 0.95;
+    }
+
+    100% {
+        transform: translateX(-50%) translateY(-50%) scale(1) rotateX(0deg);
+        opacity: 1;
+    }
+}
+
+.carousel-card.sliding-active-to-upcoming {
+    animation: rollActiveToUpcoming var(--carousel-roll-duration) var(--carousel-roll-ease) forwards;
+    transition: none !important;
+    z-index: 28;
+}
+
+@keyframes rollActiveToUpcoming {
+    0% {
+        transform: translateX(-50%) translateY(-50%) scale(1) rotateX(0deg);
+        opacity: 1;
+    }
+
+    25% {
+        transform: translateX(-50%) translateY(calc(-50% - 10px)) scale(0.98) rotateX(2deg);
+        opacity: 0.92;
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(calc(-50% - 35px)) scale(0.95) rotateX(6deg);
+        opacity: 0.84;
+    }
+
+    75% {
+        transform: translateX(-50%) translateY(calc(-50% - 70px)) scale(0.91) rotateX(11deg);
+        opacity: 0.77;
+    }
+
+    100% {
+        transform: translateX(-50%) translateY(calc(-50% - 110px)) scale(0.88) rotateX(15deg);
+        opacity: 0.7;
+    }
+}
+
+.carousel-card.sliding-upcoming-to-behind {
+    animation: rollUpcomingToBehind var(--carousel-roll-duration) var(--carousel-roll-ease) forwards;
+    transition: none !important;
+    z-index: 20;
+}
+
+@keyframes rollUpcomingToBehind {
+    0% {
+        transform: translateX(-50%) translateY(calc(-50% - 110px)) scale(0.88) rotateX(15deg);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(calc(-50% - 150px)) scale(0.84) rotateX(21deg);
+        opacity: 0.25;
+    }
+
+    100% {
+        transform: translateX(-50%) translateY(calc(-50% - 185px)) scale(0.82) rotateX(25deg);
+        opacity: 0;
+    }
+}
+
+.carousel-card.sliding-below-to-done {
+    animation: rollBelowToDone var(--carousel-roll-duration) var(--carousel-roll-ease) forwards;
+    transition: none !important;
+    z-index: 12;
+}
+
+@keyframes rollBelowToDone {
+    0% {
+        transform: translateX(-50%) translateY(calc(-50% + 220px)) scale(0.82) rotateX(-42deg);
+        opacity: 0;
+    }
+
+    40% {
+        transform: translateX(-50%) translateY(calc(-50% + 165px)) scale(0.84) rotateX(-34deg);
+        opacity: 0.28;
+    }
+
+    75% {
+        transform: translateX(-50%) translateY(calc(-50% + 130px)) scale(0.86) rotateX(-30deg);
+        opacity: 0.4;
+    }
+
+    100% {
+        transform: translateX(-50%) translateY(calc(-50% + 110px)) scale(0.88) rotateX(-25deg);
+        opacity: 0.5;
     }
 }
 
