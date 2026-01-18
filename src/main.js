@@ -19,6 +19,7 @@ import { DepartmentSettings } from './components/DepartmentSettings.js';
 import { Confetti } from './components/Confetti.js';
 import { WeeklySummary } from './components/WeeklySummary.js';
 import { APP_VERSION } from './version.js';
+import FocusTrap from './utils/FocusTrap.js';
 
 // Import styles
 import './styles/reset.css';
@@ -154,6 +155,7 @@ const App = {
             this.setupPrintActions();
             this.setupSettings();
             this.setupKeyboardShortcuts();
+            this.setupDropdowns();
             this.updateBadgeCounts();
             this.setupFavicon();
             this.displayVersion();
@@ -239,6 +241,11 @@ const App = {
         const closeBtn = document.getElementById('closeModal');
         const cancelBtn = document.getElementById('cancelTask');
 
+        // Add ARIA attributes for accessibility
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'modalTitle');
+
         openBtn.addEventListener('click', () => this.openModal());
         closeBtn.addEventListener('click', () => this.closeModal());
         cancelBtn.addEventListener('click', () => this.closeModal());
@@ -253,6 +260,11 @@ const App = {
             if (e.key === 'Escape' && modal.classList.contains('active')) {
                 this.closeModal();
             }
+            // ⌘+Enter or Ctrl+Enter to save task
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && modal.classList.contains('active')) {
+                e.preventDefault();
+                this.saveTask();
+            }
         });
     },
 
@@ -263,7 +275,8 @@ const App = {
         const modal = document.getElementById('taskModal');
         modal.classList.add('active');
         this.resetForm();
-        document.getElementById('dept1').focus();
+        // Activate focus trap for accessibility
+        FocusTrap.activate(modal);
     },
 
     /**
@@ -368,6 +381,8 @@ const App = {
         const modal = document.getElementById('taskModal');
         modal.classList.remove('active');
         this.resetForm();
+        // Deactivate focus trap and restore focus
+        FocusTrap.deactivate();
     },
 
     /**
@@ -810,6 +825,50 @@ const App = {
     },
 
     /**
+     * Setup dropdown menus
+     */
+    setupDropdowns() {
+        const dropdown = document.getElementById('moreActionsDropdown');
+        const toggleBtn = document.getElementById('moreActionsBtn');
+        const menu = document.getElementById('moreActionsMenu');
+
+        if (!dropdown || !toggleBtn || !menu) return;
+
+        // Toggle dropdown on button click
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.contains('open');
+            dropdown.classList.toggle('open');
+            toggleBtn.setAttribute('aria-expanded', !isOpen);
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('open');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Close dropdown when clicking a menu item
+        menu.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                dropdown.classList.remove('open');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+            });
+        });
+
+        // Close dropdown on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && dropdown.classList.contains('open')) {
+                dropdown.classList.remove('open');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                toggleBtn.focus();
+            }
+        });
+    },
+
+    /**
      * Setup keyboard shortcuts
      */
     setupKeyboardShortcuts() {
@@ -954,7 +1013,13 @@ const App = {
     toggleShortcutsModal() {
         const modal = document.getElementById('shortcutsModal');
         if (modal) {
+            const isOpen = modal.classList.contains('active');
             modal.classList.toggle('active');
+            if (!isOpen) {
+                FocusTrap.activate(modal);
+            } else {
+                FocusTrap.deactivate();
+            }
         }
     },
 
@@ -965,6 +1030,7 @@ const App = {
         const modal = document.getElementById('shortcutsModal');
         if (modal) {
             modal.classList.remove('active');
+            FocusTrap.deactivate();
         }
     },
 

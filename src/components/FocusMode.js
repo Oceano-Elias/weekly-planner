@@ -11,25 +11,16 @@ export const FocusMode = {
     activeTaskId: null,
     activeKeyHandler: null,
 
-    // Pomodoro Timer State
-    pomodoroTimer: null,
-    pomodoroSeconds: 25 * 60, // 25 minutes default
-    pomodoroRunning: false,
-    pomodoroMode: 'work', // 'work' or 'break'
-    workDuration: 25 * 60,
-    breakDuration: 5 * 60,
-    pomodoroTargetEpoch: null,
-    pipWindow: null,
-    badgeEl: null,
+    // Execution Engine State
+    activeTaskId: null,
+    activeKeyHandler: null,
+    sessionInterval: null,
+    carouselAnimating: false,
+    lastDoneStepIndex: null,
 
-    /**
-     * Count the number of steps in the notes
-     */
-    getStepCount(notes) {
-        if (!notes) return 0;
-        const lines = notes.split('\n').filter(l => l.trim() !== '');
-        return lines.length;
-    },
+    // Core session settings
+    sessionDuration: 25 * 60, // 25 minutes default
+    closureThreshold: 5 * 60, // 5 minutes before end
 
     /**
      * Open Focus Mode for a specific task
@@ -40,8 +31,39 @@ export const FocusMode = {
 
         this.activeTaskId = taskId;
         this.isOpen = true;
+
+        // Initialize or restore execution state
+        this.initializeExecutionState(task);
+
         this.render(task);
         document.body.style.overflow = 'hidden';
+    },
+
+    /**
+     * Initialize or restore state from Store
+     */
+    initializeExecutionState(task) {
+        const state = Store.getState().activeExecution;
+
+        // If we are opening a NEW task, or if no task is active, reset state
+        if (state.taskId !== this.activeTaskId) {
+            state.taskId = this.activeTaskId;
+            state.running = false;
+            state.phase = 'orientation';
+            state.mode = 'work';
+            state.sessionStartTime = null;
+            state.accumulatedTime = 0;
+            state.breakStartTime = null;
+            state.returnAnchor = task.returnAnchor || '';
+
+            // Find first incomplete step
+            const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+            state.currentStepIndex = lines.findIndex(l => l.includes('[ ]'));
+            if (state.currentStepIndex === -1 && lines.length > 0) {
+                state.currentStepIndex = 0; // Fallback to first
+            }
+            this.lastDoneStepIndex = null;
+        }
     },
 
     /**
@@ -49,14 +71,17 @@ export const FocusMode = {
      */
     close() {
         this.isOpen = false;
-        this.activeTaskId = null;
-        if (this.pomodoroRunning) {
-            this.openFloatingTimer();
+
+        const state = Store.getState().activeExecution;
+        if (!state.running) {
+            this.stopSession();
+            this.activeTaskId = null;
         } else {
-            this.stopTimer();
+            // Keep running in background/floating mode
+            this.openFloatingTimer();
         }
 
-        // Remove the keyboard listener to prevent leaks
+        // Remove the keyboard listener
         if (this.activeKeyHandler) {
             document.removeEventListener('keydown', this.activeKeyHandler);
             this.activeKeyHandler = null;
@@ -66,7 +91,6 @@ export const FocusMode = {
         container.innerHTML = '';
         document.body.style.overflow = '';
 
-        // Refresh UI to reflect changes made in Focus Mode (like checklist updates)
         if (window.Calendar) window.Calendar.renderScheduledTasks();
         if (window.TaskQueue) window.TaskQueue.refresh();
     },
@@ -77,184 +101,373 @@ export const FocusMode = {
     render(task) {
         const container = document.getElementById('focusModeContainer');
         const color = Departments.getColor(task.hierarchy);
-
-        this.restoreTimerState();
+        const state = Store.getState().activeExecution;
 
         container.innerHTML = `
-            <div class="focus-overlay" id="focusOverlay">
-                <div class="focus-card" style="--task-color: ${color}">
+            <div class="focus-overlay phase-${state.phase}" id="focusOverlay">
+                <div class="focus-card glass-surface-deep" style="--task-color: ${color}">
                     <button class="focus-close" id="closeFocus">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 6L6 18M6 6l12 12"/>
                         </svg>
                     </button>
-                    
-                    <div class="focus-header">
-                        <span class="focus-title">${PlannerService.escapeHtml(task.title)}</span>
-                        <h1 class="focus-goal">Break this task into steps</h1>
+
+                    <!-- Task title at top-left -->
+                    <div class="focus-header-topleft">
+                        <span class="focus-title" id="focusTaskTitle">${PlannerService.escapeHtml(task.title)}</span>
                     </div>
 
-                    <!-- Pomodoro Timer Section -->
-                    <div class="pomodoro-section">
-                        <div class="pomodoro-timer-container">
-                            <div class="pomodoro-ring">
-                                <svg viewBox="0 0 120 120">
-                                    <circle class="pomodoro-ring-bg" cx="60" cy="60" r="52"/>
-                                    <circle class="pomodoro-ring-fill" id="pomodoroRing" cx="60" cy="60" r="52"/>
-                                </svg>
-                                <div class="pomodoro-time" id="pomodoroTime">${this.formatTime(this.pomodoroSeconds)}</div>
-                            </div>
-                            <div class="pomodoro-mode" id="pomodoroModeLabel">🎯 Focus Mode</div>
-                        </div>
-                        <div class="pomodoro-controls">
-                            <button class="pomodoro-btn" id="pomodoroStartPause" title="Start/Pause">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <polygon points="5,3 19,12 5,21"/>
-                                </svg>
-                            </button>
-                            <button class="pomodoro-btn pomodoro-reset" id="pomodoroReset" title="Reset">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                                    <path d="M3 3v5h5"/>
-                                </svg>
-                            </button>
-                            <button class="pomodoro-btn" id="pomodoroFloat" title="Float Timer">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M4 4h10v10H4z"/>
-                                    <path d="M14 10h6v10h-6z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="focus-section">
-                        <div class="section-label">Quest Steps</div>
-                        <ul class="focus-checklist">
-                            ${this.renderChecklist(task.notes || '')}
-                        </ul>
-                        <div class="add-minitask-container">
-                            <button class="add-minitask-btn" id="addMiniTaskBtn">
-                                <div class="add-icon-plus">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                        <path d="M12 5v14M5 12h14"/>
-                                    </svg>
-                                </div>
-                                <span>Add Quest Step ${this.getStepCount(task.notes) + 1}</span>
-                            </button>
-                            <div class="add-minitask-input-wrap" id="addMiniTaskInput" style="display: none;">
-                                <input type="text" class="add-minitask-input" id="miniTaskInput" placeholder="Enter quest step...">
-                                <button class="add-minitask-confirm" id="confirmMiniTask">Commit</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="focus-footer">
-                        <button class="focus-commit-btn" id="focusDoneBtn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                <path d="M5 13l4 4L19 7"/>
+                    <!-- Center: Focus Engine & Quest Stack -->
+                    <div class="focus-engine-side">
+                        <div class="execution-rings-container">
+                            <svg class="execution-ring-svg" viewBox="0 0 120 120" style="position: absolute; width: 100%; height: 100%; transform: rotate(-90deg);">
+                                <defs>
+                                    <linearGradient id="outerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="var(--task-color)" stop-opacity="0.4" />
+                                        <stop offset="100%" stop-color="var(--task-color)" stop-opacity="1" />
+                                    </linearGradient>
+                                    <linearGradient id="innerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="white" />
+                                        <stop offset="100%" stop-color="var(--task-color)" />
+                                    </linearGradient>
+                                    <filter id="innerGlow">
+                                        <feGaussianBlur stdDeviation="2" result="blur" />
+                                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                    </filter>
+                                </defs>
+                                <circle class="outer-ring-bg" cx="60" cy="60" r="56"/>
+                                <circle class="outer-ring-fill" id="outerRing" cx="60" cy="60" r="56" stroke="url(#outerGradient)"/>
+                                <circle class="inner-ring-bg" cx="60" cy="60" r="48"/>
+                                <circle class="inner-ring-fill" id="innerRing" cx="60" cy="60" r="48" stroke="url(#innerGradient)"/>
                             </svg>
-                            <span>${task.completed ? 'Re-open Quest' : 'Complete Quest'}</span>
-                        </button>
+                            <div class="ring-center">
+                                <div class="ring-step-title" id="activeStepTitle">
+                                    ${state.mode === 'work' ? (this.getActiveStepTitle ? this.getActiveStepTitle(task, state.currentStepIndex) : 'Loading step...') : 'Coffee & Recharge'}
+                                </div>
+                                <div class="ring-time" id="sessionTimeDisplay">00:00</div>
+                                <div class="ring-media-controls" aria-label="Focus controls">
+                                    <button class="ring-media-btn ring-media-primary ${state.running ? 'running' : ''}" id="sessionToggleBtn" aria-label="${state.running ? 'Pause' : ((state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus')}" title="${state.running ? 'Pause' : ((state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus')}">
+                                        ${!state.running ? `
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                        ` : `
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                                        `}
+                                    </button>
+                                    ${state.running ? `
+                                        <button class="ring-media-btn ring-media-stop" id="stopSessionBtn" aria-label="Stop" title="Stop">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                                <!-- Step Action Buttons -->
+                                <div class="step-action-controls" id="stepActionControls">
+                                    <button class="step-action-btn skip-btn" id="skipStepBtn" title="Skip to next step (→)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M5 4l10 8-10 8V4zM19 5v14"/>
+                                        </svg>
+                                        Skip
+                                    </button>
+                                    <button class="step-action-btn complete-btn" id="completeStepBtn" title="Mark step complete (Enter)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20 6L9 17l-5-5"/>
+                                        </svg>
+                                        Complete
+                                    </button>
+                                </div>
+                            </div>
+                            ${state.phase === 'decision' ? this.renderDecisionOverlay() : ''}
+                        </div>
+
+                        <!-- Quest Stack Moved Under Controls -->
+                        <div class="quest-stack-container" id="questStack">
+                            ${this.renderQuestStack(task, state.currentStepIndex)}
+                        </div>
                     </div>
                 </div>
             </div>
         `;
 
         this.setupListeners();
-        this.updateTimerDisplay();
+        this.updateRings();
+        this.updateTimeDisplay();
+        this.startSessionInterval();
     },
 
     /**
-     * Update only the checklist without re-rendering the entire modal
+     * Render the decision state overlay
      */
-    updateChecklist() {
-        const task = Store.getTask(this.activeTaskId);
-        if (!task) return;
-
-        const checklist = document.querySelector('.focus-checklist');
-        if (!checklist) return;
-
-        checklist.innerHTML = this.renderChecklist(task.notes || '');
-
-        // Re-attach checklist item listeners
-        const checklistItems = document.querySelectorAll('.checklist-item');
-        const deleteButtons = document.querySelectorAll('.delete-minitask');
-
-        checklistItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (e.target.closest('.delete-minitask')) return;
-                const index = parseInt(item.dataset.index);
-                this.toggleMiniTask(index);
-            });
-        });
-
-        deleteButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const index = parseInt(btn.dataset.index);
-                this.deleteMiniTask(index);
-            });
-        });
-
-        // Reset the add mini-task UI and update button text
-        const addBtn = document.getElementById('addMiniTaskBtn');
-        const addInput = document.getElementById('addMiniTaskInput');
-        const miniTaskInput = document.getElementById('miniTaskInput');
-
-        if (addBtn && addInput && miniTaskInput) {
-            addBtn.style.display = 'flex';
-            addInput.style.display = 'none';
-            miniTaskInput.value = '';
-            // Update button text to show next step number
-            addBtn.innerHTML = `
-                <div class="add-icon-plus">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
+    renderDecisionOverlay() {
+        return `
+            <div class="decision-overlay">
+                <div class="decision-title">Session Complete</div>
+                <div class="decision-grid">
+                    <button class="decision-btn primary" id="decisionComplete">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                        Mark step complete
+                    </button>
+                    <button class="decision-btn" id="decisionContinue">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        Continue this step
+                    </button>
+                    <button class="decision-btn" id="decisionModify">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Modify / Split step
+                    </button>
                 </div>
-                <span>Add Quest Step ${stepCount + 1}</span>
-            `;
+            </div>
+        `;
+    },
+
+    /**
+     * Get the title of the current active step
+     */
+    getActiveStepTitle(task, index) {
+        if (!task.notes) return "Define your first step";
+        const lines = task.notes.split('\n').filter(l => l.trim() !== '');
+        if (lines.length === 0) return "Define your first step";
+        if (index < 0 || index >= lines.length) return lines[0].replace(/\[[ x]\]\s*/, '').trim();
+
+        return lines[index].replace(/\[[ x]\]\s*/, '').trim();
+    },
+
+    /**
+     * Update only the quest stack and active step display without full re-render
+     * Uses class toggling for smooth CSS transitions (no HTML replacement)
+     */
+    updateQuestStack() {
+        const task = Store.getTask(this.activeTaskId);
+        const state = Store.getState().activeExecution;
+
+        const stackContainer = document.getElementById('questStack');
+        const activeTitle = document.getElementById('activeStepTitle');
+
+        if (stackContainer) {
+            const carousel = stackContainer.querySelector('.quest-carousel');
+
+            // If no carousel exists yet, do initial render
+            if (!carousel) {
+                stackContainer.innerHTML = this.renderQuestStack(task, state.currentStepIndex);
+                this.setupCarouselListeners(stackContainer);
+            } else {
+                if (!this.carouselAnimating) {
+                    this.syncCarousel(carousel, task, state.currentStepIndex);
+                }
+            }
+        }
+
+        if (activeTitle) {
+            activeTitle.textContent = this.getActiveStepTitle(task, state.currentStepIndex);
         }
     },
 
     /**
-     * Parse notes into an interactive checklist
+     * Setup click listeners for carousel cards
      */
-    renderChecklist(notes) {
-        if (!notes) return '<li class="checklist-empty">No mini-tasks yet. Add one below!</li>';
+    setupCarouselListeners(container) {
+        const carousel = container.querySelector('.quest-carousel');
+        if (!carousel) return;
+        if (carousel.dataset.listenersAttached === 'true') return;
+        carousel.dataset.listenersAttached = 'true';
+
+        carousel.addEventListener('click', (e) => {
+            const card = e.target.closest('.carousel-card');
+            if (!card || card.classList.contains('empty')) return;
+            const state = Store.getState().activeExecution;
+            if (state.phase === 'execution') return;
+            const idx = parseInt(card.dataset.index);
+            if (Number.isNaN(idx) || idx < 0) return;
+            state.currentStepIndex = idx;
+            this.lastDoneStepIndex = null;
+            this.updateQuestStack();
+        });
+    },
+
+    getNextIncompleteIndex(lines, fromIndex) {
+        return lines.findIndex((l, i) => i > fromIndex && l.includes('[ ]'));
+    },
+
+    getPrevCompletedIndex(lines, fromIndex) {
+        for (let i = fromIndex - 1; i >= 0; i--) {
+            if (lines[i]?.includes('[x]')) return i;
+        }
+        return -1;
+    },
+
+    buildCarouselCardInnerHtml(stateClass, index, cleanText) {
+        const stepLabel = index >= 0 ? `Step ${index + 1}` : '';
+        const icon = stateClass === 'active'
+            ? '<div class="carousel-icon active">●</div>'
+            : (stateClass === 'done'
+                ? '<div class="carousel-icon done">✓</div>'
+                : '<div class="carousel-icon upcoming">○</div>');
+
+        const badge = stateClass === 'active' ? '<div class="carousel-badge">NOW</div>' : '';
+        const textHtml = `<div class="carousel-text">${PlannerService.escapeHtml(cleanText)}</div>`;
+
+        return `
+            <div class="carousel-header">
+                ${icon}
+                <div class="carousel-step">${stepLabel}</div>
+                ${badge}
+            </div>
+            ${textHtml}
+        `;
+    },
+
+    fillCarouselCard(cardEl, stateClass, index, lines) {
+        cardEl.classList.remove('active', 'upcoming', 'done', 'behind', 'empty', 'sliding-down', 'sliding-to-active', 'sliding-behind-to-upcoming', 'sliding-out');
+        cardEl.classList.add(stateClass);
+
+        if (index === -1) {
+            cardEl.classList.add('empty');
+            cardEl.dataset.index = '-1';
+            cardEl.style.setProperty('--depth', 1);
+            cardEl.innerHTML = '';
+            return;
+        }
+
+        const raw = lines[index] || '';
+        const cleanText = raw.replace(/\[[ x]\]\s*/, '').trim();
+        const depth = stateClass === 'active' ? 0 : (stateClass === 'behind' ? 2 : 1);
+        cardEl.dataset.index = String(index);
+        cardEl.style.setProperty('--depth', depth);
+        cardEl.innerHTML = this.buildCarouselCardInnerHtml(stateClass, index, cleanText);
+    },
+
+    syncCarousel(carousel, task, activeIndex) {
+        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        if (lines.length === 0) return;
+
+        const doneCard = carousel.querySelector('.carousel-card[data-role="done"]');
+        const activeCard = carousel.querySelector('.carousel-card[data-role="active"]');
+        const upcomingCard = carousel.querySelector('.carousel-card[data-role="upcoming"]');
+        const behindCard = carousel.querySelector('.carousel-card[data-role="behind"]');
+        if (!doneCard || !activeCard || !upcomingCard || !behindCard) return;
+
+        const nextIndex = this.getNextIncompleteIndex(lines, activeIndex);
+        const behindIndex = nextIndex === -1 ? -1 : this.getNextIncompleteIndex(lines, nextIndex);
+        const prevDone = (this.lastDoneStepIndex !== null && this.lastDoneStepIndex >= 0 && this.lastDoneStepIndex < activeIndex)
+            ? this.lastDoneStepIndex
+            : this.getPrevCompletedIndex(lines, activeIndex);
+
+        this.fillCarouselCard(doneCard, 'done', prevDone, lines);
+        this.fillCarouselCard(activeCard, 'active', activeIndex, lines);
+        this.fillCarouselCard(upcomingCard, 'upcoming', nextIndex, lines);
+        this.fillCarouselCard(behindCard, 'behind', behindIndex, lines);
+    },
+
+    animateCarouselRoll(toIndex, { markComplete }) {
+        if (this.carouselAnimating) return;
+        const task = Store.getTask(this.activeTaskId);
+        const state = Store.getState().activeExecution;
+        const fromIndex = state.currentStepIndex;
+
+        if (toIndex === -1 || toIndex === fromIndex) return;
+
+        const stackContainer = document.getElementById('questStack');
+        const carousel = stackContainer?.querySelector('.quest-carousel');
+        if (!carousel) return;
+
+        const doneCard = carousel.querySelector('.carousel-card[data-role="done"]');
+        const activeCard = carousel.querySelector('.carousel-card[data-role="active"]');
+        const upcomingCard = carousel.querySelector('.carousel-card[data-role="upcoming"]');
+        const behindCard = carousel.querySelector('.carousel-card[data-role="behind"]');
+        if (!doneCard || !activeCard || !upcomingCard || !behindCard) return;
+
+        const linesBefore = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        const behindIndexBefore = this.getNextIncompleteIndex(linesBefore, toIndex);
+        this.fillCarouselCard(upcomingCard, 'upcoming', toIndex, linesBefore);
+        this.fillCarouselCard(behindCard, 'behind', behindIndexBefore, linesBefore);
+
+        if (markComplete) {
+            this.toggleMiniTask(fromIndex, true);
+        }
+
+        this.carouselAnimating = true;
+
+        doneCard.classList.add('sliding-out');
+        activeCard.classList.add('sliding-down');
+        upcomingCard.classList.add('sliding-to-active');
+        behindCard.classList.add('sliding-behind-to-upcoming');
+        void carousel.offsetHeight;
+
+        const finish = () => {
+            this.lastDoneStepIndex = fromIndex;
+            state.currentStepIndex = toIndex;
+
+            const taskAfter = Store.getTask(this.activeTaskId);
+            const linesAfter = (taskAfter.notes || '').split('\n').filter(l => l.trim() !== '');
+            const nextUpcoming = behindIndexBefore;
+            const nextBehind = nextUpcoming === -1 ? -1 : this.getNextIncompleteIndex(linesAfter, nextUpcoming);
+
+            const oldDone = doneCard;
+            const oldActive = activeCard;
+            const oldUpcoming = upcomingCard;
+            const oldBehind = behindCard;
+
+            oldDone.dataset.role = 'behind';
+            oldBehind.dataset.role = 'upcoming';
+            oldUpcoming.dataset.role = 'active';
+            oldActive.dataset.role = 'done';
+
+            this.fillCarouselCard(oldActive, 'done', fromIndex, linesAfter);
+            this.fillCarouselCard(oldUpcoming, 'active', toIndex, linesAfter);
+            this.fillCarouselCard(oldBehind, 'upcoming', nextUpcoming, linesAfter);
+            this.fillCarouselCard(oldDone, 'behind', nextBehind, linesAfter);
+
+            const activeTitle = document.getElementById('activeStepTitle');
+            if (activeTitle) {
+                activeTitle.textContent = this.getActiveStepTitle(taskAfter, state.currentStepIndex);
+            }
+            this.updateRings();
+            this.carouselAnimating = false;
+        };
+
+        const onAnimationEnd = (e) => {
+            if (e.animationName !== 'rollToActive') return;
+            finish();
+        };
+
+        upcomingCard.addEventListener('animationend', onAnimationEnd, { once: true });
+    },
+
+    /**
+     * Render the steps as a 3D vertical carousel
+     * All cards rendered upfront for smooth CSS transitions
+     */
+    renderQuestStack(task, activeIndex) {
+        const notes = task.notes || '';
+        if (!notes) return '<div class="pills-empty">Define your journey steps...</div>';
 
         const lines = notes.split('\n').filter(l => l.trim() !== '');
-        if (lines.length === 0) return '<li class="checklist-empty">No mini-tasks yet. Add one below!</li>';
+        if (lines.length === 0) return '<div class="pills-empty">Define your journey steps...</div>';
 
-        return lines.map((line, index) => {
-            const isCompleted = line.includes('[x]');
-            const cleanText = line.replace(/\[[ x]\]\s*/, '').trim();
-            const isLast = index === lines.length - 1;
+        const nextIndex = this.getNextIncompleteIndex(lines, activeIndex);
+        const behindIndex = nextIndex === -1 ? -1 : this.getNextIncompleteIndex(lines, nextIndex);
+        const prevDone = (this.lastDoneStepIndex !== null && this.lastDoneStepIndex >= 0 && this.lastDoneStepIndex < activeIndex)
+            ? this.lastDoneStepIndex
+            : this.getPrevCompletedIndex(lines, activeIndex);
 
-            return `
-                <li class="checklist-item ${isCompleted ? 'done' : ''} ${isLast ? 'last-item' : ''}" data-index="${index}">
-                    <div class="quest-connector">
-                        <div class="quest-icon">
-                            ${isCompleted ?
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>' :
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>'
-                }
-                        </div>
-                    </div>
-                    <div class="quest-card-content">
-                        <div class="checkbox ${isCompleted ? 'checked' : ''}">
-                            ${isCompleted ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' : ''}
-                        </div>
-                        <span class="step-text">${PlannerService.escapeHtml(cleanText)}</span>
-                        <button class="delete-minitask" data-index="${index}" title="Remove Step">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 6L6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                </li>
-            `;
-        }).join('');
+        const doneInner = prevDone === -1 ? '' : this.buildCarouselCardInnerHtml('done', prevDone, lines[prevDone].replace(/\[[ x]\]\s*/, '').trim());
+        const activeInner = this.buildCarouselCardInnerHtml('active', activeIndex, lines[activeIndex].replace(/\[[ x]\]\s*/, '').trim());
+        const upcomingInner = nextIndex === -1 ? '' : this.buildCarouselCardInnerHtml('upcoming', nextIndex, lines[nextIndex].replace(/\[[ x]\]\s*/, '').trim());
+        const behindInner = behindIndex === -1 ? '' : this.buildCarouselCardInnerHtml('behind', behindIndex, lines[behindIndex].replace(/\[[ x]\]\s*/, '').trim());
+
+        return `
+            <div class="quest-carousel" data-carousel="drum">
+                <div class="carousel-card done ${prevDone === -1 ? 'empty' : ''}" data-role="done" data-index="${prevDone}" style="--depth: 1;">${doneInner}</div>
+                <div class="carousel-card active" data-role="active" data-index="${activeIndex}" style="--depth: 0;">${activeInner}</div>
+                <div class="carousel-card upcoming ${nextIndex === -1 ? 'empty' : ''}" data-role="upcoming" data-index="${nextIndex}" style="--depth: 1;">${upcomingInner}</div>
+                <div class="carousel-card behind ${behindIndex === -1 ? 'empty' : ''}" data-role="behind" data-index="${behindIndex}" style="--depth: 2;">${behindInner}</div>
+            </div>
+        `;
     },
 
     /**
@@ -263,111 +476,61 @@ export const FocusMode = {
     setupListeners() {
         const overlay = document.getElementById('focusOverlay');
         const closeBtn = document.getElementById('closeFocus');
-        const doneBtn = document.getElementById('focusDoneBtn');
-        const checklistItems = document.querySelectorAll('.checklist-item');
-        const addBtn = document.getElementById('addMiniTaskBtn');
-        const addInput = document.getElementById('addMiniTaskInput');
-        const miniTaskInput = document.getElementById('miniTaskInput');
-        const confirmBtn = document.getElementById('confirmMiniTask');
-        const deleteButtons = document.querySelectorAll('.delete-minitask');
+        const sessionToggleBtn = document.getElementById('sessionToggleBtn');
+        const questCards = document.querySelectorAll('.carousel-card');
 
-        overlay.addEventListener('click', (e) => {
+        overlay?.addEventListener('click', (e) => {
             if (e.target === overlay) this.close();
         });
 
-        closeBtn.addEventListener('click', () => this.close());
+        closeBtn?.addEventListener('click', () => this.close());
 
-        doneBtn.addEventListener('click', () => {
-            const task = Store.getTask(this.activeTaskId);
-            if (!task) return;
-
-            const wasCompleted = task.completed;
-            const scheduledDay = task.scheduledDay;
-
-            const updatedTask = Store.toggleCompleteForWeek(this.activeTaskId);
-
-            // Trigger individual task celebration
-            if (!wasCompleted && updatedTask && updatedTask.completed && window.Confetti) {
-                const width = window.innerWidth;
-                const height = window.innerHeight;
-                window.Confetti.burst(width / 2, height / 2, 60);
+        sessionToggleBtn?.addEventListener('click', () => {
+            const state = Store.getState().activeExecution;
+            if (state.running) {
+                this.pauseSession();
+            } else {
+                this.startSession();
             }
-
-            // Check for daily celebration if we just completed the task
-            if (!wasCompleted && updatedTask && updatedTask.completed && window.Calendar) {
-                window.Calendar.checkDailyCelebration(scheduledDay);
-            }
-
-            if (window.Calendar) window.Calendar.refresh();
-            if (window.TaskQueue) window.TaskQueue.refresh();
-            this.close();
+            this.render(Store.getTask(this.activeTaskId));
         });
 
-        // Pomodoro Timer Controls
-        const startPauseBtn = document.getElementById('pomodoroStartPause');
-        const resetBtn = document.getElementById('pomodoroReset');
-
-        if (startPauseBtn) {
-            startPauseBtn.addEventListener('click', () => this.startPauseTimer());
-        }
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.resetTimer());
-        }
-        const floatBtn = document.getElementById('pomodoroFloat');
-        if (floatBtn) {
-            floatBtn.addEventListener('click', () => this.openFloatingTimer());
-        }
-
-        checklistItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (e.target.closest('.delete-minitask')) return;
-                const index = parseInt(item.dataset.index);
-                this.toggleMiniTask(index);
-            });
+        document.getElementById('stopSessionBtn')?.addEventListener('click', () => {
+            this.stopSession();
         });
 
-        // Add Mini-Task button
-        addBtn.addEventListener('click', () => {
-            addBtn.style.display = 'none';
-            addInput.style.display = 'flex';
-            miniTaskInput.focus();
+        // The old startBreakBtn is replaced by the unified toggle
+
+        // Decision buttons
+        document.getElementById('decisionComplete')?.addEventListener('click', () => this.handleDecision('complete'));
+        document.getElementById('decisionContinue')?.addEventListener('click', () => this.handleDecision('continue'));
+        document.getElementById('decisionModify')?.addEventListener('click', () => this.handleDecision('modify'));
+
+        // Step Action buttons (Skip / Complete)
+        document.getElementById('skipStepBtn')?.addEventListener('click', () => {
+            this.skipToNextStep();
+        });
+        document.getElementById('completeStepBtn')?.addEventListener('click', () => {
+            this.completeCurrentStep();
         });
 
-        // Confirm add
-        confirmBtn.addEventListener('click', () => {
-            this.addMiniTask(miniTaskInput.value);
-        });
-
-        // Enter to add, ESC to cancel
-        miniTaskInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                this.addMiniTask(miniTaskInput.value);
-            } else if (e.key === 'Escape') {
-                e.stopPropagation();
-                addBtn.style.display = 'flex';
-                addInput.style.display = 'none';
-                miniTaskInput.value = '';
-            }
-        });
-
-        // Delete mini-task
-        deleteButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const index = parseInt(btn.dataset.index);
-                this.deleteMiniTask(index);
+        questCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                card.style.setProperty('--mouse-x', `${x}%`);
+                card.style.setProperty('--mouse-y', `${y}%`);
             });
         });
 
         // ESC or F to close
-        // Remove any existing listener first to prevent duplicates
         if (this.activeKeyHandler) {
             document.removeEventListener('keydown', this.activeKeyHandler);
         }
 
         this.activeKeyHandler = (e) => {
             if (e.key === 'Escape' || e.key.toLowerCase() === 'f') {
-                // Don't close if typing in an input
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 this.close();
             }
@@ -376,19 +539,218 @@ export const FocusMode = {
     },
 
     /**
-     * Add a new mini-task
+     * Toggle session state
      */
-    addMiniTask(text) {
-        if (!text.trim()) return;
+    toggleSession() {
+        const state = Store.getState().activeExecution;
 
+        if (state.running) {
+            this.stopSession();
+        } else {
+            this.startSession();
+        }
+        this.render(Store.getTask(this.activeTaskId));
+    },
+
+    /**
+     * Start focus session
+     */
+    startSession() {
+        const state = Store.getState().activeExecution;
+
+        // Cannot start without a step
         const task = Store.getTask(this.activeTaskId);
-        const notes = task.notes || '';
-        const newLine = `[ ] ${text.trim()}`;
-        const updatedNotes = notes ? `${notes}\n${newLine}` : newLine;
+        const steps = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        if (steps.length === 0) {
+            alert('Please define at least one step before starting.');
+            return;
+        }
 
-        Store.updateTaskNotesForWeek(this.activeTaskId, updatedNotes);
-        this.updateChecklist();
-        if (window.Calendar) window.Calendar.refresh();
+        state.running = true;
+        state.phase = 'execution';
+        state.mode = 'work';
+        state.sessionStartTime = Date.now();
+        state.breakStartTime = null;
+        state.updatedAt = Date.now();
+
+        this.startSessionInterval();
+    },
+
+    /**
+     * Stop focus session (Interruption)
+     */
+    stopSession() {
+        const state = Store.getState().activeExecution;
+        state.running = false;
+        state.phase = 'orientation';
+        state.sessionStartTime = null;
+        state.accumulatedTime = 0;
+        state.mode = 'work';
+        state.breakStartTime = null;
+        clearInterval(this.sessionInterval);
+        this.sessionInterval = null;
+    },
+
+    /**
+     * Start/update session interval
+     */
+    startSessionInterval() {
+        if (this.sessionInterval) clearInterval(this.sessionInterval);
+
+        this.sessionInterval = setInterval(() => {
+            if (!this.isOpen && !Store.getState().activeExecution.running) {
+                clearInterval(this.sessionInterval);
+                return;
+            }
+            this.tick();
+        }, 1000);
+    },
+
+    /**
+     * Core logic tick (1s)
+     */
+    tick() {
+        const state = Store.getState().activeExecution;
+        if (!state.running && state.mode !== 'break') return;
+
+        const now = Date.now();
+
+        if (state.mode === 'work') {
+            const currentSessionElapsed = state.sessionStartTime ? (now - state.sessionStartTime) : 0;
+            const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
+            const elapsedSeconds = Math.floor(totalElapsedMs / 1000);
+
+            // Check for closure phase
+            if (elapsedSeconds >= (this.sessionDuration - this.closureThreshold) && state.phase === 'execution') {
+                state.phase = 'closure';
+                this.notifyPhaseChange('closure');
+            }
+
+            // Check for session completion
+            if (elapsedSeconds >= this.sessionDuration) {
+                state.running = false;
+                state.phase = 'decision';
+                state.accumulatedTime = 0; // Reset for next session
+                this.render(Store.getTask(this.activeTaskId));
+            }
+        } else if (state.mode === 'break') {
+            // Break mode - count up from breakStartTime
+            // Break is always running until user resumes
+        }
+
+        this.updateRings();
+        this.updateTimeDisplay();
+    },
+
+    pauseSession() {
+        const state = Store.getState().activeExecution;
+
+        if (!state.running) return;
+        if (state.sessionStartTime) {
+            state.accumulatedTime = (state.accumulatedTime || 0) + (Date.now() - state.sessionStartTime);
+        }
+        state.running = false;
+        state.sessionStartTime = null;
+    },
+
+    /**
+     * Handle decision after session
+     */
+    handleDecision(choice) {
+        const state = Store.getState().activeExecution;
+        const task = Store.getTask(this.activeTaskId);
+
+        if (choice === 'complete') {
+            this.toggleMiniTask(state.currentStepIndex);
+
+            // Move to next step if available
+            const lines = task.notes.split('\n').filter(l => l.trim() !== '');
+            const nextIncomplete = lines.findIndex((l, i) => i > state.currentStepIndex && l.includes('[ ]'));
+            if (nextIncomplete !== -1) {
+                state.currentStepIndex = nextIncomplete;
+            }
+        } else if (choice === 'modify') {
+            // Simply close decision overlay and show orientation
+        } else if (choice === 'continue') {
+            // Immediate restart
+            this.startSession();
+            return;
+        }
+
+        state.phase = 'orientation';
+        state.running = false;
+        this.render(Store.getTask(this.activeTaskId));
+    },
+
+    /**
+     * Update ring progress
+     */
+    updateRings() {
+        const state = Store.getState().activeExecution;
+        const task = Store.getTask(this.activeTaskId);
+
+        const outerRing = document.getElementById('outerRing');
+        const innerRing = document.getElementById('innerRing');
+        if (!outerRing || !innerRing) return;
+
+        // Outer Ring: Step-based progress
+        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        const completed = lines.filter(l => l.includes('[x]')).length;
+        const total = lines.length || 1;
+        const outerCircumference = 2 * Math.PI * 56;
+        const outerProgress = completed / total;
+
+        outerRing.style.strokeDasharray = outerCircumference;
+        // Even at 0%, we show a tiny bit or just ensure it's initialized
+        outerRing.style.strokeDashoffset = outerCircumference * (1 - outerProgress);
+        outerRing.style.opacity = outerProgress > 0 ? "1" : "0.3";
+
+        // Inner Ring: Session progress
+        const innerCircumference = 2 * Math.PI * 48;
+        innerRing.style.strokeDasharray = innerCircumference;
+
+        if (state.mode === 'work') {
+            const currentSessionElapsed = (state.running && state.sessionStartTime) ? (Date.now() - state.sessionStartTime) : 0;
+            const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
+            const innerProgress = Math.min(1, totalElapsedMs / (this.sessionDuration * 1000));
+
+            innerRing.style.strokeDashoffset = innerCircumference * (1 - innerProgress);
+            innerRing.style.opacity = state.running ? "1" : "0.5";
+        } else if (state.mode === 'break') {
+            // Pulse or special state for break
+            innerRing.style.strokeDashoffset = 0;
+            innerRing.style.opacity = "0.2";
+        } else {
+            // Ready state: show empty ring
+            innerRing.style.strokeDashoffset = innerCircumference;
+            innerRing.style.opacity = "0.3";
+        }
+    },
+
+    /**
+     * Update numeric time (hidden by default in CSS)
+     */
+    updateTimeDisplay() {
+        const display = document.getElementById('sessionTimeDisplay');
+        if (!display) return;
+
+        const state = Store.getState().activeExecution;
+        let elapsedMs = state.accumulatedTime || 0;
+        if (state.mode === 'work' && state.running && state.sessionStartTime) {
+            elapsedMs += (Date.now() - state.sessionStartTime);
+        }
+
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        const totalSeconds = Math.max(0, this.sessionDuration - elapsedSeconds);
+
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    },
+
+    notifyPhaseChange(phase) {
+        // Optional: play subtle sound or visual flash
+        console.log(`[Focus] Phase changed to: ${phase}`);
     },
 
     /**
@@ -400,14 +762,16 @@ export const FocusMode = {
         lines.splice(index, 1);
 
         Store.updateTaskNotesForWeek(this.activeTaskId, lines.join('\n'));
-        this.updateChecklist();
+        this.updateQuestStack();
         if (window.Calendar) window.Calendar.refresh();
     },
 
     /**
      * Toggle a mini-task in notes
+     * @param {number} index - The step index to toggle
+     * @param {boolean} skipUpdate - If true, don't call updateQuestStack (for chained operations)
      */
-    toggleMiniTask(index) {
+    toggleMiniTask(index, skipUpdate = false) {
         const task = Store.getTask(this.activeTaskId);
         const lines = task.notes.split('\n');
         const line = lines[index];
@@ -421,8 +785,46 @@ export const FocusMode = {
         }
 
         Store.updateTaskNotesForWeek(this.activeTaskId, lines.join('\n'));
-        this.updateChecklist();
+        if (!skipUpdate) {
+            this.updateQuestStack();
+        }
         if (window.Calendar) window.Calendar.refresh();
+    },
+
+    /**
+     * Skip to next step without marking current as complete
+     */
+    skipToNextStep() {
+        const state = Store.getState().activeExecution;
+        const task = Store.getTask(this.activeTaskId);
+        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+
+        // Find next incomplete step
+        const nextIndex = lines.findIndex((l, i) => i > state.currentStepIndex && l.includes('[ ]'));
+        if (nextIndex !== -1) {
+            this.animateCarouselRoll(nextIndex, { markComplete: false });
+        }
+    },
+
+    /**
+     * Complete current step and move to next
+     */
+    completeCurrentStep() {
+        const state = Store.getState().activeExecution;
+        const task = Store.getTask(this.activeTaskId);
+        const previousIndex = state.currentStepIndex;
+
+        // Find the next incomplete step BEFORE we mark current as complete
+        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        const nextIndex = lines.findIndex((l, i) => i > state.currentStepIndex && l.includes('[ ]'));
+        if (nextIndex !== -1) {
+            this.animateCarouselRoll(nextIndex, { markComplete: true });
+            return;
+        }
+
+        this.toggleMiniTask(previousIndex, true);
+        this.lastDoneStepIndex = previousIndex;
+        this.updateQuestStack();
     },
 
     // =========================================

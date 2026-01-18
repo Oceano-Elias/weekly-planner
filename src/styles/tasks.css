@@ -4,29 +4,17 @@
    ========================================= */
 
 .task-block {
-    position: relative;
     display: flex;
     flex-direction: column;
     padding: 10px 12px;
 
-    /* 1. PREMIUM REFRACTIVE DEPTH */
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.08) 0%,
-            rgba(255, 255, 255, 0.02) 100%);
-
-    border-radius: var(--radius-md);
-    cursor: grab;
-
-    /* 2. DYNAMIC BORDER & RIM LIGHT */
-    border: 1px solid var(--glass-border);
+    /* DYNAMIC BORDER & RIM LIGHT (handled by glass-surface, specialized here) */
     border-left: 4px solid var(--task-color, var(--accent-primary));
     box-shadow:
-            inset 0 1px 1px rgba(255, 255, 255, 0.1),
-            var(--shadow-task);
+        inset 0 1px 1px rgba(255, 255, 255, 0.1),
+        var(--shadow-task);
 
-    overflow: hidden;
+    cursor: grab;
     transition: all var(--transition-spring);
     color: var(--text-primary);
 }
@@ -40,7 +28,7 @@
     z-index: 10;
 }
 
-/* DAY VIEW - Volumetric Glass Styling */
+/* Day View - Increased volumetric tint */
 .task-block.day-view {
     padding: 16px 12px;
     margin: 4px 16px;
@@ -49,20 +37,20 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 
-    /* 2. SHEEN - Vertical gradient (light top, dark bottom) */
+    /* 2. SHEEN - Increased color ratio for better distinction */
     background: linear-gradient(to bottom,
-            color-mix(in srgb, var(--task-color) 45%, var(--bg-secondary)) 0%,
-            color-mix(in srgb, var(--task-color) 20%, var(--bg-primary)) 100%);
+            color-mix(in srgb, var(--task-color) 65%, var(--bg-secondary)) 0%,
+            color-mix(in srgb, var(--task-color) 35%, var(--bg-primary)) 100%);
 
     border-radius: var(--radius-lg);
 
-    /* 3. RIM LIGHT - Bright top, faint sides/bottom */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    /* 3. RIM LIGHT - Color-tinted borders */
+    border: 1px solid color-mix(in srgb, var(--task-color) 30%, rgba(255, 255, 255, 0.1));
+    border-top: 1px solid color-mix(in srgb, var(--task-color) 50%, rgba(255, 255, 255, 0.4));
     border-left: 4px solid var(--task-color);
 
-    /* Ultra-subtle shadow */
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    /* Ultra-subtle shadow with color glow */
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--task-color) 15%, rgba(0, 0, 0, 0.1));
     min-height: 100%;
 }
 
@@ -103,13 +91,14 @@
     color: white;
 }
 
-/* Subtle color tint - no glow */
+/* Subtle color tint - increased intensity for better distinction */
 .task-block::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--task-color) 0%, transparent 60%);
-    opacity: 0.08;
+    background: linear-gradient(135deg, var(--task-color) 0%, transparent 80%);
+    opacity: 0.25;
+    /* Increased from 0.08 */
     pointer-events: none;
     z-index: 0;
     transition: opacity var(--transition-normal);
@@ -277,7 +266,8 @@
 
 /* Day view - WIDER step progress bar (stays in header, fills available space) */
 .task-block.day-view .task-step-progress {
-    flex: 0 1 auto; /* Don't force it to fill, but allow it to be the center piece */
+    flex: 0 1 auto;
+    /* Don't force it to fill, but allow it to be the center piece */
     max-width: 600px;
     width: 100%;
     min-width: 100px;
@@ -288,7 +278,8 @@
     border-radius: var(--radius-full);
     background: rgba(0, 0, 0, 0.35);
     align-self: center;
-    margin: 0 auto; /* This helps with horizontal centering in some flex scenarios */
+    margin: 0 auto;
+    /* This helps with horizontal centering in some flex scenarios */
 }
 
 .task-block.day-view .task-step-progress .step-text {
@@ -534,7 +525,8 @@
     z-index: 10;
     border-radius: var(--radius-sm);
     overflow: visible;
-    padding-bottom: 1px; /* Gap between tasks */
+    padding-bottom: 1px;
+    /* Gap between tasks */
 }
 
 .calendar-task .task-block {
@@ -723,7 +715,7 @@
 }
 
 .task-queue .task-block .task-title {
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
 }
 
 .task-queue .task-block .task-duration {

@@ -346,8 +346,11 @@ export const DragDrop = {
                 const rect = pointerCandidate.taskBlock.getBoundingClientRect();
                 const maxWidth = 250;
                 const maxHeight = 80;
-                const actualWidth = Math.min(rect.width, maxWidth);
-                const actualHeight = Math.min(rect.height, maxHeight);
+                
+                // Keep the exact width/height of the original card for the ghost 
+                // to avoid the cursor "jumping" due to size changes
+                const actualWidth = rect.width;
+                const actualHeight = rect.height;
 
                 ghost.style.width = actualWidth + 'px';
                 ghost.style.height = actualHeight + 'px';
@@ -355,12 +358,13 @@ export const DragDrop = {
                 ghost.style.minHeight = actualHeight + 'px';
                 ghost.style.maxWidth = actualWidth + 'px';
 
-                // Set initial position before adding to DOM
+                // Set initial position using the precise offsets calculated in pointerdown
                 const initialX = e.clientX - pointerGhostOffsetX;
                 const initialY = e.clientY - pointerGhostOffsetY;
                 ghost.style.transform = `translate3d(${initialX}px, ${initialY}px, 0)`;
                 ghost.style.left = '0';
                 ghost.style.top = '0';
+                ghost.style.pointerEvents = 'none'; // Ensure ghost doesn't block hit testing
 
                 document.body.appendChild(ghost);
                 pointerGhost = ghost;

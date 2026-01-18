@@ -90,50 +90,68 @@
                         </svg>
                         <span class="btn-label-sm">?</span>
                     </button>
-                    <button class="nav-btn" id="settingsBtn" title="Department Settings">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <circle cx="12" cy="12" r="3" />
-                            <path
-                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                        </svg>
-                        <span class="btn-label">Settings</span>
-                    </button>
-                    <button class="nav-btn" id="printPdfBtn" title="Export as PDF / Print">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="6 9 6 2 18 2 18 9" />
-                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                            <rect x="6" y="14" width="12" height="8" />
-                        </svg>
-                        <span class="btn-label">Print</span>
-                    </button>
-                    <button class="nav-btn" id="exportDataBtn" title="Export Data Backup (JSON)">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        <span class="btn-label">Export</span>
-                    </button>
-                    <button class="nav-btn" id="importDataBtn" title="Import Data Backup">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
-                        <span class="btn-label">Import</span>
-                    </button>
-                    <button class="nav-btn" id="weeklySummaryBtn" title="Weekly Summary">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M3 3v18h18" />
-                            <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
-                        </svg>
-                        <span class="btn-label">Summary</span>
-                    </button>
+
+                    <!-- More Actions Dropdown -->
+                    <div class="dropdown" id="moreActionsDropdown">
+                        <button class="nav-btn dropdown-toggle" id="moreActionsBtn" title="More Actions"
+                            aria-haspopup="true" aria-expanded="false">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="1" />
+                                <circle cx="12" cy="5" r="1" />
+                                <circle cx="12" cy="19" r="1" />
+                            </svg>
+                            <span class="btn-label">More</span>
+                        </button>
+                        <div class="dropdown-menu" id="moreActionsMenu">
+                            <button class="dropdown-item" id="settingsBtn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path
+                                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                </svg>
+                                <span>Departments</span>
+                            </button>
+                            <button class="dropdown-item" id="weeklySummaryBtn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M3 3v18h18" />
+                                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+                                </svg>
+                                <span>Weekly Summary</span>
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item" id="printPdfBtn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polyline points="6 9 6 2 18 2 18 9" />
+                                    <path
+                                        d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                    <rect x="6" y="14" width="12" height="8" />
+                                </svg>
+                                <span>Print / PDF</span>
+                            </button>
+                            <button class="dropdown-item" id="exportDataBtn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                <span>Export Data</span>
+                            </button>
+                            <button class="dropdown-item" id="importDataBtn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                <span>Import Data</span>
+                            </button>
+                        </div>
+                    </div>
                     <input type="file" id="importFileInput" accept=".json" style="display: none;">
                 </div>
 
@@ -232,8 +250,8 @@
     <div class="modal-overlay" id="taskModal">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">Create New Task</h2>
-                <button class="modal-close" id="closeModal">
+                <h2 class="modal-title" id="modalTitle">Create New Task</h2>
+                <button class="modal-close" id="closeModal" aria-label="Close modal">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
@@ -335,12 +353,12 @@
     <div id="focusModeContainer"></div>
 
     <!-- Keyboard Shortcuts Modal -->
-    <div class="shortcuts-modal" id="shortcutsModal">
+    <div class="shortcuts-modal" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
         <div class="shortcuts-overlay" id="shortcutsOverlay"></div>
         <div class="shortcuts-content">
             <div class="shortcuts-header">
-                <h3>⌨️ Keyboard Shortcuts</h3>
-                <button class="shortcuts-close" id="closeShortcuts">×</button>
+                <h3 id="shortcutsTitle">⌨️ Keyboard Shortcuts</h3>
+                <button class="shortcuts-close" id="closeShortcuts" aria-label="Close shortcuts">×</button>
             </div>
             <div class="shortcuts-body">
                 <div class="shortcut-group">
@@ -357,8 +375,13 @@
                 <div class="shortcut-group">
                     <h4>Tasks</h4>
                     <div class="shortcut-item"><kbd>N</kbd> <span>New Task</span></div>
-                    <div class="shortcut-item"><kbd>F</kbd> <span>Focus</span></div>
                     <div class="shortcut-item"><kbd>⌘</kbd> + <kbd>Enter</kbd> <span>Save Task</span></div>
+                    <div class="shortcut-item"><kbd>Double-click</kbd> <span>Edit Task</span></div>
+                </div>
+                <div class="shortcut-group">
+                    <h4>Focus Mode</h4>
+                    <div class="shortcut-item"><kbd>F</kbd> <span>Open/Close Focus</span></div>
+                    <div class="shortcut-item"><kbd>Space</kbd> <span>Pause/Resume Timer</span></div>
                 </div>
                 <div class="shortcut-group">
                     <h4>General</h4>

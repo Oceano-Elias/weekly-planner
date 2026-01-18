@@ -5,6 +5,7 @@
 
 import { Store } from '../store.js';
 import { DepartmentData, refreshDepartments } from '../departments.js';
+import FocusTrap from '../utils/FocusTrap.js';
 
 export const DepartmentSettings = {
     isOpen: false,
@@ -24,6 +25,9 @@ export const DepartmentSettings = {
         this.editingData = JSON.parse(JSON.stringify(DepartmentData));
         this.migrationsPending = [];
         this.render();
+        // Activate focus trap for accessibility
+        const modal = document.getElementById('departmentSettingsModal');
+        if (modal) FocusTrap.activate(modal);
     },
 
     /**
@@ -31,6 +35,13 @@ export const DepartmentSettings = {
      */
     close() {
         this.isOpen = false;
+        // Remove Escape key handler
+        if (this._escapeHandler) {
+            document.removeEventListener('keydown', this._escapeHandler);
+            this._escapeHandler = null;
+        }
+        // Deactivate focus trap and restore focus
+        FocusTrap.deactivate();
         const modal = document.getElementById('departmentSettingsModal');
         if (modal) modal.remove();
     },
@@ -86,6 +97,14 @@ export const DepartmentSettings = {
         `;
 
         document.body.appendChild(modal);
+
+        // Handle Escape key to close modal
+        this._escapeHandler = (e) => {
+            if (e.key === 'Escape' && this.isOpen) {
+                this.close();
+            }
+        };
+        document.addEventListener('keydown', this._escapeHandler);
     },
 
     /**
@@ -316,7 +335,39 @@ export const DepartmentSettings = {
      */
     deleteDept(path) {
         const name = path[path.length - 1];
-        if (!confirm(`Delete "${name}" and all its sub-departments?`)) return;
+
+        // Count children recursively
+        const countChildren = (data) => {
+            if (!data || !data.children) return 0;
+            let count = Object.keys(data.children).length;
+            for (const child of Object.values(data.children)) {
+                count += countChildren(child);
+            }
+            return count;
+        };
+
+        // Get the target node
+        let target;
+        if (path.length === 1) {
+            target = this.editingData[path[0]];
+        } else {
+            target = this.editingData;
+            for (let i = 0; i < path.length; i++) {
+                if (i === 0) {
+                    target = target[path[i]];
+                } else {
+                    target = target.children[path[i]];
+                }
+            }
+        }
+
+        const childCount = countChildren(target);
+        let message = `Delete "${name}"?`;
+        if (childCount > 0) {
+            message = `Delete "${name}" and ${childCount} sub-department${childCount > 1 ? 's' : ''}?`;
+        }
+
+        if (!confirm(message)) return;
 
         if (path.length === 1) {
             delete this.editingData[path[0]];

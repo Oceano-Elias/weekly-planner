@@ -20,14 +20,19 @@ let state = {
     weeklyData: {},
     defaultTemplate: null,
     goals: {},
-    activePomodoro: {
-        taskId: null,
-        remainingSeconds: 1500, // 25m
-        targetEpoch: null,
-        running: false,
-        mode: 'work',
-        updatedAt: null
-    }
+    // Professional Execution System
+        activeExecution: {
+            taskId: null,
+            sessionStartTime: null,
+            accumulatedTime: 0,
+            running: false,
+            phase: 'orientation', // 'orientation', 'execution', 'closure', 'decision'
+            mode: 'work', // 'work', 'break'
+            breakStartTime: null,
+            returnAnchor: '',
+            currentStepIndex: -1,
+            updatedAt: null
+        }
 };
 
 let listeners = [];
@@ -55,12 +60,16 @@ export const Store = {
             weeklyData: {},
             defaultTemplate: null,
             goals: {},
-            activePomodoro: {
+            activeExecution: {
                 taskId: null,
-                remainingSeconds: 1500,
-                targetEpoch: null,
+                sessionStartTime: null,
+                accumulatedTime: 0,
                 running: false,
+                phase: 'orientation',
                 mode: 'work',
+                breakStartTime: null,
+                returnAnchor: '',
+                currentStepIndex: -1,
                 updatedAt: null
             }
         };
@@ -220,6 +229,7 @@ export const Store = {
             // Update the instance for this week
             if (updates.completed !== undefined) resolved.instance.completed = updates.completed;
             if (updates.notes !== undefined) resolved.instance.notes = updates.notes;
+            if (updates.returnAnchor !== undefined) resolved.instance.returnAnchor = updates.returnAnchor;
         }
 
         this.save();
@@ -265,6 +275,7 @@ export const Store = {
                 id: taskId,
                 completed: resolved.instance.completed,
                 notes: resolved.instance.notes,
+                returnAnchor: resolved.instance.returnAnchor || '',
                 scheduledDay: resolved.instance.scheduledDay || resolved.template.scheduledDay,
                 scheduledTime: resolved.instance.scheduledTime || resolved.template.scheduledTime
             };
@@ -823,7 +834,43 @@ toggleCompleteForWeek(taskId) {
 },
 
 /**
- * Update task notes for a specific week
+     * Advance task progress (complete next step or toggle task)
+     * Returns { task, stepAdvanced: boolean }
+     */
+    advanceTaskProgress(taskId) {
+        const task = this.getTask(taskId);
+        if (!task) return null;
+
+        let stepAdvanced = false;
+        let notes = task.notes || '';
+        
+        // Find all lines that look like checklist items
+        const lines = notes.split('\n');
+        const firstIncompleteIndex = lines.findIndex(line => line.includes('[ ]'));
+
+        if (firstIncompleteIndex !== -1) {
+            // Advance the first incomplete step
+            lines[firstIncompleteIndex] = lines[firstIncompleteIndex].replace('[ ]', '[x]');
+            notes = lines.join('\n');
+            this.updateTaskNotesForWeek(taskId, notes);
+            stepAdvanced = true;
+
+            // Check if all steps are now complete
+            const stillHasIncomplete = lines.some(line => line.includes('[ ]'));
+            if (!stillHasIncomplete && !task.completed) {
+                // If this was the last step, mark the whole task as complete
+                this.toggleCompleteForWeek(taskId);
+            }
+        } else {
+            // No incomplete steps found, toggle the whole task
+            this.toggleCompleteForWeek(taskId);
+        }
+
+        return { task: this.getTask(taskId), stepAdvanced };
+    },
+
+    /**
+     * Update task notes for a specific week
  */
 updateTaskNotesForWeek(taskId, notes) {
     if (!taskId) return null;

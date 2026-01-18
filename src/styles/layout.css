@@ -12,7 +12,8 @@
     width: 100vw;
     height: 100vh;
     z-index: -1;
-    background-color: #020617; /* Even darker slate */
+    background-color: #020617;
+    /* Even darker slate */
     background-image:
         radial-gradient(at 0% 0%, hsla(250, 100%, 15%, 0.15) 0, transparent 50%),
         radial-gradient(at 50% 0%, hsla(220, 100%, 20%, 0.15) 0, transparent 50%),
@@ -335,6 +336,7 @@ header {
     border-color: var(--accent-primary);
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
     transform: scale(0.98);
+    cursor: pointer;
 }
 
 /* Empty State Illustration */

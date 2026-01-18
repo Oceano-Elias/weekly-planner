@@ -376,35 +376,55 @@ export const Calendar = {
             e.preventDefault();
             e.stopPropagation();
 
-            // Play animation before toggling
             const taskState = Store.getTask(task.id);
-            if (taskState && !taskState.completed) {
-                // About to complete - play animation
+            const wasCompleted = taskState ? taskState.completed : false;
+
+            // Play animation before toggling ONLY if we are completing the whole task
+            // or if it's already completed and we're toggling it back
+            const hasSteps = taskState && taskState.notes && taskState.notes.includes('[ ]');
+            
+            if (taskState && !wasCompleted && !hasSteps) {
+                // No steps and about to complete - play animation
                 if (this.onPlayCompletionAnimation) this.onPlayCompletionAnimation(taskEl);
                 else if (window.App && window.App.playCompletionAnimation) window.App.playCompletionAnimation(taskEl);
             }
 
-            // Use per-week toggle method
-            const updatedTask = Store.toggleCompleteForWeek(task.id);
+            // Use advance progress method instead of simple toggle
+            const result = Store.advanceTaskProgress(task.id);
+            const updatedTask = result ? result.task : null;
+            const stepAdvanced = result ? result.stepAdvanced : false;
 
-            // Trigger individual task celebration
-            if (updatedTask && updatedTask.completed && window.Confetti) {
+            // Trigger individual task celebration if it JUST became completed
+            if (!wasCompleted && updatedTask && updatedTask.completed && window.Confetti) {
                 const rect = block.getBoundingClientRect();
                 const x = rect.left + rect.width / 2;
                 const y = rect.top + rect.height / 2;
                 window.Confetti.burst(x, y, 40);
+
+                // Play animation if we didn't play it before (because it had steps)
+                if (hasSteps) {
+                    if (this.onPlayCompletionAnimation) this.onPlayCompletionAnimation(taskEl);
+                    else if (window.App && window.App.playCompletionAnimation) window.App.playCompletionAnimation(taskEl);
+                }
             }
 
             // Check if all tasks for the day are now complete
-            if (updatedTask && updatedTask.completed) {
+            if (!wasCompleted && updatedTask && updatedTask.completed) {
                 this.checkDailyCelebration(task.scheduledDay);
             }
 
-            // Delay refresh to allow animation to play
-            setTimeout(() => {
+            // Refresh UI
+            if (updatedTask && updatedTask.completed && !wasCompleted) {
+                // Delay refresh to allow completion animation to play
+                setTimeout(() => {
+                    this.renderScheduledTasks();
+                    if (window.TaskQueue) window.TaskQueue.refresh();
+                }, 500);
+            } else {
+                // Instant refresh for step advancement or un-completing
                 this.renderScheduledTasks();
                 if (window.TaskQueue) window.TaskQueue.refresh();
-            }, 500);
+            }
         });
 
         if (deleteBtn) {

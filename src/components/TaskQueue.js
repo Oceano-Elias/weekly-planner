@@ -196,8 +196,25 @@ export const TaskQueue = {
             block.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                Store.toggleComplete(taskId);
+
+                const taskState = Store.getTask(taskId);
+                const wasCompleted = taskState ? taskState.completed : false;
+
+                // Use advance progress method
+                const result = Store.advanceTaskProgress(taskId);
+                const updatedTask = result ? result.task : null;
+
+                // Trigger individual task celebration if it JUST became completed
+                if (!wasCompleted && updatedTask && updatedTask.completed && window.Confetti) {
+                    const rect = block.getBoundingClientRect();
+                    const x = rect.left + rect.width / 2;
+                    const y = rect.top + rect.height / 2;
+                    window.Confetti.burst(x, y, 40);
+                }
+
+                // Instant refresh for task queue
                 this.refresh();
+                if (window.Calendar) window.Calendar.renderScheduledTasks();
             });
 
             if (deleteBtn) {

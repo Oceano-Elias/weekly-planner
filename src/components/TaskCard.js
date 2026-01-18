@@ -36,7 +36,7 @@ export class TaskCard {
     const isFull = task.duration >= 90;
 
     // Use a unified layout class for base styling
-    el.className = `task-block ${task.completed ? 'completed' : ''} ${isDayView ? 'day-view' : ''} ${isCompact ? 'layout-compact' : isStandard ? 'layout-standard' : isFull ? 'layout-full' : ''}`;
+    el.className = `glass-surface glass-surface-hover task-block ${task.completed ? 'completed' : ''} ${isDayView ? 'day-view' : ''} ${isCompact ? 'layout-compact' : isStandard ? 'layout-standard' : isFull ? 'layout-full' : ''}`;
     el.dataset.taskId = task.id;
     el.draggable = true;
     el.style.setProperty('--task-color', color);
