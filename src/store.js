@@ -20,19 +20,26 @@ let state = {
     weeklyData: {},
     defaultTemplate: null,
     goals: {},
+    // Focus Mode Statistics
+    focusStats: {
+        sessions: [],      // Array of { date, duration, taskId, stepsCompleted }
+        currentStreak: 0,
+        totalFocusTime: 0,
+        lastSessionDate: null
+    },
     // Professional Execution System
-        activeExecution: {
-            taskId: null,
-            sessionStartTime: null,
-            accumulatedTime: 0,
-            running: false,
-            phase: 'orientation', // 'orientation', 'execution', 'closure', 'decision'
-            mode: 'work', // 'work', 'break'
-            breakStartTime: null,
-            returnAnchor: '',
-            currentStepIndex: -1,
-            updatedAt: null
-        }
+    activeExecution: {
+        taskId: null,
+        sessionStartTime: null,
+        accumulatedTime: 0,
+        running: false,
+        phase: 'orientation', // 'orientation', 'execution', 'closure', 'decision'
+        mode: 'work', // 'work', 'break'
+        breakStartTime: null,
+        returnAnchor: '',
+        currentStepIndex: -1,
+        updatedAt: null
+    }
 };
 
 let listeners = [];
@@ -60,6 +67,12 @@ export const Store = {
             weeklyData: {},
             defaultTemplate: null,
             goals: {},
+            focusStats: {
+                sessions: [],      // Array of { date, duration, taskId, stepsCompleted }
+                currentStreak: 0,
+                totalFocusTime: 0,
+                lastSessionDate: null
+            },
             activeExecution: {
                 taskId: null,
                 sessionStartTime: null,
@@ -135,6 +148,14 @@ export const Store = {
                 state.templates = data.templates || [];
                 state.weeklyInstances = data.weeklyInstances || {};
                 state.migrated = data.migrated || false;
+
+                // Focus statistics
+                state.focusStats = data.focusStats || {
+                    sessions: [],
+                    currentStreak: 0,
+                    totalFocusTime: 0,
+                    lastSessionDate: null
+                };
             }
 
             // Run migration if needed
@@ -160,7 +181,8 @@ export const Store = {
                     goals: state.goals,
                     templates: state.templates,
                     weeklyInstances: state.weeklyInstances,
-                    migrated: state.migrated
+                    migrated: state.migrated,
+                    focusStats: state.focusStats
                 }));
                 console.log('[Store] Changes persisted to localStorage');
             } catch (e) {
@@ -535,315 +557,315 @@ export const Store = {
         return taskToQueue;
     },
 
-        /**
-         * Toggle task completion
-         */
-        toggleComplete(taskId) {
-    const task = state.tasks.find(t => t.id === taskId);
-    if (task) {
-        task.completed = !task.completed;
+    /**
+     * Toggle task completion
+     */
+    toggleComplete(taskId) {
+        const task = state.tasks.find(t => t.id === taskId);
+        if (task) {
+            task.completed = !task.completed;
+            this.save();
+            this.notify();
+        }
+        return task;
+    },
+
+    /**
+     * Get goals
+     */
+    getGoals() {
+        return state.goals || {};
+    },
+
+    /**
+     * Save a daily goal
+     */
+    saveGoal(day, goal) {
+        if (!state.goals) state.goals = {};
+        state.goals[day] = goal;
         this.save();
         this.notify();
-    }
-    return task;
-},
+    },
 
-/**
- * Get goals
- */
-getGoals() {
-    return state.goals || {};
-},
+    /**
+     * Set default template
+     */
+    setDefaultTemplate(scheduledTasks, queueTasks) {
+        state.defaultTemplate = {
+            scheduled: scheduledTasks.map(t => ({
+                title: t.title,
+                goal: t.goal || '',
+                hierarchy: [...t.hierarchy],
+                duration: t.duration,
+                notes: t.notes || '',
+                scheduledDay: t.scheduledDay,
+                scheduledTime: t.scheduledTime
+            })),
+            queue: queueTasks.map(t => ({
+                title: t.title,
+                goal: t.goal || '',
+                hierarchy: [...t.hierarchy],
+                duration: t.duration,
+                notes: t.notes || ''
+            }))
+        };
+        this.save();
+    },
 
-/**
- * Save a daily goal
- */
-saveGoal(day, goal) {
-    if (!state.goals) state.goals = {};
-    state.goals[day] = goal;
-    this.save();
-    this.notify();
-},
+    /**
+     * Set the current week as the template (manual template control)
+     */
+    setTemplateFromCurrentWeek() {
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        const currentWeekTasks = this.getTasksForWeek(currentWeekId);
 
-/**
- * Set default template
- */
-setDefaultTemplate(scheduledTasks, queueTasks) {
-    state.defaultTemplate = {
-        scheduled: scheduledTasks.map(t => ({
-            title: t.title,
-            goal: t.goal || '',
-            hierarchy: [...t.hierarchy],
-            duration: t.duration,
-            notes: t.notes || '',
-            scheduledDay: t.scheduledDay,
-            scheduledTime: t.scheduledTime
-        })),
-        queue: queueTasks.map(t => ({
-            title: t.title,
-            goal: t.goal || '',
-            hierarchy: [...t.hierarchy],
-            duration: t.duration,
-            notes: t.notes || ''
-        }))
-    };
-    this.save();
-},
+        // Clear existing templates
+        state.templates = [];
 
-/**
- * Set the current week as the template (manual template control)
- */
-setTemplateFromCurrentWeek() {
-    const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
-    const currentWeekTasks = this.getTasksForWeek(currentWeekId);
+        // Convert current week tasks to templates
+        currentWeekTasks.forEach(task => {
+            const templateId = `template_${state.nextId++}`;
+            state.templates.push({
+                id: templateId,
+                title: task.title,
+                goal: task.goal || '',
+                hierarchy: [...task.hierarchy],
+                duration: task.duration,
+                notes: task.notes || '',
+                scheduledDay: task.scheduledDay,
+                scheduledTime: task.scheduledTime
+            });
+        });
 
-    // Clear existing templates
-    state.templates = [];
+        // Clear all weekly instances EXCEPT the current week
+        // This forces future weeks to regenerate from the new template
+        const weekIds = Object.keys(state.weeklyInstances);
+        weekIds.forEach(weekId => {
+            if (weekId !== currentWeekId) {
+                delete state.weeklyInstances[weekId];
+            }
+        });
 
-    // Convert current week tasks to templates
-    currentWeekTasks.forEach(task => {
-        const templateId = `template_${state.nextId++}`;
-        state.templates.push({
-            id: templateId,
+        this.save();
+    },
+
+    /**
+     * Get template count (for UI feedback)
+     */
+    getTemplateCount() {
+        return state.templates.length;
+    },
+
+    /**
+     * Reset current week to template
+     */
+    resetWeekToTemplate() {
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        this.createWeekFromTemplate(currentWeekId);
+        this.notify();
+    },
+
+    /**
+     * Get week identifier (e.g., '2026-W01')
+     */
+    getWeekIdentifier(date) {
+        const weekStart = PlannerService.getWeekStart(date);
+        const year = weekStart.getFullYear();
+        const week = Math.ceil(((weekStart - new Date(year, 0, 1)) / 86400000 + 1) / 7);
+        return `${year}-W${String(week).padStart(2, '0')}`;
+    },
+
+    /**
+     * Check if week has instances
+     */
+    hasWeekInstances(weekId) {
+        return !!state.weeklyInstances[weekId];
+    },
+
+    /**
+     * Create week instances from templates
+     */
+    createWeekFromTemplate(weekId) {
+        if (!state.templates || state.templates.length === 0) {
+            state.weeklyInstances[weekId] = { tasks: [] };
+            this.save();
+            return;
+        }
+
+        state.weeklyInstances[weekId] = {
+            tasks: state.templates.map(template => ({
+                templateId: template.id,
+                completed: false,
+                notes: template.notes || '',
+                scheduledDay: template.scheduledDay,
+                scheduledTime: template.scheduledTime
+            }))
+        };
+        this.save();
+    },
+
+    /**
+     * Get tasks for a specific week (merges template + instance data, plus standalone tasks)
+     */
+    getTasksForWeek(weekId) {
+        // Auto-create week if it doesn't exist
+        if (!this.hasWeekInstances(weekId)) {
+            this.createWeekFromTemplate(weekId);
+        }
+
+        const instances = state.weeklyInstances[weekId]?.tasks || [];
+
+        return instances.map((instance, index) => {
+            // If it has a template ID, it's a recurring task
+            if (instance.templateId) {
+                const template = state.templates.find(t => t.id === instance.templateId);
+                if (!template) return null;
+
+                return {
+                    ...template,
+                    id: `${template.id}_${weekId}`,  // Unique ID per week
+                    completed: instance.completed,
+                    notes: instance.notes,
+                    scheduledDay: instance.scheduledDay || template.scheduledDay,
+                    scheduledTime: instance.scheduledTime || template.scheduledTime
+                };
+            } else {
+                // Standalone week-specific task (no template)
+                // Use stable instanceId if available, fallback to index for migration
+                const taskIdSuffix = instance.instanceId || `idx_${index}`;
+                return {
+                    id: `week_${weekId}_${taskIdSuffix}`,  // Stable unique ID
+                    title: instance.title,
+                    goal: instance.goal || '',
+                    hierarchy: instance.hierarchy || [],
+                    duration: instance.duration,
+                    completed: instance.completed,
+                    notes: instance.notes,
+                    scheduledDay: instance.scheduledDay,
+                    scheduledTime: instance.scheduledTime
+                };
+            }
+        }).filter(Boolean);
+    },
+
+    /**
+     * Migrate old system to new per-week system
+     */
+    migrateToWeeklySystem() {
+        if (state.migrated) return;
+
+        console.log('Migrating to per-week system...');
+
+        // Create templates from currently scheduled tasks
+        const scheduledTasks = state.tasks.filter(t => t.scheduledDay && t.scheduledTime);
+
+        state.templates = scheduledTasks.map((task, index) => ({
+            id: `template_${state.nextId + index}`,
             title: task.title,
             goal: task.goal || '',
             hierarchy: [...task.hierarchy],
             duration: task.duration,
-            notes: task.notes || '',
             scheduledDay: task.scheduledDay,
             scheduledTime: task.scheduledTime
-        });
-    });
+        }));
 
-    // Clear all weekly instances EXCEPT the current week
-    // This forces future weeks to regenerate from the new template
-    const weekIds = Object.keys(state.weeklyInstances);
-    weekIds.forEach(weekId => {
-        if (weekId !== currentWeekId) {
-            delete state.weeklyInstances[weekId];
-        }
-    });
+        state.nextId += scheduledTasks.length;
 
-    this.save();
-},
+        // Create current week instance with existing state
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        state.weeklyInstances[currentWeekId] = {
+            tasks: state.templates.map(template => {
+                const originalTask = scheduledTasks.find(t =>
+                    t.title === template.title &&
+                    t.scheduledDay === template.scheduledDay &&
+                    t.scheduledTime === template.scheduledTime
+                );
+                return {
+                    templateId: template.id,
+                    completed: originalTask?.completed || false,
+                    notes: originalTask?.notes || '',
+                    scheduledDay: template.scheduledDay,
+                    scheduledTime: template.scheduledTime
+                };
+            })
+        };
 
-/**
- * Get template count (for UI feedback)
- */
-getTemplateCount() {
-    return state.templates.length;
-},
-
-/**
- * Reset current week to template
- */
-resetWeekToTemplate() {
-    const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
-    this.createWeekFromTemplate(currentWeekId);
-    this.notify();
-},
-
-/**
- * Get week identifier (e.g., '2026-W01')
- */
-getWeekIdentifier(date) {
-    const weekStart = PlannerService.getWeekStart(date);
-    const year = weekStart.getFullYear();
-    const week = Math.ceil(((weekStart - new Date(year, 0, 1)) / 86400000 + 1) / 7);
-    return `${year}-W${String(week).padStart(2, '0')}`;
-},
-
-/**
- * Check if week has instances
- */
-hasWeekInstances(weekId) {
-    return !!state.weeklyInstances[weekId];
-},
-
-/**
- * Create week instances from templates
- */
-createWeekFromTemplate(weekId) {
-    if (!state.templates || state.templates.length === 0) {
-        state.weeklyInstances[weekId] = { tasks: [] };
+        state.migrated = true;
         this.save();
-        return;
-    }
 
-    state.weeklyInstances[weekId] = {
-        tasks: state.templates.map(template => ({
-            templateId: template.id,
-            completed: false,
-            notes: template.notes || '',
-            scheduledDay: template.scheduledDay,
-            scheduledTime: template.scheduledTime
-        }))
-    };
-    this.save();
-},
+        console.log(`Migration complete. Created ${state.templates.length} templates.`);
+    },
 
-/**
- * Get tasks for a specific week (merges template + instance data, plus standalone tasks)
- */
-getTasksForWeek(weekId) {
-    // Auto-create week if it doesn't exist
-    if (!this.hasWeekInstances(weekId)) {
-        this.createWeekFromTemplate(weekId);
-    }
+    /**
+     * Toggle task completion for a specific week
+     * TaskId format: templateId_weekId (e.g., "template_1_2026-W01")
+     */
+    toggleCompleteForWeek(taskId) {
+        if (!taskId) return null;
 
-    const instances = state.weeklyInstances[weekId]?.tasks || [];
-
-    return instances.map((instance, index) => {
-        // If it has a template ID, it's a recurring task
-        if (instance.templateId) {
-            const template = state.templates.find(t => t.id === instance.templateId);
-            if (!template) return null;
-
-            return {
-                ...template,
-                id: `${template.id}_${weekId}`,  // Unique ID per week
-                completed: instance.completed,
-                notes: instance.notes,
-                scheduledDay: instance.scheduledDay || template.scheduledDay,
-                scheduledTime: instance.scheduledTime || template.scheduledTime
-            };
-        } else {
-            // Standalone week-specific task (no template)
-            // Use stable instanceId if available, fallback to index for migration
-            const taskIdSuffix = instance.instanceId || `idx_${index}`;
-            return {
-                id: `week_${weekId}_${taskIdSuffix}`,  // Stable unique ID
-                title: instance.title,
-                goal: instance.goal || '',
-                hierarchy: instance.hierarchy || [],
-                duration: instance.duration,
-                completed: instance.completed,
-                notes: instance.notes,
-                scheduledDay: instance.scheduledDay,
-                scheduledTime: instance.scheduledTime
-            };
-        }
-    }).filter(Boolean);
-},
-
-/**
- * Migrate old system to new per-week system
- */
-migrateToWeeklySystem() {
-    if (state.migrated) return;
-
-    console.log('Migrating to per-week system...');
-
-    // Create templates from currently scheduled tasks
-    const scheduledTasks = state.tasks.filter(t => t.scheduledDay && t.scheduledTime);
-
-    state.templates = scheduledTasks.map((task, index) => ({
-        id: `template_${state.nextId + index}`,
-        title: task.title,
-        goal: task.goal || '',
-        hierarchy: [...task.hierarchy],
-        duration: task.duration,
-        scheduledDay: task.scheduledDay,
-        scheduledTime: task.scheduledTime
-    }));
-
-    state.nextId += scheduledTasks.length;
-
-    // Create current week instance with existing state
-    const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
-    state.weeklyInstances[currentWeekId] = {
-        tasks: state.templates.map(template => {
-            const originalTask = scheduledTasks.find(t =>
-                t.title === template.title &&
-                t.scheduledDay === template.scheduledDay &&
-                t.scheduledTime === template.scheduledTime
-            );
-            return {
-                templateId: template.id,
-                completed: originalTask?.completed || false,
-                notes: originalTask?.notes || '',
-                scheduledDay: template.scheduledDay,
-                scheduledTime: template.scheduledTime
-            };
-        })
-    };
-
-    state.migrated = true;
-    this.save();
-
-    console.log(`Migration complete. Created ${state.templates.length} templates.`);
-},
-
-/**
- * Toggle task completion for a specific week
- * TaskId format: templateId_weekId (e.g., "template_1_2026-W01")
- */
-toggleCompleteForWeek(taskId) {
-    if (!taskId) return null;
-
-    // 1. Handle legacy tasks (no underscore or not matching new patterns)
-    if (!taskId.includes('_')) {
-        return this.toggleComplete(taskId);
-    }
-
-    // 2. Handle standalone week task IDs (format: week_weekId_instanceId)
-    if (taskId.startsWith('week_')) {
-        const parts = taskId.split('_');
-        const weekId = parts[1]; // "2026-W01"
-        const weekInstances = state.weeklyInstances[weekId];
-        if (!weekInstances) return null;
-
-        const suffix = parts.slice(2).join('_');
-        let instance = null;
-
-        if (suffix.startsWith('inst_')) {
-            instance = weekInstances.tasks.find(t => t.instanceId === suffix);
-        } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
-            const taskIndex = parseInt(suffix.split('_')[1]);
-            instance = weekInstances.tasks[taskIndex];
+        // 1. Handle legacy tasks (no underscore or not matching new patterns)
+        if (!taskId.includes('_')) {
+            return this.toggleComplete(taskId);
         }
 
-        if (instance) {
-            instance.completed = !instance.completed;
-            this.save();
-            this.notify();
-            return instance;
-        }
-        return null;
-    }
+        // 2. Handle standalone week task IDs (format: week_weekId_instanceId)
+        if (taskId.startsWith('week_')) {
+            const parts = taskId.split('_');
+            const weekId = parts[1]; // "2026-W01"
+            const weekInstances = state.weeklyInstances[weekId];
+            if (!weekInstances) return null;
 
-    // 3. Handle template-based week-specific IDs (format: template_X_weekId)
-    const parts = taskId.split('_');
-    if (parts.length >= 3) {
-        const weekId = parts[parts.length - 1]; // Last part is weekId
-        const templateId = parts.slice(0, -1).join('_'); // Everything before is templateId
+            const suffix = parts.slice(2).join('_');
+            let instance = null;
 
-        const weekInstances = state.weeklyInstances[weekId];
-        if (weekInstances) {
-            const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+            if (suffix.startsWith('inst_')) {
+                instance = weekInstances.tasks.find(t => t.instanceId === suffix);
+            } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
+                const taskIndex = parseInt(suffix.split('_')[1]);
+                instance = weekInstances.tasks[taskIndex];
+            }
+
             if (instance) {
                 instance.completed = !instance.completed;
                 this.save();
                 this.notify();
                 return instance;
             }
+            return null;
         }
-    }
 
-    return null;
-},
+        // 3. Handle template-based week-specific IDs (format: template_X_weekId)
+        const parts = taskId.split('_');
+        if (parts.length >= 3) {
+            const weekId = parts[parts.length - 1]; // Last part is weekId
+            const templateId = parts.slice(0, -1).join('_'); // Everything before is templateId
 
-/**
-     * Advance task progress (complete next step or toggle task)
-     * Returns { task, stepAdvanced: boolean }
-     */
+            const weekInstances = state.weeklyInstances[weekId];
+            if (weekInstances) {
+                const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+                if (instance) {
+                    instance.completed = !instance.completed;
+                    this.save();
+                    this.notify();
+                    return instance;
+                }
+            }
+        }
+
+        return null;
+    },
+
+    /**
+         * Advance task progress (complete next step or toggle task)
+         * Returns { task, stepAdvanced: boolean }
+         */
     advanceTaskProgress(taskId) {
         const task = this.getTask(taskId);
         if (!task) return null;
 
         let stepAdvanced = false;
         let notes = task.notes || '';
-        
+
         // Find all lines that look like checklist items
         const lines = notes.split('\n');
         const firstIncompleteIndex = lines.findIndex(line => line.includes('[ ]'));
@@ -872,382 +894,471 @@ toggleCompleteForWeek(taskId) {
     /**
      * Update task notes for a specific week
  */
-updateTaskNotesForWeek(taskId, notes) {
-    if (!taskId) return null;
+    updateTaskNotesForWeek(taskId, notes) {
+        if (!taskId) return null;
 
-    // Handle legacy tasks
-    if (!taskId.includes('_')) {
-        const task = state.tasks.find(t => t.id === taskId);
-        if (task) {
-            task.notes = notes;
-            this.save();
-        }
-        return task;
-    }
-
-    // Handle standalone week task IDs (format: week_weekId_instanceId or legacy week_weekId_task_index)
-    if (taskId.startsWith('week_')) {
-        const parts = taskId.split('_');
-        const weekId = parts[1]; // "2026-W01"
-
-        const weekInstances = state.weeklyInstances[weekId];
-        if (!weekInstances) return null;
-
-        // Find the task by instanceId or by index (for legacy)
-        const suffix = parts.slice(2).join('_');
-        let instance = null;
-
-        if (suffix.startsWith('inst_')) {
-            instance = weekInstances.tasks.find(t => t.instanceId === suffix);
-        } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
-            const taskIndex = parseInt(suffix.split('_')[1]);
-            instance = weekInstances.tasks[taskIndex];
+        // Handle legacy tasks
+        if (!taskId.includes('_')) {
+            const task = state.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.notes = notes;
+                this.save();
+            }
+            return task;
         }
 
-        if (instance) {
-            instance.notes = notes;
-            this.save();
-            this.notify();
-            return instance;
+        // Handle standalone week task IDs (format: week_weekId_instanceId or legacy week_weekId_task_index)
+        if (taskId.startsWith('week_')) {
+            const parts = taskId.split('_');
+            const weekId = parts[1]; // "2026-W01"
+
+            const weekInstances = state.weeklyInstances[weekId];
+            if (!weekInstances) return null;
+
+            // Find the task by instanceId or by index (for legacy)
+            const suffix = parts.slice(2).join('_');
+            let instance = null;
+
+            if (suffix.startsWith('inst_')) {
+                instance = weekInstances.tasks.find(t => t.instanceId === suffix);
+            } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
+                const taskIndex = parseInt(suffix.split('_')[1]);
+                instance = weekInstances.tasks[taskIndex];
+            }
+
+            if (instance) {
+                instance.notes = notes;
+                this.save();
+                this.notify();
+                return instance;
+            }
+            return null;
         }
+
+        // Handle template-based week-specific IDs (format: template_X_weekId)
+        if (taskId.split('_').length >= 3) {
+            const parts = taskId.split('_');
+            const weekId = parts[parts.length - 1];
+            const templateId = parts.slice(0, -1).join('_');
+
+            const weekInstances = state.weeklyInstances[weekId];
+            if (!weekInstances) return null;
+
+            const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+            if (instance) {
+                instance.notes = notes;
+                this.save();
+                this.notify();
+                return instance;
+            }
+        }
+
         return null;
-    }
+    },
 
-    // Handle template-based week-specific IDs (format: template_X_weekId)
-    if (taskId.split('_').length >= 3) {
-        const parts = taskId.split('_');
-        const weekId = parts[parts.length - 1];
-        const templateId = parts.slice(0, -1).join('_');
+    /**
+     * Get analytics data
+     */
+    getAnalytics() {
+        const scheduled = this.getScheduledTasks();
+        const byHierarchy = {};
 
-        const weekInstances = state.weeklyInstances[weekId];
-        if (!weekInstances) return null;
+        scheduled.forEach(task => {
+            const topLevel = task.hierarchy[0] || 'Uncategorized';
+            if (!byHierarchy[topLevel]) {
+                byHierarchy[topLevel] = { total: 0, completed: 0 };
+            }
+            byHierarchy[topLevel].total += task.duration;
+            if (task.completed) {
+                byHierarchy[topLevel].completed += task.duration;
+            }
+        });
 
-        const instance = weekInstances.tasks.find(t => t.templateId === templateId);
-        if (instance) {
-            instance.notes = notes;
-            this.save();
-            this.notify();
-            return instance;
-        }
-    }
+        return byHierarchy;
+    },
 
-    return null;
-},
+    /**
+     * Get analytics data for current week (includes mini-tasks)
+     */
+    getAnalyticsForWeek() {
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        const weekTasks = this.getTasksForWeek(currentWeekId);
 
-/**
- * Get analytics data
- */
-getAnalytics() {
-    const scheduled = this.getScheduledTasks();
-    const byHierarchy = {};
+        const byHierarchy = {};
+        let totalMiniTasks = 0;
+        let completedMiniTasks = 0;
+        let totalTasks = weekTasks.length;
+        let completedTasks = 0;
+        let totalDuration = 0;
+        let completedDuration = 0;
 
-    scheduled.forEach(task => {
-        const topLevel = task.hierarchy[0] || 'Uncategorized';
-        if (!byHierarchy[topLevel]) {
-            byHierarchy[topLevel] = { total: 0, completed: 0 };
-        }
-        byHierarchy[topLevel].total += task.duration;
-        if (task.completed) {
-            byHierarchy[topLevel].completed += task.duration;
-        }
-    });
+        weekTasks.forEach(task => {
+            const topLevel = task.hierarchy[0] || 'Uncategorized';
+            if (!byHierarchy[topLevel]) {
+                byHierarchy[topLevel] = { total: 0, completed: 0 };
+            }
+            byHierarchy[topLevel].total += task.duration;
+            totalDuration += task.duration;
 
-    return byHierarchy;
-},
+            if (task.completed) {
+                byHierarchy[topLevel].completed += task.duration;
+                completedTasks++;
+                completedDuration += task.duration;
+            }
 
-/**
- * Get analytics data for current week (includes mini-tasks)
- */
-getAnalyticsForWeek() {
-    const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
-    const weekTasks = this.getTasksForWeek(currentWeekId);
-
-    const byHierarchy = {};
-    let totalMiniTasks = 0;
-    let completedMiniTasks = 0;
-    let totalTasks = weekTasks.length;
-    let completedTasks = 0;
-    let totalDuration = 0;
-    let completedDuration = 0;
-
-    weekTasks.forEach(task => {
-        const topLevel = task.hierarchy[0] || 'Uncategorized';
-        if (!byHierarchy[topLevel]) {
-            byHierarchy[topLevel] = { total: 0, completed: 0 };
-        }
-        byHierarchy[topLevel].total += task.duration;
-        totalDuration += task.duration;
-
-        if (task.completed) {
-            byHierarchy[topLevel].completed += task.duration;
-            completedTasks++;
-            completedDuration += task.duration;
-        }
-
-        // Count mini-tasks from notes
-        if (task.notes) {
-            const lines = task.notes.split('\n').filter(l => l.trim() !== '');
-            lines.forEach(line => {
-                if (line.includes('[ ]') || line.includes('[x]')) {
-                    totalMiniTasks++;
-                    if (line.includes('[x]')) {
-                        completedMiniTasks++;
-                    }
-                }
-            });
-        }
-    });
-
-    return {
-        byHierarchy,
-        miniTasks: { total: totalMiniTasks, completed: completedMiniTasks },
-        tasks: { total: totalTasks, completed: completedTasks },
-        duration: { total: totalDuration, completed: completedDuration }
-    };
-},
-
-/**
- * Get daily task stats for sparkline charts
- * Returns array of 7 days with completion percentages
- */
-getDailyStatsForWeek() {
-    const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
-    const weekTasks = this.getTasksForWeek(currentWeekId);
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-    return days.map(day => {
-        const dayTasks = weekTasks.filter(t => t.scheduledDay === day);
-        const total = dayTasks.length;
-        const completed = dayTasks.filter(t => t.completed).length;
-        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-        // Also count mini-tasks for that day
-        let miniTotal = 0;
-        let miniCompleted = 0;
-        dayTasks.forEach(task => {
+            // Count mini-tasks from notes
             if (task.notes) {
                 const lines = task.notes.split('\n').filter(l => l.trim() !== '');
                 lines.forEach(line => {
                     if (line.includes('[ ]') || line.includes('[x]')) {
-                        miniTotal++;
+                        totalMiniTasks++;
                         if (line.includes('[x]')) {
-                            miniCompleted++;
+                            completedMiniTasks++;
                         }
                     }
                 });
             }
         });
 
-        const miniPercent = miniTotal > 0 ? Math.round((miniCompleted / miniTotal) * 100) : 0;
-
         return {
-            day: day.charAt(0).toUpperCase() + day.slice(1, 3),
-            tasks: { total, completed, percent },
-            miniTasks: { total: miniTotal, completed: miniCompleted, percent: miniPercent }
+            byHierarchy,
+            miniTasks: { total: totalMiniTasks, completed: completedMiniTasks },
+            tasks: { total: totalTasks, completed: completedTasks },
+            duration: { total: totalDuration, completed: completedDuration }
         };
-    });
-},
+    },
 
-// ========================================
-// CUSTOM DEPARTMENT MANAGEMENT
-// ========================================
+    /**
+     * Get daily task stats for sparkline charts
+     * Returns array of 7 days with completion percentages
+     */
+    getDailyStatsForWeek() {
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        const weekTasks = this.getTasksForWeek(currentWeekId);
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-/**
- * Get custom departments from localStorage
- * @returns {Object|null} Custom department data or null if using defaults
- */
-getCustomDepartments() {
-    try {
-        const saved = localStorage.getItem('weeklyPlanner_departments');
-        if (saved) {
-            return JSON.parse(saved);
-        }
-    } catch (e) {
-        console.error('Error loading custom departments:', e);
-    }
-    return null;
-},
+        return days.map(day => {
+            const dayTasks = weekTasks.filter(t => t.scheduledDay === day);
+            const total = dayTasks.length;
+            const completed = dayTasks.filter(t => t.completed).length;
+            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-/**
- * Save custom departments to localStorage
- * @param {Object} departmentData - The department hierarchy object
- */
-saveCustomDepartments(departmentData) {
-    try {
-        localStorage.setItem('weeklyPlanner_departments', JSON.stringify(departmentData));
-        // Trigger event for live updates
-        window.dispatchEvent(new CustomEvent('departmentsUpdated', { detail: departmentData }));
-    } catch (e) {
-        console.error('Error saving custom departments:', e);
-    }
-},
-
-/**
- * Reset departments to defaults
- */
-resetDepartmentsToDefaults() {
-    localStorage.removeItem('weeklyPlanner_departments');
-    window.dispatchEvent(new CustomEvent('departmentsUpdated', { detail: null }));
-},
-
-/**
- * Migrate department path in all tasks, templates, and weekly instances
- * @param {Array} oldPath - The current hierarchy path
- * @param {Array|null} newPath - The new hierarchy path (null if deleted)
- */
-migrateDepartment(oldPath, newPath) {
-    const updateHierarchy = (hierarchy) => {
-        if (!hierarchy) return hierarchy;
-
-        // Check if hierarchy starts with oldPath
-        const startsWith = oldPath.every((p, i) => hierarchy[i] === p);
-        if (!startsWith) return hierarchy;
-
-        if (newPath === null) {
-            // If deleted, just remove the prefix... or maybe set to empty?
-            // For now, let's just clear it if it was specifically that department
-            return [];
-        }
-
-        // Replace oldPath prefix with newPath
-        const tail = hierarchy.slice(oldPath.length);
-        return [...newPath, ...tail];
-    };
-
-    // 1. Update queue tasks
-    state.tasks.forEach(task => {
-        task.hierarchy = updateHierarchy(task.hierarchy);
-    });
-
-    // 2. Update templates
-    state.templates.forEach(template => {
-        template.hierarchy = updateHierarchy(template.hierarchy);
-    });
-
-    // 3. Update weekly instances
-    Object.values(state.weeklyInstances).forEach(week => {
-        if (week.tasks) {
-            week.tasks.forEach(task => {
-                task.hierarchy = updateHierarchy(task.hierarchy);
-            });
-        }
-    });
-
-    this.save();
-},
-
-// ========================================
-// DATA EXPORT/IMPORT
-// ========================================
-
-/**
- * Export all data as JSON
- * @returns {Object} Complete data export
- */
-exportData() {
-    return {
-        version: '3.0',
-        exportedAt: new Date().toISOString(),
-        data: {
-            tasks: state.tasks,
-            templates: state.templates,
-            weeklyInstances: state.weeklyInstances,
-            goals: state.goals,
-            nextId: state.nextId,
-            migrated: state.migrated
-        }
-    };
-},
-
-/**
- * Export data as downloadable JSON file
- */
-downloadExport() {
-    const data = this.exportData();
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `weekly-planner-backup-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-},
-
-/**
- * Import data from JSON (with deep sanitization)
- */
-importData(importedData, merge = false) {
-    try {
-        // 1. Basic Structure Validation
-        if (!importedData || !importedData.data) {
-            throw new Error('Invalid data format');
-        }
-
-        const { data } = importedData;
-
-        // 2. Sanitization helper
-        const sanitize = (val) => {
-            if (typeof val !== 'string') return val;
-            return PlannerService.escapeHtml(val);
-        };
-
-        const sanitizeTask = (t) => ({
-            ...t,
-            title: sanitize(t.title),
-            goal: sanitize(t.goal),
-            notes: sanitize(t.notes),
-            hierarchy: Array.isArray(t.hierarchy) ? t.hierarchy.map(sanitize) : []
-        });
-
-        // 3. Process Data
-        if (merge) {
-            if (data.tasks) {
-                data.tasks.forEach(t => {
-                    const task = sanitizeTask(t);
-                    task.id = `task_${state.nextId++}`;
-                    state.tasks.push(task);
-                });
-            }
-            if (data.templates) {
-                data.templates.forEach(t => {
-                    const template = sanitizeTask(t);
-                    template.id = `template_${state.nextId++}`;
-                    state.templates.push(template);
-                });
-            }
-            if (data.goals) {
-                Object.keys(data.goals).forEach(day => {
-                    state.goals[day] = sanitize(data.goals[day]);
-                });
-            }
-        } else {
-            state.tasks = (data.tasks || []).map(sanitizeTask);
-            state.templates = (data.templates || []).map(sanitizeTask);
-            state.weeklyInstances = data.weeklyInstances || {};
-            state.goals = data.goals || {};
-            state.nextId = data.nextId || 1;
-            state.migrated = data.migrated || false;
-
-            // Sanitize weekly instances too
-            Object.values(state.weeklyInstances).forEach(week => {
-                if (week.tasks) {
-                    week.tasks = week.tasks.map(sanitizeTask);
+            // Also count mini-tasks for that day
+            let miniTotal = 0;
+            let miniCompleted = 0;
+            dayTasks.forEach(task => {
+                if (task.notes) {
+                    const lines = task.notes.split('\n').filter(l => l.trim() !== '');
+                    lines.forEach(line => {
+                        if (line.includes('[ ]') || line.includes('[x]')) {
+                            miniTotal++;
+                            if (line.includes('[x]')) {
+                                miniCompleted++;
+                            }
+                        }
+                    });
                 }
             });
+
+            const miniPercent = miniTotal > 0 ? Math.round((miniCompleted / miniTotal) * 100) : 0;
+
+            return {
+                day: day.charAt(0).toUpperCase() + day.slice(1, 3),
+                tasks: { total, completed, percent },
+                miniTasks: { total: miniTotal, completed: miniCompleted, percent: miniPercent }
+            };
+        });
+    },
+
+    // ========================================
+    // FOCUS MODE STATISTICS
+    // ========================================
+
+    /**
+     * Record a focus session
+     * @param {Object} sessionData - { taskId, duration, stepsCompleted }
+     */
+    recordFocusSession({ taskId, duration, stepsCompleted = 0 }) {
+        if (!state.focusStats) {
+            state.focusStats = {
+                sessions: [],
+                currentStreak: 0,
+                totalFocusTime: 0,
+                lastSessionDate: null
+            };
         }
 
-        this.save(true); // Save immediately after import
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const session = {
+            date: today,
+            timestamp: Date.now(),
+            duration,
+            taskId,
+            stepsCompleted
+        };
+
+        state.focusStats.sessions.push(session);
+        state.focusStats.totalFocusTime += duration;
+
+        // Update streak
+        const lastDate = state.focusStats.lastSessionDate;
+        if (lastDate) {
+            const lastDateObj = new Date(lastDate);
+            const todayObj = new Date(today);
+            const daysDiff = Math.floor((todayObj - lastDateObj) / (1000 * 60 * 60 * 24));
+
+            if (daysDiff === 0) {
+                // Same day, streak unchanged
+            } else if (daysDiff === 1) {
+                // Consecutive day, increment streak
+                state.focusStats.currentStreak++;
+            } else {
+                // Streak broken, reset
+                state.focusStats.currentStreak = 1;
+            }
+        } else {
+            // First session ever
+            state.focusStats.currentStreak = 1;
+        }
+
+        state.focusStats.lastSessionDate = today;
+        this.save();
         this.notify();
-        return true;
-    } catch (error) {
-        console.error('Import failed:', error);
-        return false;
-    }
-},
+    },
+
+    /**
+     * Get focus statistics
+     * @returns {Object} Focus stats including sessions, streak, and total time
+     */
+    getFocusStats() {
+        return state.focusStats || {
+            sessions: [],
+            currentStreak: 0,
+            totalFocusTime: 0,
+            lastSessionDate: null
+        };
+    },
+
+    /**
+     * Get current focus streak
+     * @returns {number} Current streak in days
+     */
+    getStreak() {
+        const stats = this.getFocusStats();
+        const today = new Date().toISOString().split('T')[0];
+        const lastDate = stats.lastSessionDate;
+
+        if (!lastDate) return 0;
+
+        const lastDateObj = new Date(lastDate);
+        const todayObj = new Date(today);
+        const daysDiff = Math.floor((todayObj - lastDateObj) / (1000 * 60 * 60 * 24));
+
+        // If more than 1 day has passed, streak is broken
+        if (daysDiff > 1) return 0;
+        return stats.currentStreak;
+    },
+
+    // ========================================
+    // CUSTOM DEPARTMENT MANAGEMENT
+    // ========================================
+
+    /**
+     * Get custom departments from localStorage
+     * @returns {Object|null} Custom department data or null if using defaults
+     */
+    getCustomDepartments() {
+        try {
+            const saved = localStorage.getItem('weeklyPlanner_departments');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('Error loading custom departments:', e);
+        }
+        return null;
+    },
+
+    /**
+     * Save custom departments to localStorage
+     * @param {Object} departmentData - The department hierarchy object
+     */
+    saveCustomDepartments(departmentData) {
+        try {
+            localStorage.setItem('weeklyPlanner_departments', JSON.stringify(departmentData));
+            // Trigger event for live updates
+            window.dispatchEvent(new CustomEvent('departmentsUpdated', { detail: departmentData }));
+        } catch (e) {
+            console.error('Error saving custom departments:', e);
+        }
+    },
+
+    /**
+     * Reset departments to defaults
+     */
+    resetDepartmentsToDefaults() {
+        localStorage.removeItem('weeklyPlanner_departments');
+        window.dispatchEvent(new CustomEvent('departmentsUpdated', { detail: null }));
+    },
+
+    /**
+     * Migrate department path in all tasks, templates, and weekly instances
+     * @param {Array} oldPath - The current hierarchy path
+     * @param {Array|null} newPath - The new hierarchy path (null if deleted)
+     */
+    migrateDepartment(oldPath, newPath) {
+        const updateHierarchy = (hierarchy) => {
+            if (!hierarchy) return hierarchy;
+
+            // Check if hierarchy starts with oldPath
+            const startsWith = oldPath.every((p, i) => hierarchy[i] === p);
+            if (!startsWith) return hierarchy;
+
+            if (newPath === null) {
+                // If deleted, just remove the prefix... or maybe set to empty?
+                // For now, let's just clear it if it was specifically that department
+                return [];
+            }
+
+            // Replace oldPath prefix with newPath
+            const tail = hierarchy.slice(oldPath.length);
+            return [...newPath, ...tail];
+        };
+
+        // 1. Update queue tasks
+        state.tasks.forEach(task => {
+            task.hierarchy = updateHierarchy(task.hierarchy);
+        });
+
+        // 2. Update templates
+        state.templates.forEach(template => {
+            template.hierarchy = updateHierarchy(template.hierarchy);
+        });
+
+        // 3. Update weekly instances
+        Object.values(state.weeklyInstances).forEach(week => {
+            if (week.tasks) {
+                week.tasks.forEach(task => {
+                    task.hierarchy = updateHierarchy(task.hierarchy);
+                });
+            }
+        });
+
+        this.save();
+    },
+
+    // ========================================
+    // DATA EXPORT/IMPORT
+    // ========================================
+
+    /**
+     * Export all data as JSON
+     * @returns {Object} Complete data export
+     */
+    exportData() {
+        return {
+            version: '3.0',
+            exportedAt: new Date().toISOString(),
+            data: {
+                tasks: state.tasks,
+                templates: state.templates,
+                weeklyInstances: state.weeklyInstances,
+                goals: state.goals,
+                nextId: state.nextId,
+                migrated: state.migrated
+            }
+        };
+    },
+
+    /**
+     * Export data as downloadable JSON file
+     */
+    downloadExport() {
+        const data = this.exportData();
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `weekly-planner-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    /**
+     * Import data from JSON (with deep sanitization)
+     */
+    importData(importedData, merge = false) {
+        try {
+            // 1. Basic Structure Validation
+            if (!importedData || !importedData.data) {
+                throw new Error('Invalid data format');
+            }
+
+            const { data } = importedData;
+
+            // 2. Sanitization helper
+            const sanitize = (val) => {
+                if (typeof val !== 'string') return val;
+                return PlannerService.escapeHtml(val);
+            };
+
+            const sanitizeTask = (t) => ({
+                ...t,
+                title: sanitize(t.title),
+                goal: sanitize(t.goal),
+                notes: sanitize(t.notes),
+                hierarchy: Array.isArray(t.hierarchy) ? t.hierarchy.map(sanitize) : []
+            });
+
+            // 3. Process Data
+            if (merge) {
+                if (data.tasks) {
+                    data.tasks.forEach(t => {
+                        const task = sanitizeTask(t);
+                        task.id = `task_${state.nextId++}`;
+                        state.tasks.push(task);
+                    });
+                }
+                if (data.templates) {
+                    data.templates.forEach(t => {
+                        const template = sanitizeTask(t);
+                        template.id = `template_${state.nextId++}`;
+                        state.templates.push(template);
+                    });
+                }
+                if (data.goals) {
+                    Object.keys(data.goals).forEach(day => {
+                        state.goals[day] = sanitize(data.goals[day]);
+                    });
+                }
+            } else {
+                state.tasks = (data.tasks || []).map(sanitizeTask);
+                state.templates = (data.templates || []).map(sanitizeTask);
+                state.weeklyInstances = data.weeklyInstances || {};
+                state.goals = data.goals || {};
+                state.nextId = data.nextId || 1;
+                state.migrated = data.migrated || false;
+
+                // Sanitize weekly instances too
+                Object.values(state.weeklyInstances).forEach(week => {
+                    if (week.tasks) {
+                        week.tasks = week.tasks.map(sanitizeTask);
+                    }
+                });
+            }
+
+            this.save(true); // Save immediately after import
+            this.notify();
+            return true;
+        } catch (error) {
+            console.error('Import failed:', error);
+            return false;
+        }
+    },
 
     /**
      * Import data from file input
@@ -1256,57 +1367,57 @@ importData(importedData, merge = false) {
      * @returns {Promise<boolean>} Success status
      */
     async importFromFile(file, merge = false) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                const success = this.importData(data, merge);
-                resolve(success);
-            } catch (error) {
-                console.error('Failed to parse import file:', error);
-                resolve(false);
-            }
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    const success = this.importData(data, merge);
+                    resolve(success);
+                } catch (error) {
+                    console.error('Failed to parse import file:', error);
+                    resolve(false);
+                }
+            };
+            reader.onerror = () => resolve(false);
+            reader.readAsText(file);
+        });
+    },
+
+    /**
+     * Get the active Pomodoro session
+     */
+    getActivePomodoro() {
+        return state.activePomodoro;
+    },
+
+    /**
+     * Set the active Pomodoro session
+     */
+    setActivePomodoro(taskId, data) {
+        state.activePomodoro = {
+            ...state.activePomodoro,
+            ...data,
+            taskId,
+            updatedAt: Date.now()
         };
-        reader.onerror = () => resolve(false);
-        reader.readAsText(file);
-    });
-},
+        this.save();
+        this.notify();
+    },
 
-/**
- * Get the active Pomodoro session
- */
-getActivePomodoro() {
-    return state.activePomodoro;
-},
-
-/**
- * Set the active Pomodoro session
- */
-setActivePomodoro(taskId, data) {
-    state.activePomodoro = {
-        ...state.activePomodoro,
-        ...data,
-        taskId,
-        updatedAt: Date.now()
-    };
-    this.save();
-    this.notify();
-},
-
-/**
- * Clear the active Pomodoro session
- */
-clearActivePomodoro() {
-    state.activePomodoro = {
-        taskId: null,
-        remainingSeconds: 1500,
-        targetEpoch: null,
-        running: false,
-        mode: 'work',
-        updatedAt: Date.now()
-    };
-    this.save();
-    this.notify();
-}
+    /**
+     * Clear the active Pomodoro session
+     */
+    clearActivePomodoro() {
+        state.activePomodoro = {
+            taskId: null,
+            remainingSeconds: 1500,
+            targetEpoch: null,
+            running: false,
+            mode: 'work',
+            updatedAt: Date.now()
+        };
+        this.save();
+        this.notify();
+    }
 };

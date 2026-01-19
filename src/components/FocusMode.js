@@ -1287,44 +1287,73 @@ export const FocusMode = {
         const totalCount = taskLines.length || 1;
         
         const outerCircumference = 2 * Math.PI * 56;
-        
-        // Check if total task is completed
-        const isTotalComplete = taskLines.length > 0 && completedCount === totalCount;
+        const isTotalComplete = taskLines.length > 0 && taskLines.every(l => l.includes('[x]'));
 
         // --- SEGMENTATION LOGIC ---
         if (totalCount > 1) {
-            const gapSize = 3; 
-            const segmentSize = (outerCircumference / totalCount) - gapSize;
-            const dashArray = `${segmentSize} ${gapSize}`;
-            outerRing.style.strokeDasharray = dashArray;
-            if (outerRingBg) outerRingBg.style.strokeDasharray = dashArray;
+            const strokeWidth = 4;
+            const targetGap = 6; // Total visible gap between segments
+            
+            // With stroke-linecap: round, each segment adds strokeWidth/2 to each end.
+            // So we must subtract strokeWidth from the dash length and add it to the gap length.
+            const segmentDash = (outerCircumference / totalCount) - targetGap;
+            const gapDash = targetGap;
+            
+            // Background: Repeating segments [dash, gap]
+            if (outerRingBg) {
+                // Adjust for round caps: dash length = segmentLength - strokeWidth, gap length = gapLength + strokeWidth
+                outerRingBg.style.strokeDasharray = `${segmentDash - strokeWidth} ${gapDash + strokeWidth}`;
+            }
+
+            if (isTotalComplete) {
+                // Fully closed circle
+                outerRing.style.strokeDasharray = `${outerCircumference} 0`;
+                outerRing.style.strokeDashoffset = 0;
+            } else if (completedCount === 0) {
+                outerRing.style.strokeDasharray = `0 ${outerCircumference}`;
+                outerRing.style.strokeDashoffset = 0;
+            } else {
+                // Non-repeating dasharray to show exact number of segments
+                let fillArray = [];
+                let currentLength = 0;
+
+                for (let i = 0; i < completedCount; i++) {
+                    // 1. Add the dash (segment)
+                    const dash = segmentDash - strokeWidth;
+                    fillArray.push(dash);
+                    currentLength += dash;
+                    
+                    // 2. Add the gap
+                    if (i < completedCount - 1) {
+                        // Gap between completed segments
+                        const gap = gapDash + strokeWidth;
+                        fillArray.push(gap);
+                        currentLength += gap;
+                    } else {
+                        // LAST completed segment: add the remaining circumference as a gap
+                        // This ensures the array length is EVEN (dash, gap, dash, gap...)
+                        // and prevents the browser from doubling the array and turning gaps into dashes.
+                        const finalGap = outerCircumference - currentLength;
+                        fillArray.push(finalGap);
+                    }
+                }
+                
+                outerRing.style.strokeDasharray = fillArray.join(' ');
+                outerRing.style.strokeDashoffset = 0;
+            }
         } else {
-            outerRing.style.strokeDasharray = outerCircumference;
-            if (outerRingBg) outerRingBg.style.strokeDasharray = outerCircumference;
+            outerRing.style.strokeDasharray = `${outerCircumference} 0`;
+            if (outerRingBg) outerRingBg.style.strokeDasharray = `${outerCircumference} 0`;
+            outerRing.style.strokeDashoffset = isTotalComplete ? 0 : outerCircumference;
         }
 
-        // --- PROGRESS LOGIC ---
-        if (isTotalComplete) {
-            // Fill COMPLETELY if everything is done
-            outerRing.style.strokeDashoffset = 0;
-            outerRing.style.opacity = "1";
-        } else if (completedCount === 0) {
-            outerRing.style.strokeDashoffset = outerCircumference;
-            outerRing.style.opacity = "0.3";
-        } else {
-            // Fill exactly 'completedCount' segments
-            // We need to account for the gaps in our progress calculation
-            const progress = completedCount / totalCount;
-            outerRing.style.strokeDashoffset = outerCircumference * (1 - progress);
-            outerRing.style.opacity = "1";
-        }
+        outerRing.style.opacity = completedCount > 0 ? "1" : "0.3";
 
         // Inner Ring: Session progress
         const innerCircumference = 2 * Math.PI * 48;
         innerRing.style.strokeDasharray = innerCircumference;
 
         if (isTotalComplete) {
-            // Fill inner ring too if total task is complete
             innerRing.style.strokeDashoffset = 0;
             innerRing.style.opacity = "1";
         } else if (state.mode === 'work') {
@@ -1404,13 +1433,17 @@ export const FocusMode = {
         const taskLines = lines.filter(l => l.includes('[ ]') || l.includes('[x]'));
         
         // Log for debugging
-        console.log(`[Focus] Checking achievement: ${taskLines.filter(l => l.includes('[x]')).length}/${taskLines.length}`);
+        const completedCount = taskLines.filter(l => l.includes('[x]')).length;
+        console.log(`[Focus] Checking achievement: ${completedCount}/${taskLines.length}`);
         
         const allCompleted = taskLines.length > 0 && taskLines.every(l => l.includes('[x]'));
 
         if (allCompleted) {
             console.log('[Focus] SUCCESS! All tasks completed. Celebrating...');
             this.celebrateTaskAchieved();
+        } else {
+            // Update rings even if not all complete (to show progress)
+            this.updateRings();
         }
     },
 
