@@ -67,11 +67,36 @@
     top: 24px;
     left: 24px;
     z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.focus-header {
-    margin-bottom: 14px;
-    text-align: center;
+/* Streak badge */
+.focus-streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.25) 0%, rgba(239, 68, 68, 0.2) 100%);
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fb923c;
+    animation: streakGlow 2s ease-in-out infinite;
+}
+
+@keyframes streakGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(251, 146, 60, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 16px rgba(251, 146, 60, 0.6);
+    }
 }
 
 /* Status Labels & Badges */
@@ -407,6 +432,40 @@
     transform: rotate(90deg) scale(1.1);
 }
 
+/* Sound toggle button */
+.focus-sound-toggle {
+    position: absolute;
+    top: 24px;
+    right: 84px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10;
+}
+
+.focus-sound-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.05);
+}
+
+.focus-sound-toggle.muted {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.focus-sound-toggle.muted:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
 .focus-header {
     margin-bottom: 14px;
     text-align: center;
@@ -552,7 +611,7 @@
     pointer-events: none;
 }
 
-.quest-carousel.carousel-rolling + .carousel-complete-btn {
+.quest-carousel.carousel-rolling+.carousel-complete-btn {
     opacity: 0;
     pointer-events: none;
 }
@@ -574,7 +633,7 @@
     pointer-events: none;
 }
 
-.quest-carousel.carousel-rolling ~ .carousel-nav {
+.quest-carousel.carousel-rolling~.carousel-nav {
     opacity: 0;
     pointer-events: none;
 }
@@ -604,6 +663,29 @@
 
 .carousel-nav-btn:active {
     transform: translateY(0);
+}
+
+/* Disabled state for nav buttons when timer is running */
+.carousel-nav.disabled .carousel-nav-btn,
+.carousel-nav-btn:disabled,
+.carousel-nav-btn[disabled] {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+/* At boundary state - no more steps in this direction */
+.carousel-nav-btn.at-boundary {
+    opacity: 0.2 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+/* Timer paused state - greyed out */
+.ring-time.paused {
+    color: rgba(255, 255, 255, 0.4);
+    animation: none;
+    text-shadow: none;
 }
 
 /* === ACTIVE CARD - Vertically centered === */
@@ -806,16 +888,40 @@
     pointer-events: none !important;
 }
 
-.carousel-icon.done {
-    color: var(--task-color);
-    font-size: 14px;
-    background: color-mix(in srgb, var(--task-color) 20%, transparent);
-    border: 1px solid color-mix(in srgb, var(--task-color) 35%, transparent);
-}
-
 .carousel-card.done .carousel-text {
     text-decoration: line-through;
-    color: rgba(255, 255, 255, 0.4);
+    opacity: 0.6;
+}
+
+/* Completed State Visuals */
+.carousel-card.is-completed {
+    border-color: color-mix(in srgb, var(--task-color) 60%, rgba(255, 255, 255, 0.4)) !important;
+}
+
+.carousel-text.is-completed {
+    text-decoration: line-through !important;
+    opacity: 0.5;
+    color: color-mix(in srgb, var(--task-color) 40%, var(--text-tertiary)) !important;
+}
+
+.carousel-header.is-completed .carousel-step {
+    opacity: 0.6;
+    color: var(--task-color);
+}
+
+.carousel-card.active.is-completed {
+    background: linear-gradient(175deg,
+            color-mix(in srgb, var(--task-color) 15%, rgba(20, 30, 50, 0.95)) 0%,
+            color-mix(in srgb, var(--task-color) 10%, rgba(15, 25, 45, 0.92)) 100%) !important;
+    border: 1.5px solid color-mix(in srgb, var(--task-color) 30%, rgba(255, 255, 255, 0.2)) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+}
+
+.carousel-icon.done {
+    color: #10b981 !important; /* Success Green */
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
 }
 
 /* Hide cards that are too far from active (depth > 1) */
@@ -1548,4 +1654,168 @@
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.2);
     color: var(--text-primary);
+}
+
+/* Stop Confirmation Modal */
+.stop-confirm-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.stop-confirm-modal {
+    background: linear-gradient(165deg, rgba(40, 45, 60, 0.95) 0%, rgba(30, 35, 50, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 32px 40px;
+    text-align: center;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.stop-confirm-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.9;
+}
+
+.stop-confirm-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 8px;
+}
+
+.stop-confirm-message {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 24px;
+}
+
+/* Celebration Visuals */
+.celebration-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+@keyframes successFlash {
+    0% { filter: drop-shadow(0 0 5px var(--task-color)); stroke-width: 4; }
+    50% { filter: drop-shadow(0 0 25px var(--task-color)) brightness(1.5); stroke-width: 8; }
+    100% { filter: drop-shadow(0 0 5px var(--task-color)); stroke-width: 4; }
+}
+
+.success-flash {
+    animation: successFlash 0.8s ease-out;
+}
+
+@keyframes triumphGlow {
+    0% { filter: drop-shadow(0 0 0px var(--task-color)); }
+    50% { filter: drop-shadow(0 0 40px var(--task-color)) brightness(1.8); }
+    100% { filter: drop-shadow(0 0 0px var(--task-color)); }
+}
+
+.triumph-glow {
+    animation: triumphGlow 1.5s ease-in-out;
+}
+
+.confetti-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    animation: confetti-fall linear forwards;
+}
+
+@keyframes confetti-fall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
+}
+
+.timer-finished-pulse {
+    animation: timerPulse 1.5s ease-in-out infinite;
+    color: #10b981 !important;
+}
+
+@keyframes timerPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.05);
+    }
+}
+
+.stop-confirm-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.stop-confirm-btn {
+    padding: 12px 28px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stop-confirm-btn.cancel {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.stop-confirm-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.stop-confirm-btn.confirm {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+}
+
+.stop-confirm-btn.confirm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+    filter: brightness(1.1);
 }

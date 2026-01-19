@@ -5,6 +5,7 @@
 import { Store } from '../store.js';
 import { Departments } from '../departments.js';
 import { PlannerService } from '../services/PlannerService.js';
+import { FocusAudio } from '../utils/FocusAudio.js';
 
 export const FocusMode = {
     isOpen: false,
@@ -22,6 +23,7 @@ export const FocusMode = {
 
     // Core session settings
     sessionDuration: 25 * 60, // 25 minutes default
+    breakDuration: 5 * 60,    // 5 minutes break
     closureThreshold: 5 * 60, // 5 minutes before end
 
     /**
@@ -117,10 +119,25 @@ export const FocusMode = {
                             <path d="M18 6L6 18M6 6l12 12"/>
                         </svg>
                     </button>
+                    <button class="focus-sound-toggle ${FocusAudio.isEnabled() ? '' : 'muted'}" id="soundToggle" title="${FocusAudio.isEnabled() ? 'Mute sounds' : 'Enable sounds'}">
+                        ${FocusAudio.isEnabled() ? `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            </svg>
+                        ` : `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                                <line x1="23" y1="9" x2="17" y2="15"/>
+                                <line x1="17" y1="9" x2="23" y2="15"/>
+                            </svg>
+                        `}
+                    </button>
 
                     <!-- Task title at top-left -->
                     <div class="focus-header-topleft">
                         <span class="focus-title" id="focusTaskTitle">${PlannerService.escapeHtml(task.title)}</span>
+                        ${Store.getStreak() > 0 ? `<span class="focus-streak-badge" title="Focus streak: ${Store.getStreak()} day${Store.getStreak() > 1 ? 's' : ''}">🔥 ${Store.getStreak()}</span>` : ''}
                     </div>
 
                     <!-- Center: Focus Engine & Quest Stack -->
@@ -199,6 +216,7 @@ export const FocusMode = {
         this.setupListeners();
         this.updateRings();
         this.updateTimeDisplay();
+        this.updateCarouselNavState(); // Set initial arrow states
         this.startSessionInterval();
         this.schedulePositionCarouselCompleteButton();
         const carousel = document.querySelector('#questStack .quest-carousel');
@@ -212,9 +230,13 @@ export const FocusMode = {
      * Render the decision state overlay
      */
     renderDecisionOverlay() {
+        const state = Store.getState().activeExecution;
+        const title = state.mode === 'break' ? 'Time to Recharge' : 'Session Complete';
+        const continueLabel = state.mode === 'break' ? 'Continue this step' : 'Continue this step';
+        
         return `
             <div class="decision-overlay">
-                <div class="decision-title">Session Complete</div>
+                <div class="decision-title">${title}</div>
                 <div class="decision-grid">
                     <button class="decision-btn primary" id="decisionComplete">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -226,7 +248,7 @@ export const FocusMode = {
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 5v14M5 12h14"/>
                         </svg>
-                        Continue this step
+                        ${continueLabel}
                     </button>
                     <button class="decision-btn" id="decisionModify">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -287,7 +309,9 @@ export const FocusMode = {
         if (activeTitle) {
             activeTitle.textContent = this.getActiveStepTitle(task, state.currentStepIndex);
         }
+        this.updateRings();
         this.schedulePositionCarouselCompleteButton();
+        this.updateCarouselNavState(); // Update arrow enabled/disabled states
     },
 
     schedulePositionCarouselCompleteButton() {
@@ -346,7 +370,7 @@ export const FocusMode = {
 
         const carousel = stackContainer.querySelector('.quest-carousel');
         const activeCard = carousel?.querySelector('.carousel-card.active');
-        if (!carousel || !activeCard) {
+        if (!carousel || !activeCard || activeCard.classList.contains('is-completed')) {
             btn.classList.add('hidden');
             return;
         }
@@ -459,20 +483,23 @@ export const FocusMode = {
         return -1;
     },
 
-    buildCarouselCardInnerHtml(stateClass, index, cleanText) {
+    buildCarouselCardInnerHtml(stateClass, index, cleanText, isCompleted = false) {
         const visualState = stateClass === 'below' ? 'done' : stateClass;
         const stepLabel = index >= 0 ? `Step ${index + 1}` : '';
-        const icon = visualState === 'active'
-            ? '<div class="carousel-icon active">●</div>'
-            : (visualState === 'done'
-                ? '<div class="carousel-icon done">✓</div>'
+        
+        // Icon logic: if completed, always show checkmark
+        const icon = isCompleted 
+            ? '<div class="carousel-icon done">✓</div>'
+            : (visualState === 'active'
+                ? '<div class="carousel-icon active">●</div>'
                 : '<div class="carousel-icon upcoming">○</div>');
 
-        const badge = visualState === 'active' ? '<div class="carousel-badge">NOW</div>' : '';
-        const textHtml = `<div class="carousel-text">${PlannerService.escapeHtml(cleanText)}</div>`;
+        const badge = (visualState === 'active' && !isCompleted) ? '<div class="carousel-badge">NOW</div>' : '';
+        const completedClass = isCompleted ? 'is-completed' : '';
+        const textHtml = `<div class="carousel-text ${completedClass}">${PlannerService.escapeHtml(cleanText)}</div>`;
 
         return `
-            <div class="carousel-header">
+            <div class="carousel-header ${completedClass}">
                 ${icon}
                 <div class="carousel-step">${stepLabel}</div>
                 ${badge}
@@ -482,7 +509,7 @@ export const FocusMode = {
     },
 
     fillCarouselCard(cardEl, stateClass, index, lines) {
-        cardEl.classList.remove('active', 'upcoming', 'done', 'behind', 'below', 'empty', 'sliding-down', 'sliding-to-active', 'sliding-behind-to-upcoming', 'sliding-out', 'sliding-done-to-active', 'sliding-active-to-upcoming', 'sliding-upcoming-to-behind', 'sliding-below-to-done');
+        cardEl.classList.remove('active', 'upcoming', 'done', 'behind', 'below', 'empty', 'is-completed', 'sliding-down', 'sliding-to-active', 'sliding-behind-to-upcoming', 'sliding-out', 'sliding-done-to-active', 'sliding-active-to-upcoming', 'sliding-upcoming-to-behind', 'sliding-below-to-done');
         cardEl.classList.add(stateClass);
 
         if (index === -1) {
@@ -494,11 +521,17 @@ export const FocusMode = {
         }
 
         const raw = lines[index] || '';
+        const isCompleted = raw.includes('[x]');
         const cleanText = raw.replace(/\[[ x]\]\s*/, '').trim();
+        
+        if (isCompleted) {
+            cardEl.classList.add('is-completed');
+        }
+
         const depth = stateClass === 'active' ? 0 : (stateClass === 'behind' || stateClass === 'below' ? 2 : 1);
         cardEl.dataset.index = String(index);
         cardEl.style.setProperty('--depth', depth);
-        cardEl.innerHTML = this.buildCarouselCardInnerHtml(stateClass, index, cleanText);
+        cardEl.innerHTML = this.buildCarouselCardInnerHtml(stateClass, index, cleanText, isCompleted);
     },
 
     syncCarousel(carousel, task, activeIndex) {
@@ -511,13 +544,12 @@ export const FocusMode = {
         const behindCard = carousel.querySelector('.carousel-card[data-role="behind"]');
         if (!doneCard || !activeCard || !upcomingCard || !behindCard) return;
 
-        const nextIndex = this.getNextIncompleteIndex(lines, activeIndex);
-        const behindIndex = nextIndex === -1 ? -1 : this.getNextIncompleteIndex(lines, nextIndex);
-        const prevDone = (this.lastDoneStepIndex !== null && this.lastDoneStepIndex >= 0 && this.lastDoneStepIndex < activeIndex)
-            ? this.lastDoneStepIndex
-            : this.getPrevCompletedIndex(lines, activeIndex);
+        // Use sequential indices for a complete view of the journey
+        const prevIndex = activeIndex - 1;
+        const nextIndex = activeIndex + 1 < lines.length ? activeIndex + 1 : -1;
+        const behindIndex = activeIndex + 2 < lines.length ? activeIndex + 2 : -1;
 
-        this.fillCarouselCard(doneCard, 'done', prevDone, lines);
+        this.fillCarouselCard(doneCard, 'done', prevIndex, lines);
         this.fillCarouselCard(activeCard, 'active', activeIndex, lines);
         this.fillCarouselCard(upcomingCard, 'upcoming', nextIndex, lines);
         this.fillCarouselCard(behindCard, 'behind', behindIndex, lines);
@@ -542,8 +574,9 @@ export const FocusMode = {
         if (!doneCard || !activeCard || !upcomingCard || !behindCard) return;
 
         const linesBefore = (task.notes || '').split('\n').filter(l => l.trim() !== '');
-        const behindIndexBefore = this.getNextIncompleteIndex(linesBefore, toIndex);
-        this.fillCarouselCard(upcomingCard, 'upcoming', toIndex, linesBefore);
+        const nextIndexBefore = toIndex;
+        const behindIndexBefore = toIndex + 1 < linesBefore.length ? toIndex + 1 : -1;
+        this.fillCarouselCard(upcomingCard, 'upcoming', nextIndexBefore, linesBefore);
         this.fillCarouselCard(behindCard, 'behind', behindIndexBefore, linesBefore);
 
         if (markComplete) {
@@ -567,8 +600,8 @@ export const FocusMode = {
 
             const taskAfter = Store.getTask(this.activeTaskId);
             const linesAfter = (taskAfter.notes || '').split('\n').filter(l => l.trim() !== '');
-            const nextUpcoming = behindIndexBefore;
-            const nextBehind = nextUpcoming === -1 ? -1 : this.getNextIncompleteIndex(linesAfter, nextUpcoming);
+            const nextUpcoming = toIndex + 1 < linesAfter.length ? toIndex + 1 : -1;
+            const nextBehind = toIndex + 2 < linesAfter.length ? toIndex + 2 : -1;
 
             const oldDone = doneCard;
             const oldActive = activeCard;
@@ -593,11 +626,18 @@ export const FocusMode = {
             carousel.classList.remove('carousel-rolling');
             this.carouselAnimating = false;
             this.schedulePositionCarouselCompleteButton();
+            this.updateCarouselNavState();
         };
 
         const onAnimationEnd = (e) => {
             if (e.animationName !== 'rollToActive') return;
             finish();
+
+            // Play success sound if marking complete
+            if (markComplete) {
+                FocusAudio.playStepComplete();
+                this.showSuccessVisuals();
+            }
         };
 
         upcomingCard.addEventListener('animationend', onAnimationEnd, { once: true });
@@ -621,9 +661,8 @@ export const FocusMode = {
         const behindCard = carousel.querySelector('.carousel-card[data-role="behind"]');
         if (!doneCard || !activeCard || !upcomingCard || !behindCard) return;
 
-        const oldUpcomingIndex = parseInt(upcomingCard.dataset.index);
         const linesBefore = (task.notes || '').split('\n').filter(l => l.trim() !== '');
-        const prevDoneForTo = this.getPrevCompletedIndex(linesBefore, toIndex);
+        const prevDoneForTo = toIndex - 1;
         this.fillCarouselCard(behindCard, 'below', prevDoneForTo, linesBefore);
 
         this.carouselAnimating = true;
@@ -643,9 +682,9 @@ export const FocusMode = {
 
             const taskAfter = Store.getTask(this.activeTaskId);
             const linesAfter = (taskAfter.notes || '').split('\n').filter(l => l.trim() !== '');
-            const nextDone = this.getPrevCompletedIndex(linesAfter, toIndex);
-            const nextUpcoming = fromIndex;
-            const nextBehind = (!Number.isNaN(oldUpcomingIndex) && oldUpcomingIndex >= 0) ? oldUpcomingIndex : this.getNextIncompleteIndex(linesAfter, nextUpcoming);
+            const nextDone = toIndex - 1;
+            const nextUpcoming = toIndex + 1 < linesAfter.length ? toIndex + 1 : -1;
+            const nextBehind = toIndex + 2 < linesAfter.length ? toIndex + 2 : -1;
 
             const oldDone = doneCard;
             const oldActive = activeCard;
@@ -670,6 +709,7 @@ export const FocusMode = {
             carousel.classList.remove('carousel-rolling');
             this.carouselAnimating = false;
             this.schedulePositionCarouselCompleteButton();
+            this.updateCarouselNavState();
         };
 
         const onAnimationEnd = (e) => {
@@ -691,23 +731,35 @@ export const FocusMode = {
         const lines = notes.split('\n').filter(l => l.trim() !== '');
         if (lines.length === 0) return '<div class="pills-empty">Define your journey steps...</div>';
 
-        const nextIndex = this.getNextIncompleteIndex(lines, activeIndex);
-        const behindIndex = nextIndex === -1 ? -1 : this.getNextIncompleteIndex(lines, nextIndex);
-        const prevDone = (this.lastDoneStepIndex !== null && this.lastDoneStepIndex >= 0 && this.lastDoneStepIndex < activeIndex)
-            ? this.lastDoneStepIndex
-            : this.getPrevCompletedIndex(lines, activeIndex);
+        // Use sequential indices for initial render
+        const prevDone = activeIndex - 1;
+        const nextIndex = activeIndex + 1 < lines.length ? activeIndex + 1 : -1;
+        const behindIndex = activeIndex + 2 < lines.length ? activeIndex + 2 : -1;
 
-        const doneInner = prevDone === -1 ? '' : this.buildCarouselCardInnerHtml('done', prevDone, lines[prevDone].replace(/\[[ x]\]\s*/, '').trim());
-        const activeInner = this.buildCarouselCardInnerHtml('active', activeIndex, lines[activeIndex].replace(/\[[ x]\]\s*/, '').trim());
-        const upcomingInner = nextIndex === -1 ? '' : this.buildCarouselCardInnerHtml('upcoming', nextIndex, lines[nextIndex].replace(/\[[ x]\]\s*/, '').trim());
-        const behindInner = behindIndex === -1 ? '' : this.buildCarouselCardInnerHtml('behind', behindIndex, lines[behindIndex].replace(/\[[ x]\]\s*/, '').trim());
+        const buildCardInner = (role, idx) => {
+            if (idx === -1) return '';
+            const raw = lines[idx];
+            const isCompleted = raw.includes('[x]');
+            const cleanText = raw.replace(/\[[ x]\]\s*/, '').trim();
+            return this.buildCarouselCardInnerHtml(role, idx, cleanText, isCompleted);
+        };
+
+        const doneInner = buildCardInner('done', prevDone);
+        const activeInner = buildCardInner('active', activeIndex);
+        const upcomingInner = buildCardInner('upcoming', nextIndex);
+        const behindInner = buildCardInner('behind', behindIndex);
+
+        const getCompletedClass = (idx) => {
+            if (idx === -1) return '';
+            return lines[idx].includes('[x]') ? 'is-completed' : '';
+        };
 
         return `
             <div class="quest-carousel no-initial-transition" data-carousel="drum">
-                <div class="carousel-card done ${prevDone === -1 ? 'empty' : ''}" data-role="done" data-index="${prevDone}" style="--depth: 1;">${doneInner}</div>
-                <div class="carousel-card active" data-role="active" data-index="${activeIndex}" style="--depth: 0;">${activeInner}</div>
-                <div class="carousel-card upcoming ${nextIndex === -1 ? 'empty' : ''}" data-role="upcoming" data-index="${nextIndex}" style="--depth: 1;">${upcomingInner}</div>
-                <div class="carousel-card behind ${behindIndex === -1 ? 'empty' : ''}" data-role="behind" data-index="${behindIndex}" style="--depth: 2;">${behindInner}</div>
+                <div class="carousel-card done ${prevDone === -1 ? 'empty' : ''} ${getCompletedClass(prevDone)}" data-role="done" data-index="${prevDone}" style="--depth: 1;">${doneInner}</div>
+                <div class="carousel-card active ${getCompletedClass(activeIndex)}" data-role="active" data-index="${activeIndex}" style="--depth: 0;">${activeInner}</div>
+                <div class="carousel-card upcoming ${nextIndex === -1 ? 'empty' : ''} ${getCompletedClass(nextIndex)}" data-role="upcoming" data-index="${nextIndex}" style="--depth: 1;">${upcomingInner}</div>
+                <div class="carousel-card behind ${behindIndex === -1 ? 'empty' : ''} ${getCompletedClass(behindIndex)}" data-role="behind" data-index="${behindIndex}" style="--depth: 2;">${behindInner}</div>
             </div>
         `;
     },
@@ -727,18 +779,22 @@ export const FocusMode = {
 
         closeBtn?.addEventListener('click', () => this.close());
 
-        sessionToggleBtn?.addEventListener('click', () => {
+        sessionToggleBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
             const state = Store.getState().activeExecution;
             if (state.running) {
                 this.pauseSession();
             } else {
                 this.startSession();
             }
-            this.render(Store.getTask(this.activeTaskId));
+            // Update button icon without full re-render
+            this.updateToggleButton();
         });
 
-        document.getElementById('stopSessionBtn')?.addEventListener('click', () => {
+        document.getElementById('stopSessionBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
             this.stopSession();
+            this.updateToggleButton();
         });
 
         // The old startBreakBtn is replaced by the unified toggle
@@ -748,6 +804,13 @@ export const FocusMode = {
         document.getElementById('decisionContinue')?.addEventListener('click', () => this.handleDecision('continue'));
         document.getElementById('decisionModify')?.addEventListener('click', () => this.handleDecision('modify'));
 
+        // Sound toggle
+        document.getElementById('soundToggle')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            FocusAudio.toggle();
+            this.updateSoundToggleButton();
+        });
+
         document.getElementById('carouselNavUpBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -756,7 +819,7 @@ export const FocusMode = {
         document.getElementById('carouselNavDownBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.skipToNextStep();
+            this.navigateToNextVisibleStep();
         });
         document.getElementById('carouselCompleteBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
@@ -780,14 +843,51 @@ export const FocusMode = {
         }
 
         this.activeKeyHandler = (e) => {
+            // Skip if typing in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            // Enter: Complete current step
             if (e.key === 'Enter') {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 if (e.metaKey || e.ctrlKey || e.altKey) return;
                 this.completeCurrentStep();
                 return;
             }
+
+            // Space: Toggle pause/resume
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault(); // Prevent page scroll
+                const state = Store.getState().activeExecution;
+                if (state.running) {
+                    this.pauseSession();
+                } else {
+                    this.startSession();
+                }
+                this.updateToggleButton();
+                return;
+            }
+
+            // Arrow Up: Navigate to previous step
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.navigateToPrevVisibleStep();
+                return;
+            }
+
+            // Arrow Down: Navigate to next step (skip)
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                this.skipToNextStep();
+                return;
+            }
+
+            // S: Skip current step
+            if (e.key.toLowerCase() === 's') {
+                this.skipToNextStep();
+                return;
+            }
+
+            // Escape or F: Close Focus Mode
             if (e.key === 'Escape' || e.key.toLowerCase() === 'f') {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 this.close();
             }
         };
@@ -836,12 +936,24 @@ export const FocusMode = {
         state.updatedAt = Date.now();
 
         this.startSessionInterval();
+
+        // Update visual states
+        this.updateTimerVisualState();
+        this.updateCarouselNavState();
     },
 
     /**
-     * Stop focus session (Interruption)
+     * Stop focus session (Interruption) - with confirmation
+     * Uses a two-step process: first call shows confirm, second call actually stops
      */
-    stopSession() {
+    stopSession(confirmed = false) {
+        if (!confirmed) {
+            // Show confirmation overlay
+            this.showStopConfirmation();
+            return;
+        }
+
+        // Actually stop the session
         const state = Store.getState().activeExecution;
         state.running = false;
         state.phase = 'orientation';
@@ -851,6 +963,52 @@ export const FocusMode = {
         state.breakStartTime = null;
         clearInterval(this.sessionInterval);
         this.sessionInterval = null;
+
+        // Update visual states
+        this.updateTimerVisualState();
+        this.updateCarouselNavState();
+        this.updateToggleButton();
+        this.updateTimeDisplay(); // Refresh to show 25:00
+    },
+
+    /**
+     * Show stop confirmation overlay
+     */
+    showStopConfirmation() {
+        // Remove any existing confirmation
+        document.getElementById('stopConfirmOverlay')?.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'stopConfirmOverlay';
+        overlay.className = 'stop-confirm-overlay';
+        overlay.innerHTML = `
+            <div class="stop-confirm-modal">
+                <div class="stop-confirm-icon">🔄</div>
+                <div class="stop-confirm-title">Reset Timer?</div>
+                <div class="stop-confirm-message">Timer will go back to 25:00. Your steps will stay.</div>
+                <div class="stop-confirm-buttons">
+                    <button class="stop-confirm-btn cancel" id="stopConfirmCancel">Cancel</button>
+                    <button class="stop-confirm-btn confirm" id="stopConfirmYes">Reset</button>
+                </div>
+            </div>
+        `;
+
+        document.querySelector('.focus-overlay')?.appendChild(overlay);
+
+        // Add listeners
+        document.getElementById('stopConfirmCancel')?.addEventListener('click', () => {
+            overlay.remove();
+        });
+
+        document.getElementById('stopConfirmYes')?.addEventListener('click', () => {
+            overlay.remove();
+            this.stopSession(true); // Confirmed
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
     },
 
     /**
@@ -885,19 +1043,39 @@ export const FocusMode = {
             // Check for closure phase
             if (elapsedSeconds >= (this.sessionDuration - this.closureThreshold) && state.phase === 'execution') {
                 state.phase = 'closure';
+                FocusAudio.playClosureWarning();
                 this.notifyPhaseChange('closure');
             }
 
             // Check for session completion
             if (elapsedSeconds >= this.sessionDuration) {
+                // Count steps completed before recording
+                const task = Store.getTask(this.activeTaskId);
+                const lines = (task?.notes || '').split('\n').filter(l => l.trim() !== '');
+                const stepsCompleted = lines.filter(l => l.includes('[x]')).length;
+
+                // Record the session
+                Store.recordFocusSession({
+                    taskId: this.activeTaskId,
+                    duration: this.sessionDuration,
+                    stepsCompleted
+                });
+
                 state.running = false;
+                state.mode = 'break';
+                state.breakStartTime = Date.now();
                 state.phase = 'decision';
                 state.accumulatedTime = 0; // Reset for next session
+                FocusAudio.playSessionComplete();
                 this.render(Store.getTask(this.activeTaskId));
             }
         } else if (state.mode === 'break') {
-            // Break mode - count up from breakStartTime
-            // Break is always running until user resumes
+            // Break mode - count down
+            const breakElapsed = state.breakStartTime ? Math.floor((Date.now() - state.breakStartTime) / 1000) : 0;
+            if (breakElapsed >= this.breakDuration) {
+                // Break finished
+                // Keep in break mode but maybe pulse the timer or show a notification
+            }
         }
 
         this.updateRings();
@@ -913,6 +1091,148 @@ export const FocusMode = {
         }
         state.running = false;
         state.sessionStartTime = null;
+
+        // Update visual states
+        this.updateTimerVisualState();
+        this.updateCarouselNavState();
+    },
+
+    /**
+     * Update toggle button icon without full re-render
+     */
+    updateToggleButton() {
+        const state = Store.getState().activeExecution;
+        const btn = document.getElementById('sessionToggleBtn');
+        const stopBtn = document.getElementById('stopSessionBtn');
+        const mediaControls = document.querySelector('.ring-media-controls');
+
+        if (btn) {
+            if (state.running) {
+                btn.classList.add('running');
+                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+                btn.setAttribute('aria-label', 'Pause');
+                btn.setAttribute('title', 'Pause');
+
+                // Add stop button if not present
+                if (!stopBtn && mediaControls) {
+                    const newStopBtn = document.createElement('button');
+                    newStopBtn.className = 'ring-media-btn ring-media-stop';
+                    newStopBtn.id = 'stopSessionBtn';
+                    newStopBtn.setAttribute('aria-label', 'Stop');
+                    newStopBtn.setAttribute('title', 'Stop');
+                    newStopBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>`;
+                    newStopBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.stopSession();
+                        this.updateToggleButton();
+                    });
+                    mediaControls.appendChild(newStopBtn);
+                }
+            } else {
+                btn.classList.remove('running');
+                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+                const label = (state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus';
+                btn.setAttribute('aria-label', label);
+                btn.setAttribute('title', label);
+
+                // Remove stop button when paused/stopped
+                stopBtn?.remove();
+            }
+        }
+    },
+
+    /**
+     * Update sound toggle button UI without full re-render
+     */
+    updateSoundToggleButton() {
+        const btn = document.getElementById('soundToggle');
+        if (!btn) return;
+
+        const enabled = FocusAudio.isEnabled();
+        btn.classList.toggle('muted', !enabled);
+        btn.title = enabled ? 'Mute sounds' : 'Enable sounds';
+        btn.innerHTML = enabled ? `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+        ` : `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                <line x1="23" y1="9" x2="17" y2="15"/>
+                <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+        `;
+    },
+
+    /**
+     * Update timer visual state (greyed when not running)
+     */
+    updateTimerVisualState() {
+        const state = Store.getState().activeExecution;
+        const timerDisplay = document.getElementById('sessionTimeDisplay');
+
+        if (timerDisplay) {
+            if (state.running) {
+                timerDisplay.classList.add('running');
+                timerDisplay.classList.remove('paused');
+            } else {
+                timerDisplay.classList.remove('running');
+                timerDisplay.classList.add('paused');
+            }
+        }
+    },
+
+    /**
+     * Update carousel navigation state (disabled when timer is running or at boundaries)
+     */
+    updateCarouselNavState() {
+        const state = Store.getState().activeExecution;
+        const task = Store.getTask(this.activeTaskId);
+        const carouselNav = document.getElementById('carouselNav');
+        const upBtn = document.getElementById('carouselNavUpBtn');
+        const downBtn = document.getElementById('carouselNavDownBtn');
+
+        // If timer is running, disable everything
+        if (state.running) {
+            if (carouselNav) carouselNav.classList.add('disabled');
+            if (upBtn) {
+                upBtn.disabled = true;
+                upBtn.classList.remove('at-boundary');
+            }
+            if (downBtn) {
+                downBtn.disabled = true;
+                downBtn.classList.remove('at-boundary');
+            }
+            return;
+        }
+
+        // Timer not running - check step boundaries
+        if (carouselNav) carouselNav.classList.remove('disabled');
+
+        const lines = (task?.notes || '').split('\n').filter(l => l.trim() !== '');
+        const currentIndex = state.currentStepIndex || 0;
+
+        // Source of truth: are there steps before/after current index?
+        const hasPrevStep = currentIndex > 0;
+        const hasNextStep = currentIndex < lines.length - 1;
+
+        console.log('[NAV] updateCarouselNavState:', {
+            currentIndex,
+            hasPrevStep,
+            hasNextStep,
+            linesCount: lines.length
+        });
+
+        // Update individual buttons based on boundaries
+        if (upBtn) {
+            upBtn.disabled = !hasPrevStep;
+            upBtn.classList.toggle('at-boundary', !hasPrevStep);
+        }
+        if (downBtn) {
+            downBtn.disabled = !hasNextStep;
+            downBtn.classList.toggle('at-boundary', !hasNextStep);
+        }
     },
 
     /**
@@ -931,10 +1251,14 @@ export const FocusMode = {
             if (nextIncomplete !== -1) {
                 state.currentStepIndex = nextIncomplete;
             }
+            state.mode = 'work'; // Transition back to work mode
+            state.breakStartTime = null;
         } else if (choice === 'modify') {
             // Simply close decision overlay and show orientation
         } else if (choice === 'continue') {
             // Immediate restart
+            state.mode = 'work';
+            state.breakStartTime = null;
             this.startSession();
             return;
         }
@@ -952,26 +1276,58 @@ export const FocusMode = {
         const task = Store.getTask(this.activeTaskId);
 
         const outerRing = document.getElementById('outerRing');
+        const outerRingBg = document.querySelector('.outer-ring-bg');
         const innerRing = document.getElementById('innerRing');
         if (!outerRing || !innerRing) return;
 
         // Outer Ring: Step-based progress
         const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
-        const completed = lines.filter(l => l.includes('[x]')).length;
-        const total = lines.length || 1;
+        const taskLines = lines.filter(l => l.includes('[ ]') || l.includes('[x]'));
+        const completedCount = taskLines.filter(l => l.includes('[x]')).length;
+        const totalCount = taskLines.length || 1;
+        
         const outerCircumference = 2 * Math.PI * 56;
-        const outerProgress = completed / total;
+        
+        // Check if total task is completed
+        const isTotalComplete = taskLines.length > 0 && completedCount === totalCount;
 
-        outerRing.style.strokeDasharray = outerCircumference;
-        // Even at 0%, we show a tiny bit or just ensure it's initialized
-        outerRing.style.strokeDashoffset = outerCircumference * (1 - outerProgress);
-        outerRing.style.opacity = outerProgress > 0 ? "1" : "0.3";
+        // --- SEGMENTATION LOGIC ---
+        if (totalCount > 1) {
+            const gapSize = 3; 
+            const segmentSize = (outerCircumference / totalCount) - gapSize;
+            const dashArray = `${segmentSize} ${gapSize}`;
+            outerRing.style.strokeDasharray = dashArray;
+            if (outerRingBg) outerRingBg.style.strokeDasharray = dashArray;
+        } else {
+            outerRing.style.strokeDasharray = outerCircumference;
+            if (outerRingBg) outerRingBg.style.strokeDasharray = outerCircumference;
+        }
+
+        // --- PROGRESS LOGIC ---
+        if (isTotalComplete) {
+            // Fill COMPLETELY if everything is done
+            outerRing.style.strokeDashoffset = 0;
+            outerRing.style.opacity = "1";
+        } else if (completedCount === 0) {
+            outerRing.style.strokeDashoffset = outerCircumference;
+            outerRing.style.opacity = "0.3";
+        } else {
+            // Fill exactly 'completedCount' segments
+            // We need to account for the gaps in our progress calculation
+            const progress = completedCount / totalCount;
+            outerRing.style.strokeDashoffset = outerCircumference * (1 - progress);
+            outerRing.style.opacity = "1";
+        }
 
         // Inner Ring: Session progress
         const innerCircumference = 2 * Math.PI * 48;
         innerRing.style.strokeDasharray = innerCircumference;
 
-        if (state.mode === 'work') {
+        if (isTotalComplete) {
+            // Fill inner ring too if total task is complete
+            innerRing.style.strokeDashoffset = 0;
+            innerRing.style.opacity = "1";
+        } else if (state.mode === 'work') {
             const currentSessionElapsed = (state.running && state.sessionStartTime) ? (Date.now() - state.sessionStartTime) : 0;
             const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
             const innerProgress = Math.min(1, totalElapsedMs / (this.sessionDuration * 1000));
@@ -979,11 +1335,9 @@ export const FocusMode = {
             innerRing.style.strokeDashoffset = innerCircumference * (1 - innerProgress);
             innerRing.style.opacity = state.running ? "1" : "0.5";
         } else if (state.mode === 'break') {
-            // Pulse or special state for break
             innerRing.style.strokeDashoffset = 0;
             innerRing.style.opacity = "0.2";
         } else {
-            // Ready state: show empty ring
             innerRing.style.strokeDashoffset = innerCircumference;
             innerRing.style.opacity = "0.3";
         }
@@ -997,17 +1351,127 @@ export const FocusMode = {
         if (!display) return;
 
         const state = Store.getState().activeExecution;
+        
+        // If task is fully completed, show 00:00 or a checkmark
+        if (state.phase === 'completed') {
+            display.textContent = "00:00";
+            display.classList.add('timer-finished-pulse');
+            return;
+        }
+
         let elapsedMs = state.accumulatedTime || 0;
         if (state.mode === 'work' && state.running && state.sessionStartTime) {
             elapsedMs += (Date.now() - state.sessionStartTime);
         }
 
         const elapsedSeconds = Math.floor(elapsedMs / 1000);
-        const totalSeconds = Math.max(0, this.sessionDuration - elapsedSeconds);
+        let totalSeconds = 0;
+
+        if (state.mode === 'work') {
+            totalSeconds = Math.max(0, this.sessionDuration - elapsedSeconds);
+        } else if (state.mode === 'break') {
+            // Count down break time
+            const breakElapsed = state.breakStartTime ? Math.floor((Date.now() - state.breakStartTime) / 1000) : 0;
+            totalSeconds = Math.max(0, this.breakDuration - breakElapsed);
+
+            // Pulse the timer when break is over
+            if (totalSeconds === 0) {
+                display.classList.add('timer-finished-pulse');
+            } else {
+                display.classList.remove('timer-finished-pulse');
+            }
+        }
 
         const mins = Math.floor(totalSeconds / 60);
         const secs = totalSeconds % 60;
         display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    },
+
+    /**
+     * Show success visuals (flash/animation)
+     */
+    showSuccessVisuals() {
+        const ring = document.getElementById('outerRing');
+        if (!ring) return;
+
+        ring.classList.add('success-flash');
+        setTimeout(() => ring.classList.remove('success-flash'), 1000);
+
+        // Check for total task achievement
+        const task = Store.getTask(this.activeTaskId);
+        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        // Explicitly check for lines that are tasks
+        const taskLines = lines.filter(l => l.includes('[ ]') || l.includes('[x]'));
+        
+        // Log for debugging
+        console.log(`[Focus] Checking achievement: ${taskLines.filter(l => l.includes('[x]')).length}/${taskLines.length}`);
+        
+        const allCompleted = taskLines.length > 0 && taskLines.every(l => l.includes('[x]'));
+
+        if (allCompleted) {
+            console.log('[Focus] SUCCESS! All tasks completed. Celebrating...');
+            this.celebrateTaskAchieved();
+        }
+    },
+
+    /**
+     * Triumphant celebration for total task completion
+     */
+    celebrateTaskAchieved() {
+        FocusAudio.playTaskAchieved();
+
+        const ring = document.getElementById('outerRing');
+        if (ring) {
+            ring.classList.add('triumph-glow');
+            setTimeout(() => ring.classList.remove('triumph-glow'), 2000);
+        }
+
+        // Stop the timer and fill everything
+        const state = Store.getState().activeExecution;
+        state.running = false;
+        state.sessionStartTime = null;
+        state.accumulatedTime = 0;
+        state.phase = 'completed'; // New phase for total completion
+
+        // Final UI update
+        this.updateRings();
+        this.updateTimeDisplay();
+        this.updateToggleButton();
+
+        // Create confetti effect
+        this.spawnConfetti();
+    },
+
+    spawnConfetti() {
+        const container = document.querySelector('.execution-rings-container');
+        if (!container) return;
+
+        const colors = ['#3b82f6', '#10b981', '#fbbf24', '#f87171', '#a78bfa'];
+        const particleCount = 40;
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'confetti-particle';
+            
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const left = Math.random() * 100;
+            const size = 4 + Math.random() * 6;
+            const duration = 1 + Math.random() * 2;
+            const delay = Math.random() * 0.5;
+
+            particle.style.backgroundColor = color;
+            particle.style.left = `${left}%`;
+            particle.style.top = `-10px`;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.animationDuration = `${duration}s`;
+            particle.style.animationDelay = `${delay}s`;
+
+            container.appendChild(particle);
+
+            // Cleanup
+            setTimeout(() => particle.remove(), (duration + delay) * 1000);
+        }
     },
 
     notifyPhaseChange(phase) {
@@ -1075,20 +1539,34 @@ export const FocusMode = {
     navigateToPrevVisibleStep() {
         if (this.carouselAnimating) return;
         const state = Store.getState().activeExecution;
+        const task = Store.getTask(this.activeTaskId);
         if (state.phase === 'execution') return;
 
-        const stackContainer = document.getElementById('questStack');
-        const carousel = stackContainer?.querySelector('.quest-carousel');
-        if (!carousel) return;
-        const doneCard = carousel.querySelector('.carousel-card[data-role="done"]');
-        if (!doneCard || doneCard.classList.contains('empty')) return;
-        const toIndex = parseInt(doneCard.dataset.index);
-        if (Number.isNaN(toIndex) || toIndex < 0) return;
-        this.animateCarouselRollReverse(toIndex);
+        const lines = (task?.notes || '').split('\n').filter(l => l.trim() !== '');
+        const currentIndex = state.currentStepIndex || 0;
+
+        // Logic: Simply go back one index if possible
+        if (currentIndex > 0) {
+            this.animateCarouselRollReverse(currentIndex - 1);
+        }
+    },
+
+    navigateToNextVisibleStep() {
+        if (this.carouselAnimating) return;
+        const state = Store.getState().activeExecution;
+        const task = Store.getTask(this.activeTaskId);
+        if (state.phase === 'execution') return;
+
+        const lines = (task?.notes || '').split('\n').filter(l => l.trim() !== '');
+        const currentIndex = state.currentStepIndex || 0;
+
+        if (currentIndex < lines.length - 1) {
+            this.animateCarouselRoll(currentIndex + 1, { markComplete: false });
+        }
     },
 
     /**
-     * Skip to next step without marking current as complete
+     * Skip to next incomplete step
      */
     skipToNextStep() {
         const state = Store.getState().activeExecution;
