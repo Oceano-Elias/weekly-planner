@@ -450,7 +450,7 @@ export const FocusModeUI = {
         };
 
         // Fallback timeout in case animationend doesn't fire
-        const fallbackTimeout = setTimeout(handleFinish, 500);
+        const fallbackTimeout = setTimeout(handleFinish, 1000);
         els.upcomingCard.addEventListener('animationend', onAnimationEnd, { once: true });
     },
 
@@ -496,7 +496,7 @@ export const FocusModeUI = {
         };
 
         // Fallback timeout in case animationend doesn't fire
-        const fallbackTimeout = setTimeout(handleFinish, 500);
+        const fallbackTimeout = setTimeout(handleFinish, 1000);
         els.doneCard.addEventListener('animationend', onAnimationEnd, { once: true });
     },
 
