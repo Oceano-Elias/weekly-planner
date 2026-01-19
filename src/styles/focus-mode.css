@@ -6,28 +6,98 @@
     position: fixed;
     inset: 0;
     z-index: 2000;
-    /* Heavy blur backdrop with subtle gradient */
-    background: linear-gradient(135deg,
-            rgba(10, 15, 30, 0.95) 0%,
-            rgba(15, 23, 42, 0.92) 50%,
-            rgba(20, 30, 50, 0.95) 100%);
+    /* Deep midnight base */
+    background: #05080f;
     backdrop-filter: blur(32px) saturate(150%);
     -webkit-backdrop-filter: blur(32px) saturate(150%);
     display: flex;
     align-items: center;
     justify-content: center;
     animation: focusFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
 }
 
-@keyframes focusFadeIn {
+/* Premium Ambient Background */
+.focus-ambient-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.ambient-blob {
+    position: absolute;
+    width: 80vmax;
+    height: 80vmax;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.25;
+    animation: blobMove 30s infinite alternate ease-in-out;
+    mix-blend-mode: screen;
+}
+
+.blob-1 {
+    top: -20%;
+    left: -10%;
+    animation-duration: 25s;
+}
+
+.blob-2 {
+    bottom: -15%;
+    right: -10%;
+    animation-duration: 35s;
+    animation-delay: -7s;
+}
+
+.blob-3 {
+    top: 40%;
+    left: 30%;
+    width: 50vmax;
+    height: 50vmax;
+    animation-duration: 22s;
+    animation-delay: -12s;
+}
+
+@keyframes blobMove {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+
+    33% {
+        transform: translate(15%, 10%) scale(1.1) rotate(120deg);
+    }
+
+    66% {
+        transform: translate(-10%, 20%) scale(0.9) rotate(240deg);
+    }
+
+    100% {
+        transform: translate(0, 0) scale(1) rotate(360deg);
+    }
+}
+
+.focus-particles {
+    position: absolute;
+    inset: 0;
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 300px 300px;
+    animation: particlesMove 60s linear infinite;
+    opacity: 0.4;
+}
+
+@keyframes particlesMove {
     from {
-        opacity: 0;
-        backdrop-filter: blur(0px);
+        background-position: 0 0;
     }
 
     to {
-        opacity: 1;
-        backdrop-filter: blur(32px) saturate(150%);
+        background-position: 300px 600px;
     }
 }
 
@@ -37,14 +107,20 @@
     height: 90vh;
     border-radius: 48px;
     padding: clamp(18px, 4vh, 40px);
-    box-shadow: 0 80px 150px -40px rgba(0, 0, 0, 0.9);
+    background: rgba(15, 20, 35, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 80px 150px -40px rgba(0, 0, 0, 0.9),
+        inset 0 0 80px rgba(255, 255, 255, 0.02);
     position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     animation: cardFloat 0.7s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
+    backdrop-filter: blur(24px);
 }
 
 /* Center: Focus Engine & Quest Stack */
@@ -191,55 +267,50 @@
 }
 
 .ring-step-title {
-    font-size: clamp(14px, 2.5vh, 24px);
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.96);
-    line-height: 1.2;
+    font-size: clamp(16px, 2.8vh, 26px);
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.1;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
     word-wrap: break-word;
     text-align: center;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+    opacity: 0.9;
 }
 
 .ring-time {
-    margin-top: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: clamp(24px, 3.5vh, 32px);
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.85);
-    opacity: 1;
-    letter-spacing: 2px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: clamp(48px, 10vh, 92px);
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 0.9;
+    letter-spacing: -0.05em;
+    font-variant-numeric: tabular-nums;
     transform: translateZ(0);
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-        opacity 0.35s ease,
-        color 0.35s ease,
-        text-shadow 0.35s ease;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
 }
 
-.ring-time:hover {
-    color: rgba(255, 255, 255, 0.95);
-    transform: translateZ(0) scale(1.05);
-}
-
-/* Timer pulse when running */
 .ring-time.running {
-    color: rgba(255, 255, 255, 0.95);
-    animation: timerPulse 2s ease-in-out infinite;
+    animation: premiumTimePulse 2s ease-in-out infinite;
 }
 
-@keyframes timerPulse {
-
-    0%,
-    100% {
-        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+@keyframes premiumTimePulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
     }
-
     50% {
-        text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px var(--task-color);
+        transform: scale(1.03);
+        opacity: 0.95;
+        text-shadow: 0 0 40px color-mix(in srgb, var(--task-color) 40%, transparent);
     }
 }
 
@@ -253,43 +324,45 @@
 }
 
 .ring-media-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    color: rgba(255, 255, 255, 0.84);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-        background 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease,
-        opacity 0.2s ease;
-    opacity: 0.92;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0.9;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .ring-media-btn svg {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
 }
 
 .ring-media-btn:hover {
-    transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.16);
-    color: rgba(255, 255, 255, 0.94);
+    transform: translateY(-2px) scale(1.05);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
     opacity: 1;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .ring-media-primary {
-    color: color-mix(in srgb, var(--task-color) 70%, rgba(255, 255, 255, 0.94));
+    background: color-mix(in srgb, var(--task-color) 15%, rgba(255, 255, 255, 0.05));
+    border-color: color-mix(in srgb, var(--task-color) 30%, rgba(255, 255, 255, 0.1));
+    color: color-mix(in srgb, var(--task-color) 80%, #ffffff);
 }
 
 .ring-media-primary.running {
-    color: rgba(255, 255, 255, 0.94);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
 }
 
 .ring-media-stop {
@@ -620,10 +693,9 @@
     position: absolute;
     top: 0;
     left: 0;
-    transform: translate3d(var(--nav-x, 0px), var(--nav-y, 0px), 0) translate(var(--nav-tx, 0%), var(--nav-ty, -50%));
+    transform: translate3d(var(--nav-x, 0px), var(--nav-y, 0px), 0) translate(var(--nav-tx, 0%), var(--nav-ty, 0%));
     z-index: 41;
     display: flex;
-    flex-direction: column;
     gap: 8px;
     transition: transform 180ms ease, opacity 180ms ease;
 }
@@ -694,16 +766,31 @@
     transform: translateX(-50%) translateY(-50%) scale(1) rotateX(0deg);
     z-index: 20;
     background: linear-gradient(165deg,
-            rgba(255, 255, 255, 0.14) 0%,
-            rgba(255, 255, 255, 0.07) 100%);
-    border: 2px solid var(--task-color);
+            rgba(255, 255, 255, 0.12) 0%,
+            rgba(255, 255, 255, 0.06) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        0 0 0 1px color-mix(in srgb, var(--task-color) 70%, transparent),
-        0 0 50px color-mix(in srgb, var(--task-color) 25%, transparent),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+        0 40px 100px rgba(0, 0, 0, 0.6),
+        0 0 0 1px color-mix(in srgb, var(--task-color) 50%, transparent),
+        0 0 80px color-mix(in srgb, var(--task-color) 20%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+}
+
+.carousel-card.active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(125deg, transparent 40%, rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 55%, transparent 60%);
+    background-size: 200% 200%;
+    animation: premiumShine 8s infinite linear;
+    pointer-events: none;
+}
+
+@keyframes premiumShine {
+    0% { background-position: 200% 200%; }
+    100% { background-position: -200% -200%; }
 }
 
 .carousel-header {
@@ -773,17 +860,17 @@
 }
 
 .carousel-card.active .carousel-text {
-    margin-top: 14px;
-    font-size: 18px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.96);
-    white-space: normal;
-    overflow: hidden;
-    text-overflow: unset;
+    margin-top: clamp(8px, 1.5vh, 16px);
+    font-size: clamp(16px, 2.4vh, 22px);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.98);
+    line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
-    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.01em;
 }
 
 /* === UPCOMING CARDS - Stacked ABOVE active (waiting to slide down) === */

@@ -6,7 +6,7 @@ import { PlannerService } from './services/PlannerService.js';
 
 const STORAGE_KEY = 'weeklyPlanner_v3';
 
-let state = {
+const initialState = {
     tasks: [],          // Legacy - will be migrated to weekly system
     nextId: 1,
     currentWeekStart: null,
@@ -17,8 +17,6 @@ let state = {
     migrated: false,    // Migration flag
 
     // Kept for compatibility
-    weeklyData: {},
-    defaultTemplate: null,
     goals: {},
     // Focus Mode Statistics
     focusStats: {
@@ -42,6 +40,8 @@ let state = {
     }
 };
 
+let state = { ...initialState };
+
 let listeners = [];
 let saveTimeout = null;
 
@@ -57,35 +57,7 @@ export const Store = {
      * Reset store (primarily for testing)
      */
     reset() {
-        state = {
-            tasks: [],
-            nextId: 1,
-            currentWeekStart: null,
-            templates: [],
-            weeklyInstances: {},
-            migrated: false,
-            weeklyData: {},
-            defaultTemplate: null,
-            goals: {},
-            focusStats: {
-                sessions: [],      // Array of { date, duration, taskId, stepsCompleted }
-                currentStreak: 0,
-                totalFocusTime: 0,
-                lastSessionDate: null
-            },
-            activeExecution: {
-                taskId: null,
-                sessionStartTime: null,
-                accumulatedTime: 0,
-                running: false,
-                phase: 'orientation',
-                mode: 'work',
-                breakStartTime: null,
-                returnAnchor: '',
-                currentStepIndex: -1,
-                updatedAt: null
-            }
-        };
+        state = JSON.parse(JSON.stringify(initialState));
         listeners = [];
     },
 
@@ -94,13 +66,6 @@ export const Store = {
      */
     init() {
         this.load();
-
-        // Run migration if needed
-        if (!state.migrated && state.tasks.length > 0) {
-            console.log('Running migration on init...');
-            this.migrateToWeeklySystem();
-        }
-
         this.setCurrentWeek(new Date());
         this.notify();
     },
@@ -140,8 +105,6 @@ export const Store = {
                 const data = JSON.parse(saved);
                 state.tasks = data.tasks || [];
                 state.nextId = data.nextId || 1;
-                state.weeklyData = data.weeklyData || {};
-                state.defaultTemplate = data.defaultTemplate || null;
                 state.goals = data.goals || {};
 
                 // New recurring system
@@ -156,10 +119,26 @@ export const Store = {
                     totalFocusTime: 0,
                     lastSessionDate: null
                 };
+
+                // Professional Execution System
+                state.activeExecution = data.activeExecution || {
+                    taskId: null,
+                    sessionStartTime: null,
+                    accumulatedTime: 0,
+                    running: false,
+                    phase: 'orientation',
+                    mode: 'work',
+                    breakStartTime: null,
+                    returnAnchor: '',
+                    currentStepIndex: -1,
+                    updatedAt: null
+                };
             }
 
             // Run migration if needed
-            this.migrateToWeeklySystem();
+            if (!state.migrated && state.tasks.length > 0) {
+                this.migrateToWeeklySystem();
+            }
         } catch (e) {
             console.error('Error loading from storage:', e);
         }
@@ -176,13 +155,12 @@ export const Store = {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
                     tasks: state.tasks,
                     nextId: state.nextId,
-                    weeklyData: state.weeklyData,
-                    defaultTemplate: state.defaultTemplate,
                     goals: state.goals,
                     templates: state.templates,
                     weeklyInstances: state.weeklyInstances,
                     migrated: state.migrated,
-                    focusStats: state.focusStats
+                    focusStats: state.focusStats,
+                    activeExecution: state.activeExecution
                 }));
                 console.log('[Store] Changes persisted to localStorage');
             } catch (e) {
@@ -588,31 +566,6 @@ export const Store = {
     },
 
     /**
-     * Set default template
-     */
-    setDefaultTemplate(scheduledTasks, queueTasks) {
-        state.defaultTemplate = {
-            scheduled: scheduledTasks.map(t => ({
-                title: t.title,
-                goal: t.goal || '',
-                hierarchy: [...t.hierarchy],
-                duration: t.duration,
-                notes: t.notes || '',
-                scheduledDay: t.scheduledDay,
-                scheduledTime: t.scheduledTime
-            })),
-            queue: queueTasks.map(t => ({
-                title: t.title,
-                goal: t.goal || '',
-                hierarchy: [...t.hierarchy],
-                duration: t.duration,
-                notes: t.notes || ''
-            }))
-        };
-        this.save();
-    },
-
-    /**
      * Set the current week as the template (manual template control)
      */
     setTemplateFromCurrentWeek() {
@@ -954,6 +907,23 @@ export const Store = {
         }
 
         return null;
+    },
+
+    /**
+     * Get the current active execution state
+     */
+    getActiveExecution() {
+        return state.activeExecution;
+    },
+
+    /**
+     * Update active execution state
+     */
+    updateActiveExecution(updates) {
+        Object.assign(state.activeExecution, updates);
+        state.activeExecution.updatedAt = Date.now();
+        this.save();
+        this.notify();
     },
 
     /**

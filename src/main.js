@@ -160,6 +160,9 @@ const App = {
             this.setupFavicon();
             this.displayVersion();
 
+            // Initialize Update Notification component
+            UpdateNotification.init();
+
             if (FocusMode && typeof FocusMode.restoreTimerState === 'function') {
                 FocusMode.restoreTimerState();
                 if (FocusMode.pomodoroRunning && !FocusMode.isOpen) {
@@ -1039,7 +1042,6 @@ const App = {
      */
     updateBadgeCounts() {
         const queueCount = Store.getQueueTasks().length;
-        const scheduledCount = Store.getScheduledTasks().length;
 
         const queueTab = document.querySelector('.sidebar-tab[data-tab="queue"]');
         if (queueTab) {
@@ -1081,9 +1083,6 @@ const App = {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
-
-    // Initialize Update Notification component
-    UpdateNotification.init();
 
     if (import.meta.env.DEV && 'serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
