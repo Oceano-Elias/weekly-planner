@@ -199,6 +199,31 @@
     justify-content: center;
     margin: 0;
     filter: drop-shadow(0 0 40px color-mix(in srgb, var(--task-color) 15%, transparent));
+    perspective: 1200px;
+    transform-style: preserve-3d;
+}
+
+.ring-flip-surface {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ring-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+}
+
+.ring-face-back {
+    transform: rotateY(180deg);
+}
+
+.execution-rings-container.decision-flip .ring-flip-surface {
+    transform: rotateY(180deg);
 }
 
 .execution-ring-svg {
@@ -363,6 +388,26 @@
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
     color: #ffffff;
+}
+
+.ring-media-primary.waiting {
+    background: color-mix(in srgb, var(--task-color) 18%, rgba(255, 255, 255, 0.06));
+    border-color: color-mix(in srgb, var(--task-color) 40%, rgba(255, 255, 255, 0.12));
+    color: #ffffff;
+    animation: waitingBeat 1.2s ease-in-out infinite;
+}
+
+@keyframes waitingBeat {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--task-color) 20%, transparent);
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(1.06);
+        box-shadow: 0 12px 28px color-mix(in srgb, var(--task-color) 45%, transparent);
+        filter: brightness(1.15);
+    }
 }
 
 .ring-media-stop {
@@ -658,6 +703,25 @@
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
                 opacity 0.4s ease, 
                 box-shadow 0.4s ease;
+}
+
+.carousel-card.step-complete-flash {
+    animation: stepCompleteFlash 600ms ease-out;
+}
+
+@keyframes stepCompleteFlash {
+    0% {
+        box-shadow: 0 0 0 color-mix(in srgb, var(--task-color) 0%, transparent);
+        filter: brightness(1);
+    }
+    40% {
+        box-shadow: 0 18px 40px color-mix(in srgb, var(--task-color) 35%, transparent);
+        filter: brightness(1.15);
+    }
+    100% {
+        box-shadow: 0 0 0 color-mix(in srgb, var(--task-color) 0%, transparent);
+        filter: brightness(1);
+    }
 }
 
 .carousel-complete-btn {
@@ -1362,20 +1426,17 @@
 /* Decision UI */
 .decision-overlay {
     position: absolute;
-    inset: -20px;
-    background: radial-gradient(circle at center,
-            rgba(10, 15, 30, 0.92) 0%,
-            rgba(10, 15, 30, 0.8) 60%,
-            transparent 100%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: 10;
+    inset: 0;
+    background: radial-gradient(circle at top,
+            rgba(15, 23, 42, 0.92) 0%,
+            rgba(2, 6, 23, 0.85) 60%,
+            rgba(2, 6, 23, 0.7) 100%);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    padding: 40px;
+    padding: 24px;
     animation: decisionSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -1391,31 +1452,53 @@
     }
 }
 
+.decision-card {
+    width: min(360px, 90vw);
+    background: linear-gradient(165deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 1px rgba(255, 255, 255, 0.06);
+}
+
 .decision-title {
     font-size: 18px;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 4px;
+    letter-spacing: 0.6px;
     color: var(--task-color);
-    margin-bottom: 30px;
-    text-shadow: 0 0 15px color-mix(in srgb, var(--task-color) 40%, transparent);
+    text-shadow: 0 0 18px color-mix(in srgb, var(--task-color) 45%, transparent);
 }
 
-.decision-grid {
+.decision-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 18px;
+}
+
+.decision-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 14px 0;
+}
+
+.decision-actions {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    width: 100%;
-    max-width: 260px;
 }
 
 .decision-btn {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 20px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 14px;
     color: white;
     font-size: 14px;
@@ -1441,6 +1524,18 @@
 .decision-btn.primary:hover {
     filter: brightness(1.1);
     box-shadow: 0 15px 35px color-mix(in srgb, var(--task-color) 45%, transparent);
+}
+
+.decision-btn.secondary {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.decision-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
 }
 
 /* Phases styling */
@@ -1676,12 +1771,16 @@
 .stop-confirm-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: radial-gradient(circle at top,
+            rgba(15, 23, 42, 0.92) 0%,
+            rgba(2, 6, 23, 0.85) 60%,
+            rgba(2, 6, 23, 0.7) 100%);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 24px;
     z-index: 100;
     animation: fadeIn 0.2s ease;
 }
@@ -1697,13 +1796,37 @@
 }
 
 .stop-confirm-modal {
-    background: linear-gradient(165deg, rgba(40, 45, 60, 0.95) 0%, rgba(30, 35, 50, 0.98) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 24px;
-    padding: 32px 40px;
+    width: min(360px, 90vw);
+    background: linear-gradient(165deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid color-mix(in srgb, var(--task-color) 25%, rgba(255, 255, 255, 0.12));
+    border-radius: 22px;
+    padding: 28px 28px 24px;
     text-align: center;
-    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.5),
+        0 0 35px color-mix(in srgb, var(--task-color) 18%, transparent),
+        inset 0 1px 1px rgba(255, 255, 255, 0.06);
+    position: relative;
+    overflow: hidden;
     animation: modalSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stop-confirm-modal::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top,
+            color-mix(in srgb, var(--task-color) 18%, transparent) 0%,
+            transparent 60%);
+    opacity: 0.9;
+    pointer-events: none;
+}
+
+.stop-confirm-modal > * {
+    position: relative;
+    z-index: 1;
 }
 
 @keyframes modalSlideIn {
@@ -1719,22 +1842,36 @@
 }
 
 .stop-confirm-icon {
-    font-size: 32px;
-    margin-bottom: 12px;
-    opacity: 0.9;
+    position: relative;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.9);
+    background: color-mix(in srgb, var(--task-color) 16%, rgba(255, 255, 255, 0.06));
+    border: 1px solid color-mix(in srgb, var(--task-color) 30%, rgba(255, 255, 255, 0.14));
+    box-shadow:
+        0 12px 25px rgba(0, 0, 0, 0.35),
+        0 0 18px color-mix(in srgb, var(--task-color) 25%, transparent);
+    opacity: 0.95;
 }
 
 .stop-confirm-title {
     font-size: 20px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.95);
+    color: rgba(255, 255, 255, 0.96);
     margin-bottom: 8px;
+    text-shadow: 0 0 16px color-mix(in srgb, var(--task-color) 35%, transparent);
 }
 
 .stop-confirm-message {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 24px;
+    color: rgba(255, 255, 255, 0.68);
+    margin-bottom: 22px;
 }
 
 /* Celebration Visuals */
@@ -1805,33 +1942,39 @@
 
 .stop-confirm-btn {
     padding: 12px 28px;
-    border-radius: 12px;
+    border-radius: 14px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .stop-confirm-btn.cancel {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.78);
 }
 
 .stop-confirm-btn.cancel:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }
 
 .stop-confirm-btn.confirm {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    border: none;
+    border: 1px solid rgba(239, 68, 68, 0.6);
     color: white;
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+    box-shadow:
+        0 8px 18px rgba(239, 68, 68, 0.35),
+        0 0 18px rgba(239, 68, 68, 0.25);
 }
 
 .stop-confirm-btn.confirm:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+    box-shadow:
+        0 12px 24px rgba(239, 68, 68, 0.45),
+        0 0 24px rgba(239, 68, 68, 0.35);
     filter: brightness(1.1);
 }

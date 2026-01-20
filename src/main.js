@@ -310,6 +310,7 @@ const App = {
         // Set title explicitly for edit mode
         const titleInput = document.getElementById('taskTitle');
         if (titleInput) titleInput.value = task.title;
+        this.updateTitleColor();
 
         // Set duration
         const durationStr = task.duration.toString();
@@ -538,6 +539,7 @@ const App = {
         if (titleInput) {
             titleInput.value = hierarchy.length > 0 ? hierarchy[hierarchy.length - 1] : '';
         }
+        this.updateTitleColor();
     },
 
     /**
@@ -545,6 +547,7 @@ const App = {
      */
     updateHierarchyPreview() {
         const preview = document.getElementById('hierarchyPreview');
+        if (!preview) return;
         const hierarchy = this.getSelectedHierarchy();
 
         if (hierarchy.length === 0) {
@@ -561,6 +564,17 @@ const App = {
       </span>
       ${index < hierarchy.length - 1 ? '<span class="hierarchy-path-separator">›</span>' : ''}
     `).join('');
+    },
+
+    updateTitleColor() {
+        const titleInput = document.getElementById('taskTitle');
+        if (!titleInput) return;
+        const hierarchy = this.getSelectedHierarchy();
+        if (hierarchy.length === 0) {
+            titleInput.style.color = '';
+            return;
+        }
+        titleInput.style.color = Departments.getColor(hierarchy);
     },
 
     /**
@@ -700,7 +714,8 @@ const App = {
         document.getElementById('customDuration').style.display = 'none';
         this.selectedDuration = 60;
 
-        document.getElementById('hierarchyPreview').style.display = 'none';
+        const hierarchyPreview = document.getElementById('hierarchyPreview');
+        if (hierarchyPreview) hierarchyPreview.style.display = 'none';
         document.getElementById('scheduleInfo').style.display = 'none';
         this.scheduledData = null;
         document.querySelectorAll('.duration-option').forEach(btn => btn.classList.remove('disabled'));
@@ -717,6 +732,7 @@ const App = {
         this.pendingSteps = [];
         const stepsList = document.getElementById('stepsList');
         if (stepsList) stepsList.innerHTML = '';
+        this.updateTitleColor();
     },
 
     /**

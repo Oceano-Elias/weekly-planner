@@ -39,6 +39,8 @@ export const FocusMode = {
 
         this.activeTaskId = taskId;
         this.isOpen = true;
+        this.closeFloatingTimer();
+        this.hideBadge();
 
         // Initialize or restore execution state
         this.initializeExecutionState(task);
@@ -82,7 +84,7 @@ export const FocusMode = {
 
         const state = Store.getActiveExecution();
         if (!state.running) {
-            this.stopSession();
+            this.stopSession(true);
             this.activeTaskId = null;
         } else {
             // Keep running in background/floating mode
@@ -257,7 +259,8 @@ export const FocusMode = {
 
         els.decisionComplete?.addEventListener('click', () => this.handleDecision('complete'));
         els.decisionContinue?.addEventListener('click', () => this.handleDecision('continue'));
-        els.decisionModify?.addEventListener('click', () => this.handleDecision('modify'));
+        els.decisionBreak?.addEventListener('click', () => this.handleDecision('break'));
+        els.decisionStop?.addEventListener('click', () => this.handleDecision('stop'));
 
         els.soundToggle?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -500,6 +503,7 @@ export const FocusMode = {
         }
 
         this.updateUI();
+        this.updateFloatingTimer();
     },
 
     pauseSession() {
@@ -527,9 +531,12 @@ export const FocusMode = {
     handleDecision(choice) {
         const state = Store.getActiveExecution();
         const task = Store.getTask(this.activeTaskId);
+        let triggerCelebration = false;
 
         if (choice === 'complete') {
             this.toggleMiniTask(state.currentStepIndex);
+            FocusAudio.playStepComplete();
+            triggerCelebration = true;
 
             // Move to next step if available
             const lines = task.notes.split('\n').filter(l => l.trim() !== '');
@@ -539,15 +546,52 @@ export const FocusMode = {
             }
         }
 
+        if (choice === 'continue') {
+            Store.updateActiveExecution({
+                phase: 'execution',
+                mode: 'work',
+                running: true,
+                sessionStartTime: Date.now(),
+                accumulatedTime: 0,
+                breakStartTime: null
+            });
+            this.render(Store.getTask(this.activeTaskId));
+            this.startSessionInterval();
+            return;
+        }
+
+        if (choice === 'break') {
+            Store.updateActiveExecution({
+                phase: 'orientation',
+                mode: 'break',
+                running: false,
+                sessionStartTime: null,
+                accumulatedTime: 0,
+                breakStartTime: state.breakStartTime || Date.now()
+            });
+            this.render(Store.getTask(this.activeTaskId));
+            return;
+        }
+
+        if (choice === 'stop') {
+            this.stopSession(true);
+            this.render(Store.getTask(this.activeTaskId));
+            return;
+        }
+
         Store.updateActiveExecution({
             phase: 'orientation',
             mode: 'work',
+            running: false,
             sessionStartTime: null,
             accumulatedTime: 0,
             breakStartTime: null
         });
 
         this.render(Store.getTask(this.activeTaskId));
+        if (triggerCelebration) {
+            this.showSuccessVisuals();
+        }
     },
 
 
@@ -723,8 +767,10 @@ export const FocusMode = {
         }
 
         this.toggleMiniTask(previousIndex, true);
+        FocusAudio.playStepComplete();
         this.lastDoneStepIndex = previousIndex;
         this.updateQuestStack();
+        this.showSuccessVisuals();
     },
 
     // =========================================
@@ -907,7 +953,29 @@ export const FocusMode = {
     },
 
     updateFloatingTimer() {
-        FocusModeUI.updatePipUI(this.pipWindow, this.pomodoroSeconds, this.pomodoroMode, this.pomodoroRunning);
+        if (this.isOpen) {
+            this.hideBadge();
+            return;
+        }
+        const state = Store.getActiveExecution();
+        if (state.running || state.mode === 'break') {
+            const totalSeconds = state.mode === 'work' ? this.sessionDuration : this.breakDuration;
+            let secondsRemaining = 0;
+            if (state.mode === 'work') {
+                const currentSessionElapsed = state.sessionStartTime ? (Date.now() - state.sessionStartTime) : 0;
+                const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
+                secondsRemaining = Math.max(0, totalSeconds - Math.floor(totalElapsedMs / 1000));
+            } else {
+                const breakElapsed = state.breakStartTime ? Math.floor((Date.now() - state.breakStartTime) / 1000) : 0;
+                secondsRemaining = Math.max(0, totalSeconds - breakElapsed);
+            }
+            FocusModeUI.updatePipUI(this.pipWindow, secondsRemaining, state.mode, state.running, totalSeconds);
+            FocusModeUI.updateBadge(secondsRemaining, state.mode, state.running);
+            return;
+        }
+
+        const totalSeconds = this.pomodoroMode === 'work' ? this.workDuration : this.breakDuration;
+        FocusModeUI.updatePipUI(this.pipWindow, this.pomodoroSeconds, this.pomodoroMode, this.pomodoroRunning, totalSeconds);
         this.updateBadge();
     },
 

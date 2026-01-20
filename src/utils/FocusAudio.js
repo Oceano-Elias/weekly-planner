@@ -43,23 +43,32 @@ export const FocusAudio = {
         try {
             const ctx = this.getContext();
             const oscillator = ctx.createOscillator();
+            const overtone = ctx.createOscillator();
             const gainNode = ctx.createGain();
+            const overtoneGain = ctx.createGain();
 
             oscillator.connect(gainNode);
+            overtone.connect(overtoneGain);
             gainNode.connect(ctx.destination);
+            overtoneGain.connect(ctx.destination);
 
             oscillator.type = type;
             oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+            overtone.type = 'triangle';
+            overtone.frequency.setValueAtTime(frequency * 1.005, ctx.currentTime);
 
-            // Fade in
             gainNode.gain.setValueAtTime(0, ctx.currentTime);
             gainNode.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.01);
 
-            // Fade out
             gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+            overtoneGain.gain.setValueAtTime(0, ctx.currentTime);
+            overtoneGain.gain.linearRampToValueAtTime(volume * 0.35, ctx.currentTime + 0.01);
+            overtoneGain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
 
             oscillator.start(ctx.currentTime);
             oscillator.stop(ctx.currentTime + duration);
+            overtone.start(ctx.currentTime);
+            overtone.stop(ctx.currentTime + duration);
         } catch (e) {
             console.warn('[FocusAudio] Failed to play tone:', e);
         }

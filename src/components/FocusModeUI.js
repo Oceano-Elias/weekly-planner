@@ -170,6 +170,7 @@ export const FocusModeUI = {
         if (btn) {
             if (state.running) {
                 btn.classList.add('running');
+                btn.classList.remove('waiting');
                 btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
                 btn.setAttribute('aria-label', 'Pause');
                 btn.setAttribute('title', 'Pause');
@@ -189,8 +190,10 @@ export const FocusModeUI = {
                 }
             } else {
                 btn.classList.remove('running');
+                const isWaiting = (state.accumulatedTime || 0) > 0;
+                btn.classList.toggle('waiting', isWaiting);
                 btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-                const label = (state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus';
+                const label = isWaiting ? 'Resume' : 'Start Focus';
                 btn.setAttribute('aria-label', label);
                 btn.setAttribute('title', label);
 
@@ -276,6 +279,11 @@ export const FocusModeUI = {
 
         ring.classList.add('success-flash');
         setTimeout(() => ring.classList.remove('success-flash'), 1000);
+
+        const activeCard = document.querySelector('.carousel-card.active');
+        if (!activeCard) return;
+        activeCard.classList.add('step-complete-flash');
+        setTimeout(() => activeCard.classList.remove('step-complete-flash'), 600);
     },
 
     /**
@@ -572,41 +580,48 @@ export const FocusModeUI = {
      * Decision state overlay template
      */
     getDecisionOverlay(state) {
-        const title = state.mode === 'break' ? 'Time to Recharge' : 'Session Complete';
-        
+        const title = state.mode === 'break' ? 'Break Time' : 'Session Complete';
+        const subtitle = state.mode === 'break' ? 'Recharge before the next push.' : 'Choose how to continue.';
+
         return `
             <div class="decision-overlay">
-                <div class="decision-title">${title}</div>
-                <div class="decision-grid">
-                    <button class="decision-btn primary" id="decisionComplete">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 6L9 17l-5-5"/>
-                        </svg>
-                        Mark step complete
-                    </button>
-                    <button class="decision-btn" id="decisionContinue">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 5v14l11-7z"/>
-                        </svg>
-                        Continue this step
-                    </button>
-                    <button class="decision-btn secondary" id="decisionBreak">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
-                            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
-                            <line x1="6" y1="1" x2="6" y2="4"/>
-                            <line x1="10" y1="1" x2="10" y2="4"/>
-                            <line x1="14" y1="1" x2="14" y2="4"/>
-                        </svg>
-                        Take a break
-                    </button>
-                    <button class="decision-btn secondary" id="decisionStop">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                            <line x1="12" y1="2" x2="12" y2="12"/>
-                        </svg>
-                        End Focus session
-                    </button>
+                <div class="decision-card">
+                    <div class="decision-title">${title}</div>
+                    <div class="decision-subtitle">${subtitle}</div>
+                    <div class="decision-actions primary-actions">
+                        <button class="decision-btn primary" id="decisionComplete">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                            Mark step complete
+                        </button>
+                        <button class="decision-btn" id="decisionContinue">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14l11-7z"/>
+                            </svg>
+                            Continue this step
+                        </button>
+                    </div>
+                    <div class="decision-divider"></div>
+                    <div class="decision-actions secondary-actions">
+                        <button class="decision-btn secondary" id="decisionBreak">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                                <line x1="6" y1="1" x2="6" y2="4"/>
+                                <line x1="10" y1="1" x2="10" y2="4"/>
+                                <line x1="14" y1="1" x2="14" y2="4"/>
+                            </svg>
+                            Take a break
+                        </button>
+                        <button class="decision-btn secondary" id="decisionStop">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                                <line x1="12" y1="2" x2="12" y2="12"/>
+                            </svg>
+                            End Focus session
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -850,48 +865,54 @@ export const FocusModeUI = {
                     </div>
 
                     <div class="focus-engine-side">
-                        <div class="execution-rings-container">
-                            <svg class="execution-ring-svg" viewBox="0 0 120 120" style="position: absolute; width: 100%; height: 100%; transform: rotate(-90deg);">
-                                <defs>
-                                    <linearGradient id="outerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stop-color="var(--task-color)" stop-opacity="0.4" />
-                                        <stop offset="100%" stop-color="var(--task-color)" stop-opacity="1" />
-                                    </linearGradient>
-                                    <linearGradient id="innerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stop-color="white" />
-                                        <stop offset="100%" stop-color="var(--task-color)" />
-                                    </linearGradient>
-                                    <filter id="innerGlow">
-                                        <feGaussianBlur stdDeviation="2" result="blur" />
-                                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                                    </filter>
-                                </defs>
-                                <circle class="outer-ring-bg" cx="60" cy="60" r="56"/>
-                                <circle class="outer-ring-fill" id="outerRing" cx="60" cy="60" r="56" stroke="url(#outerGradient)"/>
-                                <circle class="inner-ring-bg" cx="60" cy="60" r="48"/>
-                                <circle class="inner-ring-fill" id="innerRing" cx="60" cy="60" r="48" stroke="url(#innerGradient)"/>
-                            </svg>
-                            <div class="ring-center">
-                                <div class="ring-step-title" id="activeStepTitle">
-                                    ${state.mode === 'work' ? activeStepTitle : 'Coffee & Recharge'}
+                        <div class="execution-rings-container ${state.phase === 'decision' ? 'decision-flip' : ''}">
+                            <div class="ring-flip-surface">
+                                <div class="ring-face ring-face-front">
+                                    <svg class="execution-ring-svg" viewBox="0 0 120 120" style="position: absolute; width: 100%; height: 100%; transform: rotate(-90deg);">
+                                        <defs>
+                                            <linearGradient id="outerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stop-color="var(--task-color)" stop-opacity="0.4" />
+                                                <stop offset="100%" stop-color="var(--task-color)" stop-opacity="1" />
+                                            </linearGradient>
+                                            <linearGradient id="innerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="white" />
+                                                <stop offset="100%" stop-color="var(--task-color)" />
+                                            </linearGradient>
+                                            <filter id="innerGlow">
+                                                <feGaussianBlur stdDeviation="2" result="blur" />
+                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                            </filter>
+                                        </defs>
+                                        <circle class="outer-ring-bg" cx="60" cy="60" r="56"/>
+                                        <circle class="outer-ring-fill" id="outerRing" cx="60" cy="60" r="56" stroke="url(#outerGradient)"/>
+                                        <circle class="inner-ring-bg" cx="60" cy="60" r="48"/>
+                                        <circle class="inner-ring-fill" id="innerRing" cx="60" cy="60" r="48" stroke="url(#innerGradient)"/>
+                                    </svg>
+                                    <div class="ring-center">
+                                        <div class="ring-step-title" id="activeStepTitle">
+                                            ${state.mode === 'work' ? activeStepTitle : 'Coffee & Recharge'}
+                                        </div>
+                                        <div class="ring-time" id="sessionTimeDisplay">00:00</div>
+                                        <div class="ring-media-controls" aria-label="Focus controls">
+                                            <button class="ring-media-btn ring-media-primary ${state.running ? 'running' : ''}" id="sessionToggleBtn" aria-label="${state.running ? 'Pause' : ((state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus')}" title="${state.running ? 'Pause' : ((state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus')}">
+                                                ${!state.running ? `
+                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                                ` : `
+                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                                                `}
+                                            </button>
+                                            ${state.running ? `
+                                                <button class="ring-media-btn ring-media-stop" id="stopSessionBtn" aria-label="Stop" title="Stop">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="ring-time" id="sessionTimeDisplay">00:00</div>
-                                <div class="ring-media-controls" aria-label="Focus controls">
-                                    <button class="ring-media-btn ring-media-primary ${state.running ? 'running' : ''}" id="sessionToggleBtn" aria-label="${state.running ? 'Pause' : ((state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus')}" title="${state.running ? 'Pause' : ((state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus')}">
-                                        ${!state.running ? `
-                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                                        ` : `
-                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                                        `}
-                                    </button>
-                                    ${state.running ? `
-                                        <button class="ring-media-btn ring-media-stop" id="stopSessionBtn" aria-label="Stop" title="Stop">
-                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
-                                        </button>
-                                    ` : ''}
+                                <div class="ring-face ring-face-back">
+                                    ${state.phase === 'decision' ? this.getDecisionOverlay(state) : ''}
                                 </div>
                             </div>
-                            ${state.phase === 'decision' ? this.getDecisionOverlay(state) : ''}
                         </div>
 
                         <div class="quest-stack-container" id="questStack">
@@ -936,12 +957,21 @@ export const FocusModeUI = {
      */
     getPipContent() {
         return `
-            <div id="pipRoot" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;background:#111;color:#fff;height:100%;box-sizing:border-box;">
-                <div id="pipMode" style="font-size:12px;font-weight:600;opacity:0.8"></div>
-                <div id="pipTime" style="font-size:32px;font-weight:700;letter-spacing:-1px"></div>
+            <div id="pipRoot" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px;background:linear-gradient(160deg,rgba(15,23,42,0.98) 0%,rgba(2,6,23,0.98) 100%);color:#e2e8f0;height:100%;box-sizing:border-box;border-radius:16px;border:1px solid rgba(255,255,255,0.12);box-shadow:0 18px 50px rgba(0,0,0,0.55), inset 0 1px 1px rgba(255,255,255,0.06);">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div id="pipModeDot" style="width:8px;height:8px;border-radius:999px;background:#3b82f6;box-shadow:0 0 12px rgba(59,130,246,0.6);"></div>
+                    <div id="pipMode" style="font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;opacity:0.85"></div>
+                </div>
+                <div style="position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;">
+                    <svg width="96" height="96" viewBox="0 0 96 96" style="position:absolute;inset:0;">
+                        <circle cx="48" cy="48" r="40" stroke="rgba(255,255,255,0.08)" stroke-width="6" fill="none"></circle>
+                        <circle id="pipRing" cx="48" cy="48" r="40" stroke="#3b82f6" stroke-width="6" fill="none" stroke-linecap="round" transform="rotate(-90 48 48)"></circle>
+                    </svg>
+                    <div id="pipTime" style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff"></div>
+                </div>
                 <div style="display:flex;gap:8px;">
-                    <button id="pipStartPause" style="padding:6px 10px;border:none;border-radius:8px;background:#2563eb;color:#fff">Start</button>
-                    <button id="pipReset" style="padding:6px 10px;border:1px solid #333;border-radius:8px;background:#222;color:#ddd">Reset</button>
+                    <button id="pipStartPause" style="padding:7px 12px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:700;font-size:12px;box-shadow:0 8px 18px rgba(59,130,246,0.35)">Start</button>
+                    <button id="pipReset" style="padding:7px 12px;border:1px solid rgba(255,255,255,0.16);border-radius:10px;background:rgba(15,23,42,0.6);color:#cbd5f5;font-weight:700;font-size:12px">Reset</button>
                 </div>
             </div>`;
     },
@@ -949,16 +979,30 @@ export const FocusModeUI = {
     /**
      * Update PIP window UI
      */
-    updatePipUI(pip, seconds, mode, running) {
+    updatePipUI(pip, seconds, mode, running, totalSeconds) {
         if (!pip) return;
         const doc = pip.document;
         const timeEl = doc.getElementById('pipTime');
         const modeEl = doc.getElementById('pipMode');
+        const modeDot = doc.getElementById('pipModeDot');
         const startPauseEl = doc.getElementById('pipStartPause');
+        const ringEl = doc.getElementById('pipRing');
         if (timeEl && modeEl && startPauseEl) {
             timeEl.textContent = this.formatTime(seconds);
             modeEl.textContent = mode === 'work' ? 'Focus' : 'Break';
             startPauseEl.textContent = running ? 'Pause' : 'Start';
+            if (modeDot) {
+                const dotColor = mode === 'work' ? '#3b82f6' : '#10b981';
+                modeDot.style.background = dotColor;
+                modeDot.style.boxShadow = `0 0 12px ${dotColor}66`;
+            }
+            if (ringEl && totalSeconds) {
+                const circumference = 2 * Math.PI * 40;
+                const progress = Math.max(0, Math.min(1, seconds / totalSeconds));
+                ringEl.style.stroke = mode === 'work' ? '#3b82f6' : '#10b981';
+                ringEl.style.strokeDasharray = `${circumference}`;
+                ringEl.style.strokeDashoffset = `${circumference * (1 - progress)}`;
+            }
         }
     },
 
@@ -1016,7 +1060,8 @@ export const FocusModeUI = {
             stopSessionBtn: document.getElementById('stopSessionBtn'),
             decisionComplete: document.getElementById('decisionComplete'),
             decisionContinue: document.getElementById('decisionContinue'),
-            decisionModify: document.getElementById('decisionModify'),
+            decisionBreak: document.getElementById('decisionBreak'),
+            decisionStop: document.getElementById('decisionStop'),
             soundToggle: document.getElementById('soundToggle'),
             navUp: document.getElementById('carouselNavUpBtn'),
             navDown: document.getElementById('carouselNavDownBtn'),

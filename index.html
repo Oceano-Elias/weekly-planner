@@ -250,7 +250,23 @@
     <div class="modal-overlay" id="taskModal">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title" id="modalTitle">Create New Task</h2>
+                <div class="modal-header-main">
+                    <div class="modal-header-title">
+                        <h2 class="modal-title" id="modalTitle">Create New Task</h2>
+                        <p class="modal-subtitle" id="scheduleInfo" style="display: none;">
+                            <span class="modal-subtitle-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <circle cx="12" cy="12" r="8"></circle>
+                                    <path d="M12 8v4l2.5 2.5"></path>
+                                </svg>
+                            </span>
+                            <span id="scheduleDayDisplay"></span>
+                            <span class="modal-subtitle-sep">at</span>
+                            <span id="scheduleTimeDisplay"></span>
+                            <span class="modal-subtitle-max" id="scheduleMaxInfo"></span>
+                        </p>
+                    </div>
+                </div>
                 <button class="modal-close" id="closeModal" aria-label="Close modal">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12" />
@@ -261,23 +277,15 @@
                 <form id="taskForm">
                     <!-- Task Title -->
                     <div class="form-group">
-                        <label class="form-label" for="taskTitle">Task Title *</label>
-                        <input type="text" class="form-input" id="taskTitle" placeholder="Choose department..." required
-                            readonly>
+                        <label class="form-label form-label-row" for="taskTitle">
+                            <span>Task Title *</span>
+                            <span class="form-label-chip">Auto‑generated</span>
+                        </label>
+                        <input type="text" class="form-input task-title-input" id="taskTitle"
+                            placeholder="Title generated from hierarchy" required readonly>
                     </div>
 
 
-
-                    <!-- Schedule Info (shown when creating from calendar click) -->
-                    <div class="form-group" id="scheduleInfo" style="display: none;">
-                        <label class="form-label">Scheduled For</label>
-                        <div class="schedule-preview">
-                            <span id="scheduleDayDisplay"></span>
-                            <span class="schedule-separator">at</span>
-                            <span id="scheduleTimeDisplay"></span>
-                            <span class="schedule-max-info" id="scheduleMaxInfo"></span>
-                        </div>
-                    </div>
 
                     <!-- Department Hierarchy -->
                     <div class="form-group">
@@ -308,7 +316,6 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="hierarchy-path-preview" id="hierarchyPreview" style="display: none;"></div>
                     </div>
 
                     <!-- Duration -->
@@ -338,6 +345,7 @@
                                 placeholder="Add a step and press Enter...">
                             <button type="button" class="btn-add-step" id="addStepBtn" title="Add Step">+</button>
                         </div>
+                        <div class="form-helper">Add short actionable steps to guide Focus Mode.</div>
                         <ul class="steps-list" id="stepsList"></ul>
                     </div>
                 </form>
