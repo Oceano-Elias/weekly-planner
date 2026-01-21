@@ -13,19 +13,21 @@
     box-shadow:
         inset 0 1px 1px rgba(255, 255, 255, 0.1),
         var(--shadow-task);
-
     cursor: grab;
     transition: all var(--transition-spring);
     color: var(--text-primary);
+    z-index: 1;
+    /* Base layer */
 }
 
 .task-block:hover {
-    border-color: var(--glass-border-light);
+    border-color: var(--task-color);
     transform: translateY(-4px) scale(1.02);
     box-shadow:
         var(--shadow-lg),
         0 0 25px color-mix(in srgb, var(--task-color) 35%, transparent);
-    z-index: 10;
+    z-index: 20;
+    /* Lift above everything */
 }
 
 /* Day View - Increased volumetric tint */
@@ -127,18 +129,19 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* Neutralized completion dimming to keep vibrant until all steps done */
 .task-block.completed {
-    opacity: 0.5;
-    background: var(--bg-secondary);
+    /* opacity: 0.5; */
+    /* background: var(--bg-secondary); */
 }
 
 .task-block.completed::before {
-    display: none;
+    /* display: none; */
 }
 
 .task-block.completed .task-title {
-    text-decoration: line-through;
-    color: var(--text-tertiary);
+    /* text-decoration: line-through; */
+    /* color: var(--text-tertiary); */
 }
 
 .task-block.dragging {
@@ -604,14 +607,19 @@
     left: 0;
     right: 0;
     height: 0%;
-    /* Subtle grey wash effect */
-    background: linear-gradient(180deg,
-            rgba(30, 41, 59, 0.5) 0%,
-            rgba(30, 41, 59, 0.35) 100%);
+    /* SOFT MATTE TINT - Subtle desaturation without muddy blacks */
+    background: transparent;
+    backdrop-filter: saturate(0.4) brightness(1.05) contrast(0.95);
+    -webkit-backdrop-filter: saturate(0.4) brightness(1.05) contrast(0.95);
+
     pointer-events: none;
     transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 2;
+    z-index: 10;
+    /* Above base glass but below text */
     border-radius: inherit;
+
+    /* Crisp divider line */
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Active task - subtle bottom edge */
@@ -625,17 +633,19 @@
     opacity: 0;
 }
 
-/* "EMPTY BOTTLE" - Glass Container with Visible Light Edge */
+/* "EMPTY BOTTLE" - Quiet Color Shell Look */
 .calendar-task.time-passed .task-block {
-    /* Dramatically desaturated and dimmed */
-    filter: saturate(0.3) brightness(0.55) !important;
-    /* Glass edge borders */
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-left: 4px solid color-mix(in srgb, var(--task-color) 50%, transparent) !important;
+    /* Pristine but desaturated */
+    filter: saturate(0.35) brightness(0.8) !important;
+    background: color-mix(in srgb, var(--task-color) 10%, rgba(15, 23, 42, 0.4)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-left: 4px solid color-mix(in srgb, var(--task-color) 35%, transparent) !important;
+    backdrop-filter: blur(10px);
+
     /* Stronger inner glass highlight */
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.25),
-        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 2px 8px rgba(0, 0, 0, 0.2);
     position: relative;
 }
 
@@ -690,14 +700,15 @@
 }
 
 /* Completed tasks (user marked done) - Faded */
+/* Neutralized completion dimming to keep vibrant until all steps done */
 .calendar-task .task-block.completed {
-    background: var(--bg-secondary) !important;
+    /* background: var(--bg-secondary) !important;
     opacity: 0.45;
-    filter: grayscale(30%);
+    filter: grayscale(30%); */
 }
 
 .calendar-task .task-block.completed::before {
-    display: none;
+    /* display: none; */
 }
 
 /* =========================================

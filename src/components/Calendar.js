@@ -347,12 +347,10 @@ export const Calendar = {
         taskBlockEl.draggable = false;
         taskEl.appendChild(taskBlockEl);
 
-        // Add progress overlay
-        if (!task.completed) {
-            const progressOverlay = document.createElement('div');
-            progressOverlay.className = 'task-progress-overlay';
-            taskEl.appendChild(progressOverlay);
-        }
+        // Add progress overlay (Always add for consistency, even if height 0)
+        const progressOverlay = document.createElement('div');
+        progressOverlay.className = 'task-progress-overlay';
+        taskEl.appendChild(progressOverlay);
 
         column.appendChild(taskEl);
         this.updateTaskProgress(taskEl, task);
@@ -382,7 +380,7 @@ export const Calendar = {
             // Play animation before toggling ONLY if we are completing the whole task
             // or if it's already completed and we're toggling it back
             const hasSteps = taskState && taskState.notes && taskState.notes.includes('[ ]');
-            
+
             if (taskState && !wasCompleted && !hasSteps) {
                 // No steps and about to complete - play animation
                 if (this.onPlayCompletionAnimation) this.onPlayCompletionAnimation(taskEl);
@@ -446,29 +444,40 @@ export const Calendar = {
      * Update visual progress for a task (grey wash for past portion)
      */
     updateTaskProgress(taskEl, task) {
-        if (task.completed) return;
         const overlay = taskEl.querySelector('.task-progress-overlay');
-        if (!overlay) return;
+        let progress = this.calculateProgress(task);
 
-        const progress = this.calculateProgress(task);
+        // Guard against NaN or invalid progress
+        if (isNaN(progress) || progress === null || progress === undefined) {
+            progress = 0;
+        }
 
-        // Remove old classes
-        overlay.classList.remove('in-progress', 'expired');
+        // Clamp progress
+        progress = Math.max(0, Math.min(1, progress));
+
+        // Remove old classes to reset state
+        if (overlay) overlay.classList.remove('in-progress', 'expired');
         taskEl.classList.remove('time-passed');
 
-        if (progress <= 0) {
-            // Not started yet - no grey wash
-            overlay.style.height = '0%';
-        } else if (progress >= 1) {
+        if (progress >= 1) {
             // Time has fully passed
-            overlay.style.height = '100%';
-            overlay.classList.add('expired');
+            if (overlay) {
+                overlay.style.height = '100%';
+                overlay.classList.add('expired');
+            }
             taskEl.classList.add('time-passed');
+        } else if (progress > 0) {
+            // In progress or part-complete
+            if (overlay) {
+                overlay.classList.add('in-progress');
+                const passedHeight = progress * 100;
+                overlay.style.height = `${passedHeight.toFixed(1)}%`;
+            }
         } else {
-            // In progress - grey wash grows from top down
-            overlay.classList.add('in-progress');
-            const passedHeight = progress * 100;
-            overlay.style.height = `${passedHeight.toFixed(1)}%`;
+            // Not started yet
+            if (overlay) {
+                overlay.style.height = '0%';
+            }
         }
     },
 
@@ -480,8 +489,10 @@ export const Calendar = {
 
         // 1. Calculate time-based progress
         const weekDates = this.getWeekDates();
-        const dayIndex = this.days.indexOf(task.scheduledDay);
+        const dayIndex = this.days.indexOf(task.scheduledDay?.toLowerCase());
+        if (dayIndex === -1) return 0;
         const taskDate = weekDates[dayIndex];
+        if (!taskDate) return 0;
         const now = new Date();
         const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
         const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -495,12 +506,12 @@ export const Calendar = {
             const [startHours, startMinutes] = task.scheduledTime.split(':').map(Number);
             const start = new Date(now);
             start.setHours(startHours, startMinutes, 0, 0);
-            const end = new Date(start);
-            end.setMinutes(end.getMinutes() + task.duration);
+            const duration = task.duration || 30; // Guard against missing duration
+            const end = new Date(start.getTime() + duration * 60 * 1000);
 
             if (now < start) timeProgress = 0;
             else if (now > end) timeProgress = 1;
-            else timeProgress = (now - start) / (end - start);
+            else timeProgress = (now - start) / (duration * 60 * 1000);
         }
 
         // 2. Calculate mini-task progress if present
@@ -573,6 +584,7 @@ export const Calendar = {
         if (!marker) {
             marker = document.createElement('div');
             marker.id = 'currentTimeMarker';
+            marker.className = 'current-time-line';
             grid.appendChild(marker);
         }
 

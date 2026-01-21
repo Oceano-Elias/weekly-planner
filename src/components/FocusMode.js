@@ -30,6 +30,13 @@ export const FocusMode = {
     pomodoroTargetEpoch: null,
     pipWindow: null,
 
+    // Long break cycle settings
+    longBreakDuration: 20 * 60,       // 20-minute long break
+    pomodorosBeforeLongBreak: 4,      // Cycle length
+    completedPomodoros: 0,            // Counter (0-3, resets after long break)
+    totalPomodorosToday: 0,           // Daily total
+    pomodoroSessionDate: null,        // Date for daily reset
+
     /**
      * Open Focus Mode for a specific task
      */
@@ -41,6 +48,9 @@ export const FocusMode = {
         this.isOpen = true;
         this.closeFloatingTimer();
         this.hideBadge();
+
+        // Restore Pomodoro counter state from localStorage
+        this.restoreTimerState();
 
         // Initialize or restore execution state
         this.initializeExecutionState(task);
@@ -55,25 +65,62 @@ export const FocusMode = {
     initializeExecutionState(task) {
         const state = Store.getActiveExecution();
 
-        // If we are opening a NEW task, or if no task is active, reset state
-        if (state.taskId !== this.activeTaskId) {
+        // 1. Check if the TASK itself has a saved session result (Per-Task Persistence)
+        if (task.sessionResult) {
+            console.log('[Focus] Restoring session results from task metadata');
+            Store.updateActiveExecution({
+                ...task.sessionResult,
+                taskId: this.activeTaskId,
+                running: false
+            });
+            this.lastDoneStepIndex = null;
+            return;
+        }
+
+        // 2. Fallback to global activeExecution if it matches the current task
+        // (Used for sessions in progress)
+        if (state.taskId === this.activeTaskId) {
+            return;
+        }
+
+        // 3. New: If the task is already completed, jump to results phase
+        if (task.completed) {
             Store.updateActiveExecution({
                 taskId: this.activeTaskId,
                 running: false,
-                phase: 'orientation',
-                mode: 'work',
-                sessionStartTime: null,
-                accumulatedTime: 0,
-                breakStartTime: null,
-                returnAnchor: task.returnAnchor || '',
-                currentStepIndex: (() => {
-                    const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
-                    const idx = lines.findIndex(l => l.includes('[ ]'));
-                    return idx === -1 && lines.length > 0 ? 0 : idx;
-                })()
+                phase: 'completed'
             });
             this.lastDoneStepIndex = null;
+            return;
         }
+
+        // 4. Otherwise, reset to orientation for a fresh start
+        Store.updateActiveExecution({
+            taskId: this.activeTaskId,
+            running: false,
+            phase: 'orientation',
+            mode: 'work',
+            sessionStartTime: null,
+            accumulatedTime: 0,
+            breakStartTime: null,
+            returnAnchor: task.returnAnchor || '',
+            currentStepIndex: (() => {
+                const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+                const idx = lines.findIndex(l => l.includes('[ ]'));
+                return idx === -1 && lines.length > 0 ? 0 : idx;
+            })(),
+            // Reset step timing for new task
+            stepTimings: [],
+            pauseCount: 0,
+            sessionStats: {
+                startedAt: null,
+                completedAt: null,
+                totalFocusTime: 0,
+                totalBreakTime: 0,
+                pomodorosUsed: 0
+            }
+        });
+        this.lastDoneStepIndex = null;
     },
 
     /**
@@ -83,10 +130,10 @@ export const FocusMode = {
         this.isOpen = false;
 
         const state = Store.getActiveExecution();
-        if (!state.running) {
+        if (!state.running && state.phase !== 'completed') {
             this.stopSession(true);
             this.activeTaskId = null;
-        } else {
+        } else if (state.running) {
             // Keep running in background/floating mode
             this.openFloatingTimer();
         }
@@ -127,6 +174,13 @@ export const FocusMode = {
             FocusModeUI.removeCarouselInitialTransition();
             this.schedulePositionCarouselCompleteButton();
         });
+        if (state.phase === 'completion' && state.celebrateOnNextRender) {
+            Store.updateActiveExecution({ celebrateOnNextRender: false });
+            requestAnimationFrame(() => {
+                FocusModeUI.celebrateVisuals();
+                this.spawnConfetti();
+            });
+        }
     },
 
     /**
@@ -143,6 +197,14 @@ export const FocusMode = {
         FocusModeUI.updateToggleButton(state, () => this.stopSession());
         FocusModeUI.updateSoundToggleButton();
         FocusModeUI.updateTimerVisualState(state);
+
+        // Show Results Card if completed
+        if (state.phase === 'completed') {
+            this.updateQuestStack();
+        }
+
+        // Show Pomodoro counter
+        FocusModeUI.updatePomodoroCounter(this.completedPomodoros, this.pomodorosBeforeLongBreak, this.totalPomodorosToday);
     },
 
     schedulePositionCarouselCompleteButton() {
@@ -187,23 +249,78 @@ export const FocusMode = {
 
         this.carouselAnimating = true;
 
+        const task = Store.getTask(this.activeTaskId);
+        const steps = (task?.notes || '').split('\n').filter(l => l.trim() !== '');
+
         FocusModeUI.animateForwardRoll({
             fromIndex,
             toIndex,
-            task: Store.getTask(this.activeTaskId),
+            task,
             onStepComplete: markComplete ? () => {
                 this.toggleMiniTask(fromIndex, true);
+                this.recordStepCompletion(fromIndex, 'completed');
                 FocusAudio.playStepComplete();
                 this.showSuccessVisuals();
-            } : null,
+            } : () => {
+                // If not markComplete, it's a skip or manual navigaton
+                this.recordStepCompletion(fromIndex, 'skipped');
+            },
             onFinish: () => {
                 this.lastDoneStepIndex = fromIndex;
                 Store.updateActiveExecution({ currentStepIndex: toIndex });
+                this.startStepTimer(toIndex, steps);
                 this.updateUI();
                 this.carouselAnimating = false;
                 this.schedulePositionCarouselCompleteButton();
             }
         });
+    },
+
+    /**
+     * Start timing a step
+     */
+    startStepTimer(index, steps) {
+        if (index < 0 || index >= steps.length) return;
+
+        const state = Store.getActiveExecution();
+        const stepTimings = [...(state.stepTimings || [])];
+
+        // If timing already exists for this index and is skipped, we might be returning to it
+        // For now, let's only start IF it doesn't have a startedAt or was skipped
+        let timing = stepTimings.find(t => t.stepIndex === index);
+
+        if (!timing) {
+            timing = {
+                stepIndex: index,
+                stepText: steps[index].replace(/\[[ x]\]/, '').trim(),
+                startedAt: Date.now(),
+                completedAt: null,
+                duration: 0,
+                status: 'active'
+            };
+            stepTimings.push(timing);
+        } else if (timing.status === 'skipped' || timing.status === 'active') {
+            timing.startedAt = Date.now();
+            timing.status = 'active';
+        }
+
+        Store.updateActiveExecution({ stepTimings });
+    },
+
+    /**
+     * Record step completion or skip
+     */
+    recordStepCompletion(index, status = 'completed') {
+        const state = Store.getActiveExecution();
+        const stepTimings = [...(state.stepTimings || [])];
+        const timing = stepTimings.find(t => t.stepIndex === index);
+
+        if (timing && timing.status === 'active') {
+            timing.completedAt = Date.now();
+            timing.duration += (timing.completedAt - timing.startedAt);
+            timing.status = status;
+            Store.updateActiveExecution({ stepTimings });
+        }
     },
 
     animateCarouselRollReverse(toIndex) {
@@ -356,6 +473,45 @@ export const FocusMode = {
             e.stopPropagation();
             this.completeCurrentStep();
         });
+
+        stackContainer.querySelector('#restartSessionBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const task = Store.getTask(this.activeTaskId);
+            if (!task) return;
+
+            // PERSISTENCE: Clear the saved session result from the task
+            Store.updateTask(this.activeTaskId, { sessionResult: null });
+
+            // Reset execution state to start fresh
+            Store.updateActiveExecution({
+                taskId: this.activeTaskId,
+                running: false,
+                phase: 'orientation',
+                mode: 'work',
+                sessionStartTime: null,
+                accumulatedTime: 0,
+                breakStartTime: null,
+                returnAnchor: task.returnAnchor || '',
+                currentStepIndex: (() => {
+                    const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+                    const idx = lines.findIndex(l => l.includes('[ ]'));
+                    return idx === -1 && lines.length > 0 ? 0 : idx;
+                })(),
+                stepTimings: [],
+                pauseCount: 0,
+                sessionStats: {
+                    startedAt: null,
+                    completedAt: null,
+                    totalFocusTime: 0,
+                    totalBreakTime: 0,
+                    pomodorosUsed: 0
+                }
+            });
+
+            this.render(task);
+        });
     },
 
     /**
@@ -384,13 +540,26 @@ export const FocusMode = {
             return;
         }
 
+        const state = Store.getActiveExecution();
+        const now = Date.now();
+
+        // Initialize session stats if this is the first start
+        const sessionStats = state.sessionStats || {};
+        if (!sessionStats.startedAt) {
+            sessionStats.startedAt = now;
+        }
+
+        // Start timing current step if not already started
+        this.startStepTimer(state.currentStepIndex, steps);
+
         Store.updateActiveExecution({
             running: true,
             phase: 'execution',
             mode: 'work',
-            sessionStartTime: Date.now(),
+            sessionStartTime: now,
             breakStartTime: null,
-            updatedAt: Date.now()
+            updatedAt: now,
+            sessionStats
         });
 
         this.startSessionInterval();
@@ -492,6 +661,11 @@ export const FocusMode = {
                 });
                 FocusAudio.playSessionComplete();
                 this.render(Store.getTask(this.activeTaskId));
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        this.showSuccessVisuals();
+                    }, 100);
+                });
             }
         } else if (state.mode === 'break') {
             // Break mode - count down
@@ -511,14 +685,25 @@ export const FocusMode = {
 
         if (!state.running) return;
         let newAccumulatedTime = state.accumulatedTime || 0;
+        const now = Date.now();
         if (state.sessionStartTime) {
-            newAccumulatedTime += (Date.now() - state.sessionStartTime);
+            newAccumulatedTime += (now - state.sessionStartTime);
+        }
+
+        // Also update the current step's duration
+        const stepTimings = [...(state.stepTimings || [])];
+        const timing = stepTimings.find(t => t.stepIndex === state.currentStepIndex);
+        if (timing && timing.status === 'active') {
+            timing.duration += (now - timing.startedAt);
+            // We keep it 'active' but it's not currently accumulating until resumed
         }
 
         Store.updateActiveExecution({
             running: false,
             sessionStartTime: null,
-            accumulatedTime: newAccumulatedTime
+            accumulatedTime: newAccumulatedTime,
+            pauseCount: (state.pauseCount || 0) + 1,
+            stepTimings
         });
 
         // Update visual states
@@ -532,6 +717,7 @@ export const FocusMode = {
         const state = Store.getActiveExecution();
         const task = Store.getTask(this.activeTaskId);
         let triggerCelebration = false;
+        let shouldCelebrate = false;
 
         if (choice === 'complete') {
             this.toggleMiniTask(state.currentStepIndex);
@@ -543,6 +729,15 @@ export const FocusMode = {
             const nextIncomplete = lines.findIndex((l, i) => i > state.currentStepIndex && l.includes('[ ]'));
             if (nextIncomplete !== -1) {
                 Store.updateActiveExecution({ currentStepIndex: nextIncomplete });
+            }
+
+            const updatedTask = Store.getTask(this.activeTaskId);
+            const updatedLines = (updatedTask?.notes || '').split('\n').filter(l => l.trim() !== '');
+            const taskLines = updatedLines.filter(l => l.includes('[ ]') || l.includes('[x]'));
+            shouldCelebrate = taskLines.length > 0 && taskLines.every(l => l.includes('[x]'));
+            if (shouldCelebrate) {
+                this.celebrateTaskAchieved();
+                return;
             }
         }
 
@@ -590,7 +785,11 @@ export const FocusMode = {
 
         this.render(Store.getTask(this.activeTaskId));
         if (triggerCelebration) {
-            this.showSuccessVisuals();
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    this.showSuccessVisuals();
+                }, 100);
+            });
         }
     },
 
@@ -606,14 +805,16 @@ export const FocusMode = {
         const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
         // Explicitly check for lines that are tasks
         const taskLines = lines.filter(l => l.includes('[ ]') || l.includes('[x]'));
-        
+
         // Log for debugging
         const completedCount = taskLines.filter(l => l.includes('[x]')).length;
         console.log(`[Focus] Checking achievement: ${completedCount}/${taskLines.length}`);
-        
-        const allCompleted = taskLines.length > 0 && taskLines.every(l => l.includes('[x]'));
 
-        if (allCompleted) {
+        const state = Store.getActiveExecution();
+        const allCompleted = (taskLines.length > 0 && taskLines.every(l => l.includes('[x]'))) || state.phase === 'completed';
+        const alreadyTransitioning = state.phase === 'completion';
+
+        if (allCompleted && !alreadyTransitioning) {
             console.log('[Focus] SUCCESS! All tasks completed. Celebrating...');
             this.celebrateTaskAchieved();
         } else {
@@ -627,21 +828,37 @@ export const FocusMode = {
      */
     celebrateTaskAchieved() {
         FocusAudio.playTaskAchieved();
-        FocusModeUI.celebrateVisuals();
+        const state = Store.getActiveExecution();
+        const sessionStats = { ...(state.sessionStats || {}) };
+        if (!sessionStats.completedAt) {
+            sessionStats.completedAt = Date.now();
+        }
 
-        // Stop the timer and fill everything
-        Store.updateActiveExecution({
+        const transitionState = {
+            ...state,
             running: false,
             sessionStartTime: null,
             accumulatedTime: 0,
-            phase: 'completed' // New phase for total completion
-        });
+            phase: 'completion',
+            sessionStats,
+            celebrateOnNextRender: true
+        };
 
-        // Final UI update
-        this.updateUI();
+        const finalState = { ...transitionState, phase: 'completed', celebrateOnNextRender: false };
 
-        // Create confetti effect
-        this.spawnConfetti();
+        Store.updateActiveExecution(transitionState);
+        Store.updateTask(this.activeTaskId, { sessionResult: finalState });
+        Store.save(true);
+
+        const task = Store.getTask(this.activeTaskId);
+        this.render(task);
+        setTimeout(() => {
+            const latest = Store.getActiveExecution();
+            if (latest.phase === 'completion') {
+                Store.updateActiveExecution({ phase: 'completed' });
+                this.render(Store.getTask(this.activeTaskId));
+            }
+        }, 1200);
     },
 
     spawnConfetti() {
@@ -767,10 +984,53 @@ export const FocusMode = {
         }
 
         this.toggleMiniTask(previousIndex, true);
+        this.recordStepCompletion(previousIndex, 'completed');
+
         FocusAudio.playStepComplete();
         this.lastDoneStepIndex = previousIndex;
-        this.updateQuestStack();
-        this.showSuccessVisuals();
+        const updatedTask = Store.getTask(this.activeTaskId);
+        const updatedLines = (updatedTask?.notes || '').split('\n').filter(l => l.trim() !== '');
+        const taskLines = updatedLines.filter(l => l.includes('[ ]') || l.includes('[x]'));
+        const shouldCelebrate = taskLines.length > 0 && taskLines.every(l => l.includes('[x]'));
+
+        if (shouldCelebrate) {
+            this.celebrateTaskAchieved();
+            return;
+        }
+
+        // Finish session
+        const sessionStats = { ...state.sessionStats };
+        sessionStats.completedAt = Date.now();
+
+        const finalState = {
+            phase: 'completed',
+            running: false, // Ensure session is stopped
+            sessionStats,
+            stepTimings: state.stepTimings,
+            pauseCount: state.pauseCount
+        };
+
+        Store.updateActiveExecution(finalState);
+
+        // PERSISTENCE: Save result to the task itself so it survives task switching
+        Store.updateTask(this.activeTaskId, { sessionResult: finalState });
+
+        // Force immediate save for critical phase change
+        Store.save(true);
+
+        // Full re-render to update template structure (hide rings)
+        this.render(updatedTask);
+
+        // Yield to browser to ensure Results Card is in DOM before celebrating
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                if (shouldCelebrate) {
+                    this.celebrateTaskAchieved();
+                } else {
+                    this.showSuccessVisuals();
+                }
+            }, 100);
+        });
     },
 
     // =========================================
@@ -841,21 +1101,49 @@ export const FocusMode = {
         this.pomodoroRunning = false;
 
         if (this.pomodoroMode === 'work') {
+            // Completed a Pomodoro! Increment counters
+            this.completedPomodoros++;
+            this.totalPomodorosToday++;
+
+            // Track session stats
+            const state = Store.getActiveExecution();
+            const sessionStats = { ...(state.sessionStats || {}) };
+            sessionStats.pomodorosUsed = (sessionStats.pomodorosUsed || 0) + 1;
+            Store.updateActiveExecution({ sessionStats });
+
             this.pomodoroMode = 'break';
-            this.pomodoroSeconds = this.breakDuration;
-            // Play notification sound or show notification
-            if (Notification.permission === 'granted') {
-                new Notification('🎉 Focus session complete!', { body: 'Time for a break.' });
+
+            // Check if this is time for a long break (every 4 Pomodoros)
+            const isLongBreak = this.completedPomodoros >= this.pomodorosBeforeLongBreak;
+
+            if (isLongBreak) {
+                this.pomodoroSeconds = this.longBreakDuration;
+                this.completedPomodoros = 0; // Reset cycle counter
+                if (Notification.permission === 'granted') {
+                    new Notification('🎉 Great work! Long break time!', {
+                        body: `You completed ${this.pomodorosBeforeLongBreak} Pomodoros! Enjoy a 20-min break.`
+                    });
+                }
+            } else {
+                this.pomodoroSeconds = this.breakDuration;
+                if (Notification.permission === 'granted') {
+                    new Notification('🎉 Focus session complete!', {
+                        body: `Pomodoro ${this.completedPomodoros}/${this.pomodorosBeforeLongBreak} done. Short break time!`
+                    });
+                }
             }
         } else {
             this.pomodoroMode = 'work';
             this.pomodoroSeconds = this.workDuration;
             if (Notification.permission === 'granted') {
-                new Notification('💪 Break over!', { body: 'Ready to focus again?' });
+                new Notification('💪 Break over!', {
+                    body: `Ready for Pomodoro ${this.completedPomodoros + 1}/${this.pomodorosBeforeLongBreak}?`
+                });
             }
         }
 
         FocusModeUI.updatePomodoroStartPauseButton(false);
+        FocusModeUI.updatePomodoroCounter(this.completedPomodoros, this.pomodorosBeforeLongBreak, this.totalPomodorosToday);
 
         this.updateTimerDisplay();
         this.pomodoroTargetEpoch = null;
@@ -878,6 +1166,7 @@ export const FocusMode = {
     },
 
     persistTimerState() {
+        const today = new Date().toDateString();
         const state = {
             mode: this.pomodoroMode,
             running: this.pomodoroRunning,
@@ -885,6 +1174,10 @@ export const FocusMode = {
             targetEpoch: this.pomodoroTargetEpoch,
             work: this.workDuration,
             break: this.breakDuration,
+            // Pomodoro cycle tracking
+            completedPomodoros: this.completedPomodoros,
+            totalPomodorosToday: this.totalPomodorosToday,
+            pomodoroSessionDate: today,
             updatedAt: Date.now()
         };
         try {
@@ -902,11 +1195,28 @@ export const FocusMode = {
             this.pomodoroSeconds = this.workDuration;
             this.pomodoroRunning = false;
             this.pomodoroTargetEpoch = null;
+            this.completedPomodoros = 0;
+            this.totalPomodorosToday = 0;
+            this.pomodoroSessionDate = new Date().toDateString();
             return;
         }
         this.workDuration = state.work || this.workDuration;
         this.breakDuration = state.break || this.breakDuration;
         this.pomodoroMode = state.mode || 'work';
+
+        // Restore Pomodoro counters
+        const today = new Date().toDateString();
+        if (state.pomodoroSessionDate === today) {
+            // Same day - restore all counts
+            this.completedPomodoros = state.completedPomodoros || 0;
+            this.totalPomodorosToday = state.totalPomodorosToday || 0;
+        } else {
+            // New day - reset daily total, keep cycle position
+            this.completedPomodoros = state.completedPomodoros || 0;
+            this.totalPomodorosToday = 0;
+        }
+        this.pomodoroSessionDate = today;
+
         if (state.targetEpoch && state.running) {
             const remaining = Math.max(0, Math.round((state.targetEpoch - Date.now()) / 1000));
             this.pomodoroSeconds = remaining;
@@ -937,14 +1247,18 @@ export const FocusMode = {
             if (!api) throw new Error('pip');
             const pip = await api.requestWindow({ initialWidth: 220, initialHeight: 160 });
             this.pipWindow = pip;
-            
+
             pip.startPause = () => this.startPauseTimer();
             pip.resetTimer = () => this.resetTimer();
-            
-            FocusModeUI.setupPipWindow(pip, pip.startPause, pip.resetTimer);
-            
+
+            FocusModeUI.setupPipWindow(pip, pip.startPause, pip.resetTimer, () => {
+                if (this.activeTaskId) {
+                    this.open(this.activeTaskId);
+                }
+            });
+
             pip.addEventListener('pagehide', () => { this.pipWindow = null; });
-            
+
             this.updateFloatingTimer();
             this.hideBadge();
         } catch {

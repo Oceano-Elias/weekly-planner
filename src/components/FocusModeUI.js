@@ -36,12 +36,28 @@ export const FocusModeUI = {
         const display = document.getElementById('sessionTimeDisplay');
         if (!display) return;
 
-        // If task is fully completed, show 00:00 or a checkmark
+        // If task is fully completed, show celebration
         if (state.phase === 'completed') {
-            display.textContent = "00:00";
-            display.classList.add('timer-finished-pulse');
+            display.innerHTML = `<span class="completion-celebration">🏆</span>`;
+            display.classList.add('timer-completed');
+            display.classList.remove('timer-finished-pulse');
+            const stepTitle = document.getElementById('activeStepTitle');
+            const controls = document.querySelector('.ring-media-controls');
+            if (stepTitle) {
+                stepTitle.innerHTML = `<span class="completion-text">All Done!</span>`;
+                stepTitle.classList.add('completion-title');
+            }
+            if (controls) controls.style.display = 'none';
+            document.title = '🎉 All Done! – Focus Mode';
             return;
         }
+
+        // Reset from completed state if needed
+        display.classList.remove('timer-completed');
+        const stepTitle = document.getElementById('activeStepTitle');
+        const controls = document.querySelector('.ring-media-controls');
+        if (stepTitle) stepTitle.classList.remove('completion-title');
+        if (controls) controls.style.display = '';
 
         let secondsRemaining;
         if (state.mode === 'work') {
@@ -84,7 +100,7 @@ export const FocusModeUI = {
         const taskLines = lines.filter(l => l.includes('[ ]') || l.includes('[x]'));
         const completedCount = taskLines.filter(l => l.includes('[x]')).length;
         const totalCount = taskLines.length || 1;
-        
+
         const outerCircumference = 2 * Math.PI * 56;
         const isTotalComplete = taskLines.length > 0 && taskLines.every(l => l.includes('[x]'));
 
@@ -92,10 +108,10 @@ export const FocusModeUI = {
         if (totalCount > 1) {
             const strokeWidth = 4;
             const targetGap = 6; // Total visible gap between segments
-            
+
             const segmentDash = (outerCircumference / totalCount) - targetGap;
             const gapDash = targetGap;
-            
+
             if (outerRingBg) {
                 outerRingBg.style.strokeDasharray = `${segmentDash - strokeWidth} ${gapDash + strokeWidth}`;
             }
@@ -114,7 +130,7 @@ export const FocusModeUI = {
                     const dash = segmentDash - strokeWidth;
                     fillArray.push(dash);
                     currentLength += dash;
-                    
+
                     if (i < completedCount - 1) {
                         const gap = gapDash + strokeWidth;
                         fillArray.push(gap);
@@ -124,7 +140,7 @@ export const FocusModeUI = {
                         fillArray.push(finalGap);
                     }
                 }
-                
+
                 outerRing.style.strokeDasharray = fillArray.join(' ');
                 outerRing.style.strokeDashoffset = 0;
             }
@@ -275,15 +291,22 @@ export const FocusModeUI = {
      */
     showSuccessVisuals() {
         const ring = document.getElementById('outerRing');
-        if (!ring) return;
+        const resultsCard = document.querySelector('.results-card-container');
 
-        ring.classList.add('success-flash');
-        setTimeout(() => ring.classList.remove('success-flash'), 1000);
+        if (ring) {
+            ring.classList.add('success-flash');
+            setTimeout(() => ring.classList.remove('success-flash'), 1000);
+        } else if (resultsCard) {
+            // Fallback for completion phase
+            resultsCard.classList.add('success-flash');
+            setTimeout(() => resultsCard.classList.remove('success-flash'), 1000);
+        }
 
         const activeCard = document.querySelector('.carousel-card.active');
-        if (!activeCard) return;
-        activeCard.classList.add('step-complete-flash');
-        setTimeout(() => activeCard.classList.remove('step-complete-flash'), 600);
+        if (activeCard) {
+            activeCard.classList.add('step-complete-flash');
+            setTimeout(() => activeCard.classList.remove('step-complete-flash'), 600);
+        }
     },
 
     /**
@@ -291,9 +314,16 @@ export const FocusModeUI = {
      */
     celebrateVisuals() {
         const ring = document.getElementById('outerRing');
+        const resultsCard = document.querySelector('.results-card-container');
+
         if (ring) {
             ring.classList.add('triumph-glow');
             setTimeout(() => ring.classList.remove('triumph-glow'), 2000);
+        }
+
+        if (resultsCard) {
+            resultsCard.classList.add('triumph-glow-results');
+            setTimeout(() => resultsCard.classList.remove('triumph-glow-results'), 2000);
         }
     },
 
@@ -303,8 +333,8 @@ export const FocusModeUI = {
     getCarouselCardInner(stateClass, index, cleanText, isCompleted = false) {
         const stepLabel = index >= 0 ? `Step ${index + 1}` : '';
         const visualState = stateClass === 'below' ? 'done' : stateClass;
-        
-        const icon = isCompleted 
+
+        const icon = isCompleted
             ? '<div class="carousel-icon done">✓</div>'
             : (visualState === 'active'
                 ? '<div class="carousel-icon active">●</div>'
@@ -402,7 +432,7 @@ export const FocusModeUI = {
         const raw = lines[index] || '';
         const isCompleted = raw.includes('[x]');
         const cleanText = raw.replace(/\[[ x]\]\s*/, '').trim();
-        
+
         if (isCompleted) {
             cardEl.classList.add('is-completed');
         }
@@ -421,7 +451,7 @@ export const FocusModeUI = {
         if (!els.carousel || !els.doneCard || !els.activeCard || !els.upcomingCard || !els.behindCard) return;
 
         const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
-        
+
         // Pre-update upcoming/behind for smooth entry
         const nextIndexBefore = toIndex;
         const behindIndexBefore = toIndex + 1 < lines.length ? toIndex + 1 : -1;
@@ -432,7 +462,7 @@ export const FocusModeUI = {
 
         this.setCarouselRolling(true);
         this.applyForwardRollClasses(els);
-        
+
         // Force reflow
         void els.carousel.offsetHeight;
 
@@ -476,7 +506,7 @@ export const FocusModeUI = {
 
         this.setCarouselRolling(true);
         this.applyBackwardRollClasses(els);
-        
+
         // Force reflow
         void els.carousel.offsetHeight;
 
@@ -671,29 +701,31 @@ export const FocusModeUI = {
      * Create confetti effect
      */
     spawnConfetti() {
-        const container = document.querySelector('.execution-rings-container');
+        // Fallback to focus-card if rings container is hidden
+        const container = document.querySelector('.execution-rings-container') || document.querySelector('.focus-card');
         if (!container) return;
 
         const colors = ['#3b82f6', '#10b981', '#fbbf24', '#f87171', '#a78bfa'];
-        const particleCount = 40;
+        const particleCount = 60; // Increased for better effect
 
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
             particle.className = 'confetti-particle';
-            
+
             const color = colors[Math.floor(Math.random() * colors.length)];
             const left = Math.random() * 100;
-            const size = 4 + Math.random() * 6;
-            const duration = 1 + Math.random() * 2;
-            const delay = Math.random() * 0.5;
+            const size = 6 + Math.random() * 8; // Slightly larger
+            const duration = 2 + Math.random() * 2; // Longer fall
+            const delay = Math.random() * 0.8;
 
             particle.style.backgroundColor = color;
             particle.style.left = `${left}%`;
-            particle.style.top = `-10px`;
+            particle.style.top = `-20px`; // Start slightly higher
             particle.style.width = `${size}px`;
             particle.style.height = `${size}px`;
             particle.style.animationDuration = `${duration}s`;
             particle.style.animationDelay = `${delay}s`;
+            particle.style.zIndex = '1000'; // Ensure it's on top
 
             container.appendChild(particle);
 
@@ -717,7 +749,7 @@ export const FocusModeUI = {
 
         const carousel = stackContainer.querySelector('.quest-carousel');
         const activeCard = carousel?.querySelector('.carousel-card.active');
-        
+
         // Hide button if no active card, or card is completed, or carousel is currently rolling
         if (!carousel || !activeCard || activeCard.classList.contains('is-completed') || carousel.classList.contains('carousel-rolling')) {
             btn.classList.add('hidden');
@@ -726,7 +758,7 @@ export const FocusModeUI = {
 
         const stackRect = stackContainer.getBoundingClientRect();
         const cardRect = activeCard.getBoundingClientRect();
-        
+
         // If elements are not visible (rect is zero), don't try to position
         if (stackRect.width === 0 || cardRect.width === 0) {
             btn.classList.add('hidden');
@@ -735,7 +767,7 @@ export const FocusModeUI = {
 
         const scaleX = stackContainer.offsetWidth ? (stackRect.width / stackContainer.offsetWidth) : 1;
         const scaleY = stackContainer.offsetHeight ? (stackRect.height / stackContainer.offsetHeight) : 1;
-        
+
         const cardLeft = (cardRect.left - stackRect.left) / scaleX;
         const cardTop = (cardRect.top - stackRect.top) / scaleY;
         const cardWidth = cardRect.width / scaleX;
@@ -772,7 +804,7 @@ export const FocusModeUI = {
 
         const carousel = stackContainer.querySelector('.quest-carousel');
         const activeCard = carousel?.querySelector('.carousel-card.active');
-        
+
         if (!carousel || !activeCard) {
             nav.classList.add('hidden');
             return;
@@ -780,7 +812,7 @@ export const FocusModeUI = {
 
         const stackRect = stackContainer.getBoundingClientRect();
         const cardRect = activeCard.getBoundingClientRect();
-        
+
         if (stackRect.width === 0 || cardRect.width === 0) {
             nav.classList.add('hidden');
             return;
@@ -788,7 +820,7 @@ export const FocusModeUI = {
 
         const scaleX = stackContainer.offsetWidth ? (stackRect.width / stackContainer.offsetWidth) : 1;
         const scaleY = stackContainer.offsetHeight ? (stackRect.height / stackContainer.offsetHeight) : 1;
-        
+
         const cardLeft = (cardRect.left - stackRect.left) / scaleX;
         const cardTop = (cardRect.top - stackRect.top) / scaleY;
         const cardWidth = cardRect.width / scaleX;
@@ -865,6 +897,7 @@ export const FocusModeUI = {
                     </div>
 
                     <div class="focus-engine-side">
+                    ${state.phase !== 'completed' ? `
                         <div class="execution-rings-container ${state.phase === 'decision' ? 'decision-flip' : ''}">
                             <div class="ring-flip-surface">
                                 <div class="ring-face ring-face-front">
@@ -914,9 +947,10 @@ export const FocusModeUI = {
                                 </div>
                             </div>
                         </div>
+                    ` : ''}
 
                         <div class="quest-stack-container" id="questStack">
-                            ${this.getQuestStack(task, state.currentStepIndex)}
+                            ${state.phase === 'completed' ? this.getResultsCard(state) : this.getQuestStack(task, state.currentStepIndex)}
                         </div>
                     </div>
                 </div>
@@ -1026,10 +1060,64 @@ export const FocusModeUI = {
         const timeEl = badgeEl.querySelector('#badgeTime');
         const modeEl = badgeEl.querySelector('#badgeMode');
         const spEl = badgeEl.querySelector('#badgeStartPause');
+        const counterEl = badgeEl.querySelector('#badgeCounter');
         if (!timeEl || !modeEl || !spEl) return;
         timeEl.textContent = this.formatTime(seconds);
         modeEl.textContent = mode === 'work' ? 'Focus' : 'Break';
         spEl.textContent = running ? 'Pause' : 'Start';
+    },
+
+    /**
+     * Update Pomodoro counter display in UI
+     * Shows progress like "🍅 2/4" toward long break
+     */
+    updatePomodoroCounter(completed, total, todayTotal) {
+        // If phase is completed, hide tomatoes (as requested by user)
+        const activeExec = Store.getActiveExecution();
+        if (activeExec && activeExec.phase === 'completed') {
+            const el = document.getElementById('pomodoroCounterDisplay');
+            if (el) el.style.display = 'none';
+            return;
+        }
+
+        // Update or create counter in the ring center area
+        let counterEl = document.getElementById('pomodoroCounterDisplay');
+        const ringCenter = document.querySelector('.ring-center');
+
+        if (!counterEl && ringCenter) {
+            counterEl = document.createElement('div');
+            counterEl.id = 'pomodoroCounterDisplay';
+            counterEl.className = 'pomodoro-counter-display';
+            ringCenter.insertBefore(counterEl, ringCenter.firstChild);
+        }
+
+        if (counterEl) {
+            counterEl.style.display = ''; // Ensure visible
+            const tomatoes = '🍅'.repeat(completed);
+            const empty = '⚪'.repeat(total - completed);
+            const isNearLongBreak = completed >= total - 1 && completed > 0;
+
+            counterEl.innerHTML = `
+                <div class="pomodoro-dots ${isNearLongBreak ? 'near-long-break' : ''}">
+                    ${tomatoes}${empty}
+                </div>
+                <div class="pomodoro-count-text">${completed}/${total}</div>
+                ${todayTotal > 0 ? `<div class="pomodoro-today-total">Today: ${todayTotal}</div>` : ''}
+            `;
+        }
+
+        // Also update floating badge if visible
+        const badge = document.getElementById('floatingPomodoroBadge');
+        if (badge) {
+            let badgeCounter = badge.querySelector('#badgeCounter');
+            if (!badgeCounter) {
+                badgeCounter = document.createElement('span');
+                badgeCounter.id = 'badgeCounter';
+                badgeCounter.style.cssText = 'font-size:14px;margin-right:4px;';
+                badge.insertBefore(badgeCounter, badge.firstChild);
+            }
+            badgeCounter.textContent = `🍅${completed}/${total}`;
+        }
     },
 
     /**
@@ -1094,7 +1182,7 @@ export const FocusModeUI = {
     setCarouselRolling(isRolling) {
         const carousel = document.querySelector('.quest-carousel');
         if (!carousel) return;
-        
+
         if (isRolling) {
             carousel.classList.add('carousel-rolling');
             document.getElementById('carouselCompleteBtn')?.classList.add('hidden');
@@ -1110,12 +1198,17 @@ export const FocusModeUI = {
     updateQuestStack(task, currentStepIndex, onCardClick) {
         const stackContainer = document.getElementById('questStack');
         if (!stackContainer) return;
-        stackContainer.innerHTML = this.getQuestStack(task, currentStepIndex);
-        
-        if (onCardClick) {
-            this.setupCarouselListeners(stackContainer, onCardClick);
+
+        const state = Store.getActiveExecution();
+        if (state.phase === 'completed') {
+            stackContainer.innerHTML = this.getResultsCard(state);
+        } else {
+            stackContainer.innerHTML = this.getQuestStack(task, currentStepIndex);
+            if (onCardClick) {
+                this.setupCarouselListeners(stackContainer, onCardClick);
+            }
         }
-        
+
         return stackContainer;
     },
 
@@ -1134,7 +1227,7 @@ export const FocusModeUI = {
             if (!card || card.classList.contains('empty')) return;
             const idx = parseInt(card.dataset.index);
             if (Number.isNaN(idx) || idx < 0) return;
-            
+
             if (onCardClick) onCardClick(idx);
         });
 
@@ -1176,7 +1269,7 @@ export const FocusModeUI = {
     /**
      * Set up PiP window document styles and initial content
      */
-    setupPipWindow(pip, onStartPause, onReset) {
+    setupPipWindow(pip, onStartPause, onReset, onRestore) {
         const doc = pip.document;
         doc.body.style.margin = '0';
         doc.body.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
@@ -1184,6 +1277,7 @@ export const FocusModeUI = {
 
         doc.getElementById('pipStartPause')?.addEventListener('click', onStartPause);
         doc.getElementById('pipReset')?.addEventListener('click', onReset);
+        doc.getElementById('pipRoot')?.addEventListener('dblclick', onRestore);
     },
 
     /**
@@ -1191,7 +1285,7 @@ export const FocusModeUI = {
      */
     showBadge(pomodoroSeconds, pomodoroMode, pomodoroRunning, onStartPause, onReset) {
         if (this.badgeEl) return this.badgeEl;
-        
+
         this.badgeEl = this.createBadge(onStartPause, onReset);
         this.updateBadge(pomodoroSeconds, pomodoroMode, pomodoroRunning);
         return this.badgeEl;
@@ -1203,7 +1297,7 @@ export const FocusModeUI = {
     updateBadge(seconds, mode, running) {
         if (!this.badgeEl) return;
         this.updateBadgeUI(this.badgeEl, seconds, mode, running);
-        
+
         if (!running && seconds <= 0) {
             this.hideBadge();
         }
@@ -1238,7 +1332,7 @@ export const FocusModeUI = {
         el.style.alignItems = 'center';
         el.style.gap = '10px';
         el.innerHTML = this.getBadgeTemplate();
-        
+
         document.body.appendChild(el);
 
         // Position it
@@ -1260,7 +1354,7 @@ export const FocusModeUI = {
         // Setup dragging
         let dragging = false;
         let startX = 0, startY = 0, startLeft = 0, startTop = 0;
-        
+
         const onMouseMove = (e) => {
             if (!dragging) return;
             const dx = e.clientX - startX;
@@ -1310,10 +1404,10 @@ export const FocusModeUI = {
         const toast = document.createElement('div');
         toast.id = 'phaseNotification';
         toast.className = 'phase-toast';
-        
+
         let text = '';
         let icon = '';
-        
+
         switch (phase) {
             case 'closure':
                 text = 'Closure Phase: Wrapping up...';
@@ -1358,5 +1452,102 @@ export const FocusModeUI = {
                 <polygon points="5,3 19,12 5,21"/>
             </svg>`;
         }
+    },
+
+    /**
+     * Get Results Card template
+     */
+    getResultsCard(state) {
+        const timings = state.stepTimings || [];
+
+        const formatDuration = (ms) => {
+            const min = Math.floor(ms / 60000);
+            const sec = Math.floor((ms % 60000) / 1000);
+            if (min === 0) return `${sec}s`;
+            return `${min}m ${sec}s`;
+        };
+
+        const maxDuration = Math.max(...timings.map(t => t.duration || 0), 1);
+
+        const rows = timings.map(t => {
+            const percent = Math.min(100, (t.duration / maxDuration) * 100);
+            const icon = t.status === 'completed' ? '✓' : '⏭';
+            return `
+                <div class="results-row ${t.status}">
+                    <div class="results-row-header">
+                        <span class="results-icon">${icon}</span>
+                        <span class="results-text">${t.stepText}</span>
+                        <span class="results-time">${formatDuration(t.duration)}</span>
+                    </div>
+                    <div class="results-bar-container">
+                        <div class="results-bar" style="width: ${percent}%;"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const totalFocus = timings.reduce((acc, t) => acc + (t.duration || 0), 0);
+        const pomodoroCount = Store.getActiveExecution().sessionStats?.pomodorosUsed || 0;
+        const stats = state.sessionStats || {};
+        const totalDuration = stats.completedAt && stats.startedAt ? stats.completedAt - stats.startedAt : 0;
+        const focusScore = totalDuration > 0 ? Math.min(100, Math.round((totalFocus / totalDuration) * 100)) : 0;
+
+        const formatTime = (ts) => {
+            if (!ts) return '--:--';
+            return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        };
+
+        return `
+            <div class="results-card-wrapper animate-in-up">
+                <div class="completion-celebration results-celebration">
+                    <div class="completion-trophy">🏆</div>
+                    <div class="completion-text">All Done!</div>
+                </div>
+                <div class="results-card-container glass-surface">
+                    <div class="results-header">
+                        SESSION ANALYSIS
+                        <div class="results-session-meta">
+                            ${formatTime(stats.startedAt)} – ${formatTime(stats.completedAt)}
+                        </div>
+                    </div>
+                    <div class="results-scroll-area">
+                        ${rows.length > 0 ? rows : '<div class="results-empty">No step data recorded</div>'}
+                    </div>
+                    <div class="results-footer">
+                        <div class="results-stat-group">
+                            <div class="results-stat">
+                                <span class="stat-label">FOCUS TIME</span>
+                                <span class="stat-value">${formatDuration(totalFocus)}</span>
+                            </div>
+                            <div class="results-stat">
+                                <span class="stat-label">TOTAL TIME</span>
+                                <span class="stat-value">${formatDuration(totalDuration)}</span>
+                            </div>
+                            <div class="results-stat">
+                                <span class="stat-label">PAUSES</span>
+                                <span class="stat-value">${state.pauseCount || 0}</span>
+                            </div>
+                            <div class="results-stat">
+                                <span class="stat-label">TOMATOES</span>
+                                <span class="stat-value">${pomodoroCount} 🍅</span>
+                            </div>
+                            <div class="results-stat">
+                                <span class="stat-label">FOCUS SCORE</span>
+                                <span class="stat-value">${focusScore}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-hint">Share your focus achievement! 📸</div>
+                <div class="results-actions">
+                    <button class="results-restart-btn" id="restartSessionBtn">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.65 6.35c-1.63-1.63-3.94-2.57-6.48-2.25-3.52.44-6.42 3.33-6.86 6.85-.56 4.5 3 8.35 7.42 8.35 3.32 0 6.13-2.13 7.15-5.08.18-.53-.22-1.07-.78-1.07h-.05c-.39 0-.74.24-.87.61-.75 2.19-2.85 3.76-5.45 3.76-2.56 0-4.74-1.74-5.38-4.14-.39-1.48.06-2.92.93-3.94a5.02 5.02 0 013.91-1.63c1.39.02 2.62.59 3.49 1.48l-1.79 1.79c-.31.31-.09.85.35.85H20c.28 0 .5-.22.5-.5V10.7c0-.45-.54-.67-.85-.35l-2-2z"/>
+                        </svg>
+                        RESTART FOCUS
+                    </button>
+                </div>
+            </div>
+        `;
     }
 };

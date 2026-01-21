@@ -31,12 +31,22 @@ const initialState = {
         sessionStartTime: null,
         accumulatedTime: 0,
         running: false,
-        phase: 'orientation', // 'orientation', 'execution', 'closure', 'decision'
+        phase: 'orientation', // 'orientation', 'execution', 'closure', 'decision', 'completed'
         mode: 'work', // 'work', 'break'
         breakStartTime: null,
         returnAnchor: '',
         currentStepIndex: -1,
-        updatedAt: null
+        updatedAt: null,
+        // Step timing tracking for Results Card
+        stepTimings: [],      // Array of { stepIndex, stepText, startedAt, completedAt, duration, status }
+        pauseCount: 0,        // Number of times user paused
+        sessionStats: {       // Session-level statistics
+            startedAt: null,
+            completedAt: null,
+            totalFocusTime: 0,
+            totalBreakTime: 0,
+            pomodorosUsed: 0
+        }
     }
 };
 
@@ -131,8 +141,26 @@ export const Store = {
                     breakStartTime: null,
                     returnAnchor: '',
                     currentStepIndex: -1,
-                    updatedAt: null
+                    updatedAt: null,
+                    stepTimings: [],
+                    pauseCount: 0,
+                    sessionStats: {
+                        startedAt: null,
+                        completedAt: null,
+                        totalFocusTime: 0,
+                        totalBreakTime: 0,
+                        pomodorosUsed: 0
+                    }
                 };
+                // Ensure new fields exist on loaded state
+                if (!state.activeExecution.stepTimings) state.activeExecution.stepTimings = [];
+                if (!state.activeExecution.pauseCount) state.activeExecution.pauseCount = 0;
+                if (!state.activeExecution.sessionStats) {
+                    state.activeExecution.sessionStats = {
+                        startedAt: null, completedAt: null,
+                        totalFocusTime: 0, totalBreakTime: 0, pomodorosUsed: 0
+                    };
+                }
             }
 
             // Run migration if needed
@@ -230,6 +258,7 @@ export const Store = {
             if (updates.completed !== undefined) resolved.instance.completed = updates.completed;
             if (updates.notes !== undefined) resolved.instance.notes = updates.notes;
             if (updates.returnAnchor !== undefined) resolved.instance.returnAnchor = updates.returnAnchor;
+            if (updates.sessionResult !== undefined) resolved.instance.sessionResult = updates.sessionResult;
         }
 
         this.save();
