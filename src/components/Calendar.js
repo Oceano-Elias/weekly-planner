@@ -3,22 +3,31 @@
  */
 
 import { Store } from '../store.js';
-import { Departments } from '../departments.js';
 import { PlannerService } from '../services/PlannerService.js';
 import { TaskCard } from './TaskCard.js';
 import { ConfirmModal } from './ConfirmModal.js';
+import { DOMUtils } from '../utils/DOMUtils.js';
 
 export const Calendar = {
     currentWeekStart: null,
     // Use shared constants from PlannerService
-    get days() { return PlannerService.DAYS; },
-    get dayLabels() { return PlannerService.DAY_LABELS; },
-    get startHour() { return PlannerService.START_HOUR; },
-    get endHour() { return PlannerService.END_HOUR; },
+    get days() {
+        return PlannerService.DAYS;
+    },
+    get dayLabels() {
+        return PlannerService.DAY_LABELS;
+    },
+    get startHour() {
+        return PlannerService.START_HOUR;
+    },
+    get endHour() {
+        return PlannerService.END_HOUR;
+    },
     viewMode: 'week',
     selectedDayIndex: 0,
     progressTimer: null,
     gridClickHandler: null,
+    columnCache: {}, // Cache for day columns
     onEditTask: null,
     onOpenModalWithSchedule: null,
     onPlayCompletionAnimation: null,
@@ -29,9 +38,12 @@ export const Calendar = {
     setViewMode(mode) {
         this.viewMode = mode;
         // Only set today if index is null OR we want to reset to today
-        if (mode === 'day' && (this.selectedDayIndex === null || this.selectedDayIndex === undefined)) {
+        if (
+            mode === 'day' &&
+            (this.selectedDayIndex === null || this.selectedDayIndex === undefined)
+        ) {
             const weekDates = this.getWeekDates();
-            const todayIndex = weekDates.findIndex(d => this.isToday(d));
+            const todayIndex = weekDates.findIndex((d) => this.isToday(d));
             this.selectedDayIndex = todayIndex !== -1 ? todayIndex : 0;
         }
         this.renderHeader();
@@ -91,7 +103,7 @@ export const Calendar = {
                 weekday: 'long',
                 month: 'long',
                 day: 'numeric',
-                year: 'numeric'
+                year: 'numeric',
             });
         }
 
@@ -119,10 +131,16 @@ export const Calendar = {
      */
     renderHeader() {
         const header = document.getElementById('calendarHeader');
+        DOMUtils.clear(header);
         const dates = this.getWeekDates();
         const goals = Store.getGoals();
 
-        let html = '<div class="calendar-header-cell"></div>';
+        // Empty corner cell
+        if (this.viewMode === 'week') {
+            header.appendChild(
+                DOMUtils.createElement('div', { className: 'calendar-header-cell' })
+            );
+        }
 
         if (this.viewMode === 'week') {
             dates.forEach((date, index) => {
@@ -130,16 +148,31 @@ export const Calendar = {
                 const dayName = this.days[index];
                 const goal = goals[dayName] || '';
 
-                html += `
-          <div class="calendar-header-cell day-header-nav" data-index="${index}">
-            <div class="calendar-day-name">${this.dayLabels[index]}</div>
-            <div class="calendar-day-date ${isToday ? 'today' : ''}">${date.getDate()}</div>
-            <input type="text" class="calendar-day-goal" 
-                   placeholder="Add goal..." 
-                   data-day="${dayName}"
-                   value="${goal.replace(/"/g, '&quot;')}">
-          </div>
-        `;
+                const cell = DOMUtils.createElement(
+                    'div',
+                    {
+                        className: 'calendar-header-cell day-header-nav',
+                        dataset: { index },
+                    },
+                    [
+                        DOMUtils.createElement('div', {
+                            className: 'calendar-day-name',
+                            textContent: this.dayLabels[index],
+                        }),
+                        DOMUtils.createElement('div', {
+                            className: `calendar-day-date ${isToday ? 'today' : ''}`,
+                            textContent: date.getDate().toString(),
+                        }),
+                        DOMUtils.createElement('input', {
+                            type: 'text',
+                            className: 'calendar-day-goal',
+                            placeholder: 'Add goal...',
+                            dataset: { day: dayName },
+                            value: goal,
+                        }),
+                    ]
+                );
+                header.appendChild(cell);
             });
             header.style.gridTemplateColumns = `var(--calendar-time-col, 60px) repeat(7, 1fr)`;
         } else {
@@ -153,7 +186,7 @@ export const Calendar = {
             const dateStr = date.toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
-                day: 'numeric'
+                day: 'numeric',
             });
 
             // Current time for initial render (will be updated by timer)
@@ -161,32 +194,44 @@ export const Calendar = {
             const timeStr = now.toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
-                hour12: true
+                hour12: true,
             });
 
-            html += `
-        <div class="calendar-header-cell day-view-header-new">
-          <div class="day-header-left">
-            <span class="day-header-date ${isToday ? 'today' : ''}">${dateStr}</span>
-          </div>
-          <div class="day-header-center">
-            <input type="text" class="day-header-goal" 
-                   placeholder="🎯 Set today's goal..." 
-                   data-day="${dayName}"
-                   value="${goal.replace(/"/g, '&quot;')}">
-          </div>
-          <div class="day-header-right">
-            <span class="day-header-clock" id="dayHeaderClock">${timeStr}</span>
-          </div>
-        </div>
-      `;
+            const headerCell = DOMUtils.createElement(
+                'div',
+                { className: 'calendar-header-cell day-view-header-new' },
+                [
+                    DOMUtils.createElement('div', { className: 'day-header-left' }, [
+                        DOMUtils.createElement('span', {
+                            className: `day-header-date ${isToday ? 'today' : ''}`,
+                            textContent: dateStr,
+                        }),
+                    ]),
+                    DOMUtils.createElement('div', { className: 'day-header-center' }, [
+                        DOMUtils.createElement('input', {
+                            type: 'text',
+                            className: 'day-header-goal',
+                            placeholder: "🎯 Set today's goal...",
+                            dataset: { day: dayName },
+                            value: goal,
+                        }),
+                    ]),
+                    DOMUtils.createElement('div', { className: 'day-header-right' }, [
+                        DOMUtils.createElement('span', {
+                            className: 'day-header-clock',
+                            id: 'dayHeaderClock',
+                            textContent: timeStr,
+                        }),
+                    ]),
+                ]
+            );
+            header.appendChild(headerCell);
             header.style.gridTemplateColumns = `var(--calendar-time-col, 60px) 1fr`;
 
             // Start clock update timer
             this.startDayClockTimer();
         }
 
-        header.innerHTML = html;
         document.getElementById('weekDisplay').textContent = this.formatWeekDisplay();
         this.setupGoalListeners();
         this.setupHeaderNavigation();
@@ -197,7 +242,7 @@ export const Calendar = {
      */
     setupHeaderNavigation() {
         const header = document.getElementById('calendarHeader');
-        header.querySelectorAll('.day-header-nav').forEach(cell => {
+        header.querySelectorAll('.day-header-nav').forEach((cell) => {
             cell.addEventListener('click', (e) => {
                 // Don't trigger if clicking the goal input
                 if (e.target.tagName === 'INPUT') return;
@@ -207,7 +252,7 @@ export const Calendar = {
                 this.setViewMode('day');
 
                 // Update UI buttons
-                document.querySelectorAll('.view-btn').forEach(btn => {
+                document.querySelectorAll('.view-btn').forEach((btn) => {
                     btn.classList.toggle('active', btn.dataset.view === 'day');
                 });
             });
@@ -220,7 +265,7 @@ export const Calendar = {
     setupGoalListeners() {
         // Select both week view and day view goal inputs
         const inputs = document.querySelectorAll('.calendar-day-goal, .day-header-goal');
-        inputs.forEach(input => {
+        inputs.forEach((input) => {
             input.addEventListener('change', (e) => {
                 const day = e.target.dataset.day;
                 const goal = e.target.value;
@@ -255,31 +300,48 @@ export const Calendar = {
      */
     renderGrid() {
         const grid = document.getElementById('calendarGrid');
+        DOMUtils.clear(grid);
+        this.columnCache = {}; // Reset cache on new grid render
         const slots = this.getTimeSlots();
 
-        let timeColumnHtml = '<div class="time-column">';
-        slots.forEach(slot => {
-            timeColumnHtml += `<div class="time-slot-label">${slot.label}</div>`;
+        // Render time column
+        const timeColumn = DOMUtils.createElement('div', { className: 'time-column' });
+        slots.forEach((slot) => {
+            timeColumn.appendChild(
+                DOMUtils.createElement('div', {
+                    className: 'time-slot-label',
+                    textContent: slot.label,
+                })
+            );
         });
-        timeColumnHtml += '</div>';
+        grid.appendChild(timeColumn);
 
-        let dayColumnsHtml = '';
-        const daysToRender = this.viewMode === 'week' ? this.days : [this.days[this.selectedDayIndex]];
+        // Render day columns
+        const daysToRender =
+            this.viewMode === 'week' ? this.days : [this.days[this.selectedDayIndex]];
         const weekDates = this.getWeekDates();
-        const today = new Date();
 
         daysToRender.forEach((day, index) => {
             const dayIndex = this.viewMode === 'week' ? index : this.selectedDayIndex;
             const isToday = weekDates[dayIndex] && this.isToday(weekDates[dayIndex]);
-            dayColumnsHtml += `<div class="day-column ${isToday ? 'today' : ''}" data-day="${day}">`;
-            slots.forEach(slot => {
-                const time = this.formatTime(slot.hour, slot.minute);
-                dayColumnsHtml += `<div class="calendar-cell" data-day="${day}" data-time="${time}"></div>`;
-            });
-            dayColumnsHtml += '</div>';
-        });
 
-        grid.innerHTML = timeColumnHtml + dayColumnsHtml;
+            const dayColumn = DOMUtils.createElement('div', {
+                className: `day-column ${isToday ? 'today' : ''}`,
+                dataset: { day },
+            });
+
+            slots.forEach((slot) => {
+                const time = this.formatTime(slot.hour, slot.minute);
+                dayColumn.appendChild(
+                    DOMUtils.createElement('div', {
+                        className: 'calendar-cell',
+                        dataset: { day, time },
+                    })
+                );
+            });
+            grid.appendChild(dayColumn);
+            this.columnCache[day] = dayColumn; // Cache the column element
+        });
 
         if (this.viewMode === 'week') {
             grid.style.gridTemplateColumns = `var(--calendar-time-col, 60px) repeat(7, 1fr)`;
@@ -300,21 +362,21 @@ export const Calendar = {
         const weekId = Store.getWeekIdentifier(this.currentWeekStart);
         let tasks = Store.getTasksForWeek(weekId);
 
-        document.querySelectorAll('.calendar-task').forEach(el => el.remove());
+        document.querySelectorAll('.calendar-task').forEach((el) => el.remove());
 
         // Apply filter if any filters are selected
         if (window.Filters) {
-            tasks = tasks.filter(task => {
+            tasks = tasks.filter((task) => {
                 if (window.Filters.selectedPaths.length === 0) return true;
                 if (!task.hierarchy || task.hierarchy.length === 0) return true;
-                return window.Filters.selectedPaths.some(filterPath => {
+                return window.Filters.selectedPaths.some((filterPath) => {
                     if (filterPath.length > task.hierarchy.length) return false;
                     return filterPath.every((item, index) => task.hierarchy[index] === item);
                 });
             });
         }
 
-        tasks.forEach(task => {
+        tasks.forEach((task) => {
             this.renderTask(task);
         });
     },
@@ -324,23 +386,26 @@ export const Calendar = {
      */
     renderTask(task) {
         if (!task.scheduledDay || !task.scheduledTime) return;
-
-        const column = document.querySelector(`.day-column[data-day="${task.scheduledDay}"]`);
+        const column = this.columnCache[task.scheduledDay];
         if (!column) return;
 
         const [hours, minutes] = task.scheduledTime.split(':').map(Number);
-        const slotIndex = (hours - this.startHour) * 2 + (minutes >= PlannerService.SLOT_DURATION ? 1 : 0);
+        const slotIndex =
+            (hours - this.startHour) * 2 + (minutes >= PlannerService.SLOT_DURATION ? 1 : 0);
         const slotsCount = task.duration / PlannerService.SLOT_DURATION;
 
         const cellHeight = PlannerService.CELL_HEIGHT;
         const top = slotIndex * cellHeight + 1;
         const height = slotsCount * cellHeight - 2;
 
-        const taskEl = document.createElement('div');
         const isCompact = task.duration <= PlannerService.SLOT_DURATION;
-        taskEl.className = `calendar-task ${task.completed ? 'completed' : ''} ${isCompact ? 'compact' : ''}`;
-        taskEl.style.top = `${top}px`;
-        taskEl.style.height = `${height}px`;
+        const taskEl = DOMUtils.createElement('div', {
+            className: `calendar-task ${task.completed ? 'completed' : ''} ${isCompact ? 'compact' : ''}`,
+            style: {
+                top: `${top}px`,
+                height: `${height}px`,
+            },
+        });
 
         const card = new TaskCard(task);
         const taskBlockEl = card.render({ isDayView: this.viewMode === 'day', isCompact });
@@ -348,8 +413,9 @@ export const Calendar = {
         taskEl.appendChild(taskBlockEl);
 
         // Add progress overlay (Always add for consistency, even if height 0)
-        const progressOverlay = document.createElement('div');
-        progressOverlay.className = 'task-progress-overlay';
+        const progressOverlay = DOMUtils.createElement('div', {
+            className: 'task-progress-overlay',
+        });
         taskEl.appendChild(progressOverlay);
 
         column.appendChild(taskEl);
@@ -384,13 +450,13 @@ export const Calendar = {
             if (taskState && !wasCompleted && !hasSteps) {
                 // No steps and about to complete - play animation
                 if (this.onPlayCompletionAnimation) this.onPlayCompletionAnimation(taskEl);
-                else if (window.App && window.App.playCompletionAnimation) window.App.playCompletionAnimation(taskEl);
+                else if (window.App && window.App.playCompletionAnimation)
+                    window.App.playCompletionAnimation(taskEl);
             }
 
             // Use advance progress method instead of simple toggle
             const result = Store.advanceTaskProgress(task.id);
             const updatedTask = result ? result.task : null;
-            const stepAdvanced = result ? result.stepAdvanced : false;
 
             // Trigger individual task celebration if it JUST became completed
             if (!wasCompleted && updatedTask && updatedTask.completed && window.Confetti) {
@@ -402,7 +468,8 @@ export const Calendar = {
                 // Play animation if we didn't play it before (because it had steps)
                 if (hasSteps) {
                     if (this.onPlayCompletionAnimation) this.onPlayCompletionAnimation(taskEl);
-                    else if (window.App && window.App.playCompletionAnimation) window.App.playCompletionAnimation(taskEl);
+                    else if (window.App && window.App.playCompletionAnimation)
+                        window.App.playCompletionAnimation(taskEl);
                 }
             }
 
@@ -429,7 +496,9 @@ export const Calendar = {
             deleteBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const confirmed = await ConfirmModal.show('Are you sure you want to delete this task?');
+                const confirmed = await ConfirmModal.show(
+                    'Are you sure you want to delete this task?'
+                );
                 if (confirmed) {
                     Store.deleteTask(task.id);
                     this.renderScheduledTasks();
@@ -494,7 +563,11 @@ export const Calendar = {
         const taskDate = weekDates[dayIndex];
         if (!taskDate) return 0;
         const now = new Date();
-        const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+        const taskDateOnly = new Date(
+            taskDate.getFullYear(),
+            taskDate.getMonth(),
+            taskDate.getDate()
+        );
         const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
         let timeProgress = 0;
@@ -517,10 +590,10 @@ export const Calendar = {
         // 2. Calculate mini-task progress if present
         let miniTaskProgress = 0;
         if (task.notes) {
-            const lines = task.notes.split('\n').filter(line => line.trim());
-            const miniTasks = lines.filter(line => line.includes('[ ]') || line.includes('[x]'));
+            const lines = task.notes.split('\n').filter((line) => line.trim());
+            const miniTasks = lines.filter((line) => line.includes('[ ]') || line.includes('[x]'));
             if (miniTasks.length > 0) {
-                const completedCount = miniTasks.filter(line => line.includes('[x]')).length;
+                const completedCount = miniTasks.filter((line) => line.includes('[x]')).length;
                 miniTaskProgress = completedCount / miniTasks.length;
             }
         }
@@ -538,7 +611,7 @@ export const Calendar = {
         this.updateTimeMarker();
 
         this.progressTimer = setInterval(() => {
-            document.querySelectorAll('.calendar-task').forEach(taskEl => {
+            document.querySelectorAll('.calendar-task').forEach((taskEl) => {
                 const taskBlock = taskEl.querySelector('.task-block');
                 if (!taskBlock) return;
                 const taskId = taskBlock.dataset.taskId;
@@ -571,7 +644,7 @@ export const Calendar = {
         let showToday = false;
 
         if (this.viewMode === 'week') {
-            showToday = weekDates.some(d => d.toDateString() === todayDateStr);
+            showToday = weekDates.some((d) => d.toDateString() === todayDateStr);
         } else {
             showToday = weekDates[this.selectedDayIndex].toDateString() === todayDateStr;
         }
@@ -582,9 +655,10 @@ export const Calendar = {
         }
 
         if (!marker) {
-            marker = document.createElement('div');
-            marker.id = 'currentTimeMarker';
-            marker.className = 'current-time-line';
+            marker = DOMUtils.createElement('div', {
+                id: 'currentTimeMarker',
+                className: 'current-time-line',
+            });
             grid.appendChild(marker);
         }
 
@@ -600,7 +674,7 @@ export const Calendar = {
         const timeStr = now.toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
         });
 
         marker.style.display = 'block';
@@ -613,9 +687,9 @@ export const Calendar = {
      */
     setupViewToggle() {
         const viewBtns = document.querySelectorAll('.view-btn');
-        viewBtns.forEach(btn => {
+        viewBtns.forEach((btn) => {
             btn.addEventListener('click', () => {
-                viewBtns.forEach(b => b.classList.remove('active'));
+                viewBtns.forEach((b) => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.setViewMode(btn.dataset.view);
             });
@@ -670,7 +744,7 @@ export const Calendar = {
             this.setCurrentWeek(new Date());
             if (this.viewMode === 'day') {
                 const weekDates = this.getWeekDates();
-                const todayIndex = weekDates.findIndex(d => this.isToday(d));
+                const todayIndex = weekDates.findIndex((d) => this.isToday(d));
                 this.selectedDayIndex = todayIndex !== -1 ? todayIndex : 0;
             }
             this.renderHeader();
@@ -687,18 +761,40 @@ export const Calendar = {
         if (!grid) return;
         if (this.gridClickHandler) {
             grid.removeEventListener('click', this.gridClickHandler);
+            grid.removeEventListener('keydown', this.gridKeyHandler);
         }
+
         this.gridClickHandler = (e) => {
             const cell = e.target.closest('.calendar-cell');
             if (!cell) return;
             if (e.target.closest('.calendar-task') || e.target.closest('.task-block')) return;
-            const day = cell.dataset.day;
-            const time = cell.dataset.time;
-            const maxDuration = this.getMaxDurationForSlot(day, time);
-            if (this.onOpenModalWithSchedule) this.onOpenModalWithSchedule(day, time, maxDuration);
-            else if (window.App && window.App.openModalWithSchedule) window.App.openModalWithSchedule(day, time, maxDuration);
+            this.handleCellInteraction(cell);
         };
+
+        this.gridKeyHandler = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const cell = e.target.closest('.calendar-cell');
+                if (cell && !e.target.closest('.calendar-task')) {
+                    e.preventDefault();
+                    this.handleCellInteraction(cell);
+                }
+            }
+        };
+
         grid.addEventListener('click', this.gridClickHandler);
+        grid.addEventListener('keydown', this.gridKeyHandler);
+    },
+
+    /**
+     * Handle interaction with a grid cell (click or keyboard)
+     */
+    handleCellInteraction(cell) {
+        const day = cell.dataset.day;
+        const time = cell.dataset.time;
+        const maxDuration = this.getMaxDurationForSlot(day, time);
+        if (this.onOpenModalWithSchedule) this.onOpenModalWithSchedule(day, time, maxDuration);
+        else if (window.App && window.App.openModalWithSchedule)
+            window.App.openModalWithSchedule(day, time, maxDuration);
     },
 
     /**
@@ -711,7 +807,7 @@ export const Calendar = {
         if (startTotalMins >= endOfDayMins) return 0;
         const dayTasks = Store.getTasksForDay(day);
         let nextTaskStart = endOfDayMins;
-        dayTasks.forEach(task => {
+        dayTasks.forEach((task) => {
             if (!task.scheduledTime) return;
             const [taskHour, taskMin] = task.scheduledTime.split(':').map(Number);
             const taskStart = taskHour * 60 + taskMin;
@@ -752,7 +848,7 @@ export const Calendar = {
                 const timeStr = now.toLocaleTimeString('en-US', {
                     hour: 'numeric',
                     minute: '2-digit',
-                    hour12: true
+                    hour12: true,
                 });
                 clockEl.textContent = timeStr;
             } else {
@@ -768,13 +864,20 @@ export const Calendar = {
      */
     checkDailyCelebration(day) {
         const weekId = Store.getWeekIdentifier(this.currentWeekStart);
-        const dayTasks = Store.getTasksForWeek(weekId).filter(t => t.scheduledDay === day);
+        const dayTasks = Store.getTasksForWeek(weekId).filter((t) => t.scheduledDay === day);
 
-        console.log('Checking celebration for', day, '- Tasks:', dayTasks.length, 'Completed:', dayTasks.filter(t => t.completed).length);
+        console.log(
+            'Checking celebration for',
+            day,
+            '- Tasks:',
+            dayTasks.length,
+            'Completed:',
+            dayTasks.filter((t) => t.completed).length
+        );
 
         if (dayTasks.length === 0) return;
 
-        const allComplete = dayTasks.every(t => t.completed);
+        const allComplete = dayTasks.every((t) => t.completed);
 
         console.log('All complete?', allComplete);
 
@@ -785,5 +888,5 @@ export const Calendar = {
                 window.Confetti.celebrate();
             }, 600);
         }
-    }
+    },
 };

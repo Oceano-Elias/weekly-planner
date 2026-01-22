@@ -19,7 +19,7 @@ export const Filters = {
         // Default to all selected
         const topLevel = Departments.getTopLevel();
         this.selectedDepts = [...topLevel];
-        this.selectedPaths = this.selectedDepts.map(d => [d]);
+        this.selectedPaths = this.selectedDepts.map((d) => [d]);
 
         this.render();
 
@@ -50,7 +50,7 @@ export const Filters = {
       <div class="filter-cards">
     `;
 
-        topLevel.forEach(deptName => {
+        topLevel.forEach((deptName) => {
             const color = Departments.getColor([deptName]);
             const isSelected = this.selectedDepts.includes(deptName);
             const taskCount = this.getTaskCount(deptName);
@@ -83,7 +83,7 @@ export const Filters = {
      */
     getTaskCount(deptName) {
         const allTasks = Store ? Store.getAllTasks() : [];
-        return allTasks.filter(t => t.hierarchy && t.hierarchy[0] === deptName).length;
+        return allTasks.filter((t) => t.hierarchy && t.hierarchy[0] === deptName).length;
     },
 
     /**
@@ -93,12 +93,12 @@ export const Filters = {
         const filters = this;
 
         // Card click handlers
-        document.querySelectorAll('.filter-card').forEach(card => {
+        document.querySelectorAll('.filter-card').forEach((card) => {
             card.addEventListener('click', () => {
                 const dept = card.dataset.dept;
 
                 if (filters.selectedDepts.includes(dept)) {
-                    filters.selectedDepts = filters.selectedDepts.filter(d => d !== dept);
+                    filters.selectedDepts = filters.selectedDepts.filter((d) => d !== dept);
                     card.classList.remove('selected');
                 } else {
                     filters.selectedDepts.push(dept);
@@ -106,7 +106,7 @@ export const Filters = {
                 }
 
                 // Convert to path format for Calendar filtering
-                filters.selectedPaths = filters.selectedDepts.map(d => [d]);
+                filters.selectedPaths = filters.selectedDepts.map((d) => [d]);
 
                 if (filters.onFilterChange) filters.onFilterChange();
             });
@@ -135,7 +135,7 @@ export const Filters = {
     selectAll() {
         const topLevel = Departments.getTopLevel();
         this.selectedDepts = [...topLevel];
-        this.selectedPaths = this.selectedDepts.map(d => [d]);
+        this.selectedPaths = this.selectedDepts.map((d) => [d]);
         this.render();
         if (this.onFilterChange) this.onFilterChange();
     },
@@ -156,5 +156,4 @@ export const Filters = {
     refresh() {
         this.render();
     },
-
 };

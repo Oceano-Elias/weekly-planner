@@ -22,7 +22,7 @@ describe('Store', () => {
         const taskData = {
             title: 'Test Task',
             duration: 60,
-            dept1: 'WORK'
+            dept1: 'WORK',
         };
 
         Store.addTask(taskData);

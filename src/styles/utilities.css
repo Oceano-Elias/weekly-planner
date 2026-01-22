@@ -6,9 +6,11 @@
     position: relative;
     backdrop-filter: blur(12px) saturate(180%);
     -webkit-backdrop-filter: blur(12px) saturate(180%);
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.08) 0%,
-            rgba(255, 255, 255, 0.02) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
     border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-md, 12px);
     transition: all var(--transition-spring, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
@@ -24,9 +26,7 @@
 .glass-surface-deep {
     backdrop-filter: blur(50px) saturate(150%);
     -webkit-backdrop-filter: blur(50px) saturate(150%);
-    background: linear-gradient(145deg,
-            rgba(15, 23, 42, 0.95) 0%,
-            rgba(10, 15, 30, 0.98) 100%);
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 30, 0.98) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -71,8 +71,8 @@
 }
 
 .drop-target {
-    background: rgba(16, 185, 129, 0.15) !important;
-    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.3);
+    background: color-mix(in srgb, var(--accent-success) 20%, transparent) !important;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-success) 35%, transparent);
 }
 
 .drop-invalid {
@@ -132,7 +132,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(16, 185, 129, 0.3);
+    background: color-mix(in srgb, var(--accent-success) 28%, transparent);
     z-index: 100;
     animation: fadeInOut 0.6s ease forwards;
 }
@@ -141,7 +141,7 @@
     width: 48px;
     height: 48px;
     color: white;
-    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8));
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent-success) 85%, transparent));
     animation: checkmarkPop 0.4s ease forwards;
 }
 
@@ -186,10 +186,12 @@
    ========================================= */
 
 .skeleton {
-    background: linear-gradient(90deg,
-            var(--bg-tertiary) 0%,
-            var(--bg-elevated) 50%,
-            var(--bg-tertiary) 100%);
+    background: linear-gradient(
+        90deg,
+        var(--bg-tertiary) 0%,
+        var(--bg-elevated) 50%,
+        var(--bg-tertiary) 100%
+    );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: var(--radius-md);
@@ -243,7 +245,10 @@
     background: rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s, opacity 0.6s;
+    transition:
+        width 0.6s,
+        height 0.6s,
+        opacity 0.6s;
     opacity: 0;
 }
 
@@ -255,7 +260,9 @@
 
 /* Subtle hover lift for cards */
 .hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .hover-lift:hover {
@@ -269,7 +276,6 @@
 }
 
 @keyframes pulse {
-
     0%,
     100% {
         opacity: 1;

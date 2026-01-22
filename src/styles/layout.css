@@ -210,7 +210,7 @@ header {
     border: none;
     cursor: pointer;
     text-align: center;
-    border-bottom: 2px solid transparent;
+    position: relative;
 }
 
 .sidebar-tab:hover {
@@ -219,9 +219,14 @@ header {
 }
 
 .sidebar-tab.active {
-    color: var(--accent-primary);
-    border-bottom-color: var(--accent-primary);
-    background-color: rgba(99, 102, 241, 0.08);
+    color: white;
+    /* Active Pill Style */
+    background-color: var(--accent-primary);
+    border-radius: var(--radius-full);
+    margin: 4px;
+    padding: 6px 10px;
+    flex: 1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 /* Sidebar Search */
@@ -248,8 +253,8 @@ header {
 .search-input {
     width: 100%;
     padding: 10px 14px 10px 36px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-tertiary); /* Higher contrast input bg */
+    border: 1px solid var(--border-secondary);
     border-radius: var(--radius-full);
     color: var(--text-primary);
     font-size: var(--font-size-sm);
@@ -259,8 +264,8 @@ header {
 .search-input:focus {
     outline: none;
     border-color: var(--accent-primary);
-    background: rgba(255, 255, 255, 0.06);
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+    background: var(--bg-elevated);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
 /* Search Clear Button */
@@ -386,7 +391,6 @@ header {
 }
 
 @keyframes floatBob {
-
     0%,
     100% {
         transform: translateY(0);
@@ -402,7 +406,6 @@ header {
 }
 
 @keyframes sparklePulse {
-
     0%,
     100% {
         opacity: 0.8;
@@ -609,23 +612,25 @@ header {
 .day-header-goal:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2),
+    box-shadow:
+        0 0 0 3px rgba(59, 130, 246, 0.2),
         0 0 20px rgba(59, 130, 246, 0.4),
         0 0 40px rgba(59, 130, 246, 0.2);
     animation: goal-focus-pulse 2s ease-in-out infinite;
 }
 
 @keyframes goal-focus-pulse {
-
     0%,
     100% {
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2),
+        box-shadow:
+            0 0 0 3px rgba(59, 130, 246, 0.2),
             0 0 20px rgba(59, 130, 246, 0.4),
             0 0 40px rgba(59, 130, 246, 0.2);
     }
 
     50% {
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3),
+        box-shadow:
+            0 0 0 4px rgba(59, 130, 246, 0.3),
             0 0 30px rgba(59, 130, 246, 0.5),
             0 0 50px rgba(59, 130, 246, 0.3);
     }
@@ -692,8 +697,8 @@ header {
     left: 1px;
     right: 1px;
     border-radius: var(--radius-sm);
-    background: rgba(16, 185, 129, 0.12);
-    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.35);
+    background: color-mix(in srgb, var(--accent-success) 18%, transparent);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-success) 40%, transparent);
     pointer-events: none;
     z-index: 50;
     will-change: top, height;
@@ -742,7 +747,6 @@ header {
 }
 
 @keyframes laser-pulse {
-
     0%,
     100% {
         transform: scale(1);
@@ -775,7 +779,6 @@ header {
 }
 
 @keyframes pulse {
-
     0%,
     100% {
         transform: scale(1);
@@ -788,48 +791,40 @@ header {
     }
 }
 
-/* Planner Grid (legacy support) */
-.planner-container {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: var(--space-md);
-    display: flex;
-    flex-direction: column;
-}
+/* Responsive Layout */
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+    }
 
-.planner-grid {
-    display: grid;
-    grid-template-columns: 60px repeat(7, 1fr);
-    flex: 1;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    overflow: hidden;
-    min-height: 0;
-}
+    .sidebar {
+        width: 100%;
+        height: auto;
+        margin: 0 0 12px 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
 
-/* Time Column */
-.time-column {
-    display: flex;
-    flex-direction: column;
-    background-color: var(--bg-secondary);
-    border-right: 1px solid var(--border-primary);
-}
+    .sidebar.collapsed {
+        width: 100%;
+        height: 50px;
+    }
 
-.time-header-spacer {
-    height: 50px;
-    border-bottom: 1px solid var(--border-primary);
-    background-color: var(--bg-tertiary);
-}
+    .calendar-container {
+        margin: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
 
-.time-slot-label {
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-tertiary);
+    .calendar-header-cell {
+        padding: 4px;
+    }
+
+    .calendar-day-name {
+        font-size: 10px;
+    }
 }
 
 /* Day Columns */
@@ -846,41 +841,60 @@ header {
     border-right: none;
 }
 
-.day-header {
-    height: 50px;
-    padding: var(--space-xs);
-    background-color: var(--bg-tertiary);
-    border-bottom: 1px solid var(--border-primary);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+.day-column.today {
+    background-color: rgba(59, 130, 246, 0.03);
 }
 
-.day-name {
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-}
-
-.day-date {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.day-header.today {
-    background-color: rgba(59, 130, 246, 0.1);
-}
-
-.day-header.today .day-date {
-    color: var(--accent-primary);
-}
-
+/* Button Consistency */
 .btn {
     white-space: nowrap;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Glass Surface Hover Consistency */
+.glass-surface {
+    transition:
+        background-color var(--transition-normal),
+        border-color var(--transition-normal);
+}
+
+.glass-surface:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Shake Animation for Errors */
+@keyframes shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-4px);
+    }
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(4px);
+    }
+}
+
+.shake-animation {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }

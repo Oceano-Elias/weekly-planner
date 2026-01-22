@@ -1,14 +1,12 @@
 /**
- * Drag and Drop - Handles all drag & drop functionality
+ * DragDropService - Handles all drag & drop functionality
  */
 
 import { Store } from '../store.js';
-import { PlannerService } from '../services/PlannerService.js';
-import { Calendar } from './Calendar.js';
-import { TaskQueue } from './TaskQueue.js';
-import { Analytics } from './Analytics.js';
+import { PlannerService } from './PlannerService.js';
+import { DOMUtils } from '../utils/DOMUtils.js';
 
-export const DragDrop = {
+export const DragDropService = {
     draggedTask: null,
     draggedElement: null,
     dayTasksCache: {},
@@ -29,8 +27,12 @@ export const DragDrop = {
             return this.getCellFromHitTestCache(e.clientX, e.clientY);
         }
 
-        const fromPoint = typeof document !== 'undefined' ? document.elementFromPoint(e.clientX, e.clientY) : null;
-        if (fromPoint?.closest?.('.time-column') || e.target?.closest?.('.time-column')) return null;
+        const fromPoint =
+            typeof document !== 'undefined'
+                ? document.elementFromPoint(e.clientX, e.clientY)
+                : null;
+        if (fromPoint?.closest?.('.time-column') || e.target?.closest?.('.time-column'))
+            return null;
 
         const column = fromPoint?.closest?.('.day-column') || e.target?.closest?.('.day-column');
         if (!column) return null;
@@ -47,9 +49,10 @@ export const DragDrop = {
 
     ensureDropIndicator() {
         if (this.dropIndicatorEl) return this.dropIndicatorEl;
-        const el = document.createElement('div');
-        el.className = 'drop-indicator';
-        el.style.display = 'none';
+        const el = DOMUtils.createElement('div', {
+            className: 'drop-indicator',
+            style: { display: 'none' },
+        });
         this.dropIndicatorEl = el;
         return el;
     },
@@ -91,7 +94,8 @@ export const DragDrop = {
         if (this.hitTestCache) return;
 
         const grid = document.getElementById('calendarGrid');
-        const timeColumn = grid?.querySelector?.('.time-column') || document.querySelector('.time-column');
+        const timeColumn =
+            grid?.querySelector?.('.time-column') || document.querySelector('.time-column');
         const timeColumnRect = timeColumn?.getBoundingClientRect?.();
 
         const columns = [];
@@ -115,7 +119,7 @@ export const DragDrop = {
                 firstCellTop: firstCellRect.top,
                 cellHeight,
                 cellCount,
-                cells
+                cells,
             };
             columns.push(entry);
             columnsByEl.set(column, entry);
@@ -147,7 +151,7 @@ export const DragDrop = {
             columns,
             columnsByEl,
             timeColumnRight: timeColumnRect ? timeColumnRect.right : 0,
-            onScroll
+            onScroll,
         };
     },
 
@@ -210,7 +214,9 @@ export const DragDrop = {
         if (desiredIndex === null) return null;
 
         const weekGrid = document.getElementById('calendarGrid');
-        const column = weekGrid?.querySelector?.(`.day-column[data-day="${day}"]`) || document.querySelector(`.day-column[data-day="${day}"]`);
+        const column =
+            weekGrid?.querySelector?.(`.day-column[data-day="${day}"]`) ||
+            document.querySelector(`.day-column[data-day="${day}"]`);
         const cellCount = column?.querySelectorAll?.('.calendar-cell')?.length ?? 0;
         if (!cellCount) return null;
 
@@ -267,164 +273,174 @@ export const DragDrop = {
         let pointerLatestX = 0;
         let pointerLatestY = 0;
 
-        document.addEventListener('pointerdown', (e) => {
-            if (e.button !== 0) return;
-            const taskBlock = e.target?.closest?.('.task-block');
-            if (!taskBlock) return;
-            const inCalendar = !!taskBlock.closest('.calendar-task');
-            const inQueue = !!taskBlock.closest('#taskQueue');
-            if (!inCalendar && !inQueue) return;
-            if (e.target?.closest?.('.task-delete')) return;
-            if (e.target?.closest?.('input, textarea, select, button')) return;
-            if (e.detail && e.detail > 1) return;
+        document.addEventListener(
+            'pointerdown',
+            (e) => {
+                if (e.button !== 0) return;
+                const taskBlock = e.target?.closest?.('.task-block');
+                if (!taskBlock) return;
+                const inCalendar = !!taskBlock.closest('.calendar-task');
+                const inQueue = !!taskBlock.closest('#taskQueue');
+                if (!inCalendar && !inQueue) return;
+                if (e.target?.closest?.('.task-delete')) return;
+                if (e.target?.closest?.('input, textarea, select, button')) return;
+                if (e.detail && e.detail > 1) return;
 
-            const taskId = taskBlock.dataset.taskId;
-            const task = Store.getTask(taskId);
-            if (!task) return;
+                const taskId = taskBlock.dataset.taskId;
+                const task = Store.getTask(taskId);
+                if (!task) return;
 
-            const rect = taskBlock.getBoundingClientRect();
-            pointerGhostOffsetX = e.clientX - rect.left;
-            pointerGhostOffsetY = e.clientY - rect.top;
+                const rect = taskBlock.getBoundingClientRect();
+                pointerGhostOffsetX = e.clientX - rect.left;
+                pointerGhostOffsetY = e.clientY - rect.top;
 
-            // We skip immediate setPointerCapture here to allow the browser
-            // to detect standard 'dblclick' sequences.
+                pointerCandidate = { taskId, taskBlock };
+                pointerStartX = e.clientX;
+                pointerStartY = e.clientY;
+                pointerId = e.pointerId;
+                pointerDragging = false;
+                pointerContextMenuBlocked = false;
+            },
+            { capture: true }
+        );
 
-            pointerCandidate = { taskId, taskBlock };
-            pointerStartX = e.clientX;
-            pointerStartY = e.clientY;
-            pointerId = e.pointerId;
-            pointerDragging = false;
-            pointerContextMenuBlocked = false;
-        }, { capture: true });
+        document.addEventListener(
+            'pointermove',
+            (e) => {
+                if (!pointerCandidate) return;
+                if (pointerId !== e.pointerId) return;
 
-        document.addEventListener('pointermove', (e) => {
-            if (!pointerCandidate) return;
-            if (pointerId !== e.pointerId) return;
+                const dx = e.clientX - pointerStartX;
+                const dy = e.clientY - pointerStartY;
+                const movedEnough = dx * dx + dy * dy >= 144;
 
-            const dx = e.clientX - pointerStartX;
-            const dy = e.clientY - pointerStartY;
-            const movedEnough = (dx * dx + dy * dy) >= 144;
+                if (!pointerDragging) {
+                    if (!movedEnough) return;
 
-            if (!pointerDragging) {
-                if (!movedEnough) return;
+                    // Capture pointer only when drag threshold is met
+                    try {
+                        pointerCandidate.taskBlock.setPointerCapture(pointerId);
+                    } catch (err) {
+                        // Ignore pointer capture errors
+                    }
 
-                // Capture pointer only when drag threshold is met
-                try {
-                    pointerCandidate.taskBlock.setPointerCapture(pointerId);
-                } catch (err) { }
+                    pointerDragging = true;
+                    this.isDraggingTask = true;
+                    document.body.classList.add('dnd-active');
+                    this.dayTasksCache = {};
+                    this.lastHoverCell = null;
+                    this.lastHoverQueue = null;
+                    this.prepareHitTestCache();
+                    this.ensureDropIndicator();
 
-                pointerDragging = true;
-                this.isDraggingTask = true;
-                document.body.classList.add('dnd-active');
-                this.dayTasksCache = {};
-                this.lastHoverCell = null;
-                this.lastHoverQueue = null;
-                this.prepareHitTestCache();
-                this.ensureDropIndicator();
+                    const task = Store.getTask(pointerCandidate.taskId);
+                    this.draggedTask = task;
+                    this.draggedElement = pointerCandidate.taskBlock;
+                    this.draggedElement.classList.add('dragging');
 
-                const task = Store.getTask(pointerCandidate.taskId);
-                this.draggedTask = task;
-                this.draggedElement = pointerCandidate.taskBlock;
-                this.draggedElement.classList.add('dragging');
+                    const ghost = pointerCandidate.taskBlock.cloneNode(true);
+                    ghost.classList.add('drag-ghost');
 
-                const ghost = pointerCandidate.taskBlock.cloneNode(true);
-                ghost.classList.add('drag-ghost');
-                ghost.style.zIndex = '9999';
+                    // Use DOMUtils to set styles if possible, but for individual properties it's fine
+                    Object.assign(ghost.style, {
+                        zIndex: '9999',
+                        top: '0',
+                        left: '0',
+                        margin: '0',
+                        opacity: '0.9',
+                        pointerEvents: 'none',
+                    });
 
-                // CRITICAL style sanitation: Strip any inherited off-screen positioning
-                // which might have been set by native dragstart or previous states.
-                ghost.style.top = '0';
-                ghost.style.left = '0';
-                ghost.style.margin = '0';
-                ghost.style.opacity = '0.9';
+                    // Hide original to prevent hit-test interference
+                    this.draggedElement.style.opacity = '0';
+                    this.draggedElement.style.pointerEvents = 'none';
 
-                // Hide original to prevent hit-test interference
-                // CRITICAL: Hide AFTER cloning, or ghost will inherit opacity 0
-                this.draggedElement.style.opacity = '0';
-                this.draggedElement.style.pointerEvents = 'none';
+                    const rect = pointerCandidate.taskBlock.getBoundingClientRect();
 
-                const rect = pointerCandidate.taskBlock.getBoundingClientRect();
-                const maxWidth = 250;
-                const maxHeight = 80;
-                
-                // Keep the exact width/height of the original card for the ghost 
-                // to avoid the cursor "jumping" due to size changes
-                const actualWidth = rect.width;
-                const actualHeight = rect.height;
+                    // Keep the exact width/height of the original card for the ghost
+                    const actualWidth = rect.width;
+                    const actualHeight = rect.height;
 
-                ghost.style.width = actualWidth + 'px';
-                ghost.style.height = actualHeight + 'px';
-                ghost.style.maxHeight = actualHeight + 'px';
-                ghost.style.minHeight = actualHeight + 'px';
-                ghost.style.maxWidth = actualWidth + 'px';
+                    Object.assign(ghost.style, {
+                        width: `${actualWidth}px`,
+                        height: `${actualHeight}px`,
+                        maxHeight: `${actualHeight}px`,
+                        minHeight: `${actualHeight}px`,
+                        maxWidth: `${actualWidth}px`,
+                    });
 
-                // Set initial position using the precise offsets calculated in pointerdown
-                const initialX = e.clientX - pointerGhostOffsetX;
-                const initialY = e.clientY - pointerGhostOffsetY;
-                ghost.style.transform = `translate3d(${initialX}px, ${initialY}px, 0)`;
-                ghost.style.left = '0';
-                ghost.style.top = '0';
-                ghost.style.pointerEvents = 'none'; // Ensure ghost doesn't block hit testing
+                    // Set initial position using the precise offsets calculated in pointerdown
+                    const initialX = e.clientX - pointerGhostOffsetX;
+                    const initialY = e.clientY - pointerGhostOffsetY;
+                    ghost.style.transform = `translate3d(${initialX}px, ${initialY}px, 0)`;
 
-                document.body.appendChild(ghost);
-                pointerGhost = ghost;
+                    document.body.appendChild(ghost);
+                    pointerGhost = ghost;
 
-                if (!pointerContextMenuBlocked) {
-                    pointerContextMenuBlocked = true;
-                    document.addEventListener('contextmenu', (evt) => evt.preventDefault(), { once: true, capture: true });
-                }
-            }
-
-            if (pointerDragging) e.preventDefault();
-
-            const fromPoint = document.elementFromPoint(e.clientX, e.clientY);
-            const queue = fromPoint?.closest?.('#taskQueue') || fromPoint?.closest?.('#queuePanel') || fromPoint?.closest?.('.sidebar');
-            const cell = this.getCellFromPointerEvent(e);
-
-            if (pointerGhost) {
-                if (window.getSelection) {
-                    const selection = window.getSelection();
-                    if (selection.removeAllRanges) {
-                        selection.removeAllRanges();
-                    } else if (selection.empty) {
-                        selection.empty();
+                    if (!pointerContextMenuBlocked) {
+                        pointerContextMenuBlocked = true;
+                        document.addEventListener('contextmenu', (evt) => evt.preventDefault(), {
+                            once: true,
+                            capture: true,
+                        });
                     }
                 }
 
-                pointerLatestX = e.clientX;
-                pointerLatestY = e.clientY;
-                if (!pointerMoveRaf) {
-                    pointerMoveRaf = requestAnimationFrame(() => {
-                        pointerMoveRaf = 0;
-                        if (!pointerGhost) return;
-                        const x = pointerLatestX - pointerGhostOffsetX;
-                        const y = pointerLatestY - pointerGhostOffsetY;
-                        pointerGhost.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-                    });
-                }
-            }
+                if (pointerDragging) e.preventDefault();
 
-            if (cell) {
-                this.lastHoverCell = cell;
-                this.lastHoverQueue = null; // Clear stale queue state
-                this.highlightDropZone(cell);
-                const queueEl = document.getElementById('taskQueue');
-                if (queueEl) queueEl.classList.remove('drag-over');
-            }
-            if (queue) {
-                this.lastHoverQueue = queue;
-                this.lastHoverCell = null; // Clear stale cell state
-                this.hideDropIndicator();
-                const queueEl = document.getElementById('taskQueue');
-                if (queueEl) queueEl.classList.add('drag-over');
-            }
-            if (!cell && !queue) {
-                if (this.lastHoverCell) this.highlightDropZone(this.lastHoverCell);
-                else this.hideDropIndicator();
-                const queueEl = document.getElementById('taskQueue');
-                if (queueEl) queueEl.classList.remove('drag-over');
-            }
-        }, { capture: true });
+                const fromPoint = document.elementFromPoint(e.clientX, e.clientY);
+                const queue =
+                    fromPoint?.closest?.('#taskQueue') ||
+                    fromPoint?.closest?.('#queuePanel') ||
+                    fromPoint?.closest?.('.sidebar');
+                const cell = this.getCellFromPointerEvent(e);
+
+                if (pointerGhost) {
+                    if (window.getSelection) {
+                        const selection = window.getSelection();
+                        if (selection.removeAllRanges) {
+                            selection.removeAllRanges();
+                        } else if (selection.empty) {
+                            selection.empty();
+                        }
+                    }
+
+                    pointerLatestX = e.clientX;
+                    pointerLatestY = e.clientY;
+                    if (!pointerMoveRaf) {
+                        pointerMoveRaf = requestAnimationFrame(() => {
+                            pointerMoveRaf = 0;
+                            if (!pointerGhost) return;
+                            const x = pointerLatestX - pointerGhostOffsetX;
+                            const y = pointerLatestY - pointerGhostOffsetY;
+                            pointerGhost.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+                        });
+                    }
+                }
+
+                if (cell) {
+                    this.lastHoverCell = cell;
+                    this.lastHoverQueue = null; // Clear stale queue state
+                    this.highlightDropZone(cell);
+                    const queueEl = document.getElementById('taskQueue');
+                    if (queueEl) queueEl.classList.remove('drag-over');
+                }
+                if (queue) {
+                    this.lastHoverQueue = queue;
+                    this.lastHoverCell = null; // Clear stale cell state
+                    this.hideDropIndicator();
+                    const queueEl = document.getElementById('taskQueue');
+                    if (queueEl) queueEl.classList.add('drag-over');
+                }
+                if (!cell && !queue) {
+                    if (this.lastHoverCell) this.highlightDropZone(this.lastHoverCell);
+                    else this.hideDropIndicator();
+                    const queueEl = document.getElementById('taskQueue');
+                    if (queueEl) queueEl.classList.remove('drag-over');
+                }
+            },
+            { capture: true }
+        );
 
         const finishPointerDrag = (e) => {
             if (!pointerCandidate) return;
@@ -458,7 +474,10 @@ export const DragDrop = {
 
                 // Prioritize CURRENT targets over stale last-hover states
                 let cell = this.getCellFromPointerEvent(e);
-                let queue = fromPoint?.closest?.('#taskQueue') || fromPoint?.closest?.('#queuePanel') || fromPoint?.closest?.('.sidebar');
+                let queue =
+                    fromPoint?.closest?.('#taskQueue') ||
+                    fromPoint?.closest?.('#queuePanel') ||
+                    fromPoint?.closest?.('.sidebar');
 
                 if (!cell && !queue) {
                     // Only use last-hover if we are truly in a "dead zone" (no active target)
@@ -474,17 +493,22 @@ export const DragDrop = {
 
                 finishVisuals();
 
+                let updated = false;
                 if (queue) {
                     Store.unscheduleTask(taskId, true);
+                    updated = true;
                 } else if (day && time) {
                     this.dayTasksCache = {};
                     const bestTime = this.findNearestAvailableStart(day, time, duration, taskId);
-                    if (bestTime) Store.rescheduleTaskInWeek(taskId, day, bestTime);
+                    if (bestTime) {
+                        Store.rescheduleTaskInWeek(taskId, day, bestTime);
+                        updated = true;
+                    }
                 }
 
-                if (Calendar && typeof Calendar.refresh === 'function') Calendar.refresh();
-                if (TaskQueue && typeof TaskQueue.refresh === 'function') TaskQueue.refresh();
-                if (Analytics && typeof Analytics.render === 'function') Analytics.render();
+                if (updated) {
+                    window.dispatchEvent(new CustomEvent('drag-drop:finish'));
+                }
             } else {
                 finishVisuals();
             }
@@ -532,13 +556,15 @@ export const DragDrop = {
         }
 
         const cache = this.hitTestCache?.columnsByEl?.get(column);
-        const cellCount = cache?.cellCount ?? column?.querySelectorAll?.('.calendar-cell')?.length ?? 0;
+        const cellCount =
+            cache?.cellCount ?? column?.querySelectorAll?.('.calendar-cell')?.length ?? 0;
 
         const slotsNeeded = Math.ceil(this.draggedTask.duration / PlannerService.SLOT_DURATION);
         const slotsToShow = Math.max(0, Math.min(slotsNeeded, cellCount - slotIndex));
         const fits = slotIndex + slotsNeeded <= cellCount;
 
-        const isAvailable = fits && this.isSlotAvailable(day, time, this.draggedTask.duration, this.draggedTask.id);
+        const isAvailable =
+            fits && this.isSlotAvailable(day, time, this.draggedTask.duration, this.draggedTask.id);
         this.showDropIndicator(column, slotIndex, slotsToShow, isAvailable);
-    }
+    },
 };

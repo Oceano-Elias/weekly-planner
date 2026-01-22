@@ -23,7 +23,7 @@ if (styleMatch) {
 // We already inlined it in main.js, so browsers should see it once JS runs.
 // But for "unstyled" initial load, let's keep it simple.
 
-// 4. Clean up any remaining absolute paths or service worker references 
+// 4. Clean up any remaining absolute paths or service worker references
 // that might fail on file://
 html = html.replace(/href="\/manifest\.json"/g, 'href="manifest.json"');
 html = html.replace(/href="\/icon\.png"/g, 'href="icon.png"');

@@ -14,7 +14,7 @@ export const Confetti = {
     colors: [
         '#6366f1', // Indigo
         '#8b5cf6', // Purple
-        '#10b981', // Green
+        '#c084fc', // Lavender
         '#f59e0b', // Amber
         '#ef4444', // Red
         '#06b6d4', // Cyan
@@ -80,7 +80,7 @@ export const Confetti = {
             gravity: 0.4,
             friction: 0.98,
             opacity: 1,
-            decay: 0.01 + Math.random() * 0.01 // Fade slightly faster but with more particles
+            decay: 0.01 + Math.random() * 0.01, // Fade slightly faster but with more particles
         };
     },
 
@@ -156,7 +156,7 @@ export const Confetti = {
             pop.stop(audioContext.currentTime + 0.1);
 
             // Layer 2: Shimmering Arpeggio
-            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; // C5 to G6
+            const notes = [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98]; // C5 to G6
             notes.forEach((freq, i) => {
                 const osc = audioContext.createOscillator();
                 const node = audioContext.createGain();
@@ -168,7 +168,7 @@ export const Confetti = {
                 osc.connect(node);
                 node.connect(masterGain);
 
-                const startTime = audioContext.currentTime + (i * 0.08) + 0.05;
+                const startTime = audioContext.currentTime + i * 0.08 + 0.05;
                 const duration = 0.4;
 
                 node.gain.setValueAtTime(0, startTime);
@@ -182,21 +182,24 @@ export const Confetti = {
             // Layer 3: Natural Crowd Cheer
             // Loading the higher-quality natural sound effect we downloaded
             fetch('./src/assets/sounds/celebration.mp3')
-                .then(response => response.arrayBuffer())
-                .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-                .then(audioBuffer => {
+                .then((response) => response.arrayBuffer())
+                .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
+                .then((audioBuffer) => {
                     const source = audioContext.createBufferSource();
                     source.buffer = audioBuffer;
 
                     const cheerGain = audioContext.createGain();
                     cheerGain.gain.setValueAtTime(0.4, audioContext.currentTime);
-                    cheerGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + audioBuffer.duration);
+                    cheerGain.gain.exponentialRampToValueAtTime(
+                        0.001,
+                        audioContext.currentTime + audioBuffer.duration
+                    );
 
                     source.connect(cheerGain);
                     cheerGain.connect(masterGain);
                     source.start(audioContext.currentTime);
                 })
-                .catch(err => console.warn('Could not play celebration MP3:', err));
+                .catch((err) => console.warn('Could not play celebration MP3:', err));
 
             // Layer 4: High Sparkle harmonics
             const sparkle = audioContext.createOscillator();
@@ -213,7 +216,6 @@ export const Confetti = {
 
             sparkle.start(sparkleStart);
             sparkle.stop(sparkleStart + 0.4);
-
         } catch (e) {
             // Silently ignore if audio fails
         }
@@ -282,7 +284,7 @@ export const Confetti = {
         if (this.ctx && this.canvas) {
             this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         }
-    }
+    },
 };
 
 // Make globally available and add debug helper

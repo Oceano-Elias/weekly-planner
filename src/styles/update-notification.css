@@ -15,7 +15,9 @@
     gap: 16px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transform: translateY(0);
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition:
+        transform 0.3s ease,
+        opacity 0.3s ease;
 }
 
 .update-notification.hidden {
@@ -38,7 +40,6 @@
 }
 
 @keyframes bounce {
-
     0%,
     100% {
         transform: translateY(0);
@@ -87,7 +88,7 @@
 }
 
 /* Adjust app layout when notification is visible */
-.update-notification:not(.hidden)~.app {
+.update-notification:not(.hidden) ~ .app {
     margin-top: 52px;
 }
 

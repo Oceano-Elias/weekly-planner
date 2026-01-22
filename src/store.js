@@ -7,23 +7,23 @@ import { PlannerService } from './services/PlannerService.js';
 const STORAGE_KEY = 'weeklyPlanner_v3';
 
 const initialState = {
-    tasks: [],          // Legacy - will be migrated to weekly system
+    tasks: [], // Legacy - will be migrated to weekly system
     nextId: 1,
     currentWeekStart: null,
 
     // New recurring weekly system
-    templates: [],      // Task templates (the recurring pattern)
+    templates: [], // Task templates (the recurring pattern)
     weeklyInstances: {}, // Per-week state: { '2026-W01': { tasks: [...] } }
-    migrated: false,    // Migration flag
+    migrated: false, // Migration flag
 
     // Kept for compatibility
     goals: {},
     // Focus Mode Statistics
     focusStats: {
-        sessions: [],      // Array of { date, duration, taskId, stepsCompleted }
+        sessions: [], // Array of { date, duration, taskId, stepsCompleted }
         currentStreak: 0,
         totalFocusTime: 0,
-        lastSessionDate: null
+        lastSessionDate: null,
     },
     // Professional Execution System
     activeExecution: {
@@ -38,16 +38,17 @@ const initialState = {
         currentStepIndex: -1,
         updatedAt: null,
         // Step timing tracking for Results Card
-        stepTimings: [],      // Array of { stepIndex, stepText, startedAt, completedAt, duration, status }
-        pauseCount: 0,        // Number of times user paused
-        sessionStats: {       // Session-level statistics
+        stepTimings: [], // Array of { stepIndex, stepText, startedAt, completedAt, duration, status }
+        pauseCount: 0, // Number of times user paused
+        sessionStats: {
+            // Session-level statistics
             startedAt: null,
             completedAt: null,
             totalFocusTime: 0,
             totalBreakTime: 0,
-            pomodorosUsed: 0
-        }
-    }
+            pomodorosUsed: 0,
+        },
+    },
 };
 
 let state = { ...initialState };
@@ -82,13 +83,13 @@ export const Store = {
 
     /**
      * Subscribe to store changes
-     * @param {Function} callback 
+     * @param {Function} callback
      * @returns {Function} Unsubscribe function
      */
     subscribe(callback) {
         listeners.push(callback);
         return () => {
-            listeners = listeners.filter(l => l !== callback);
+            listeners = listeners.filter((l) => l !== callback);
         };
     },
 
@@ -96,7 +97,7 @@ export const Store = {
      * Notify all listeners of a change
      */
     notify() {
-        listeners.forEach(callback => {
+        listeners.forEach((callback) => {
             try {
                 callback();
             } catch (e) {
@@ -127,7 +128,7 @@ export const Store = {
                     sessions: [],
                     currentStreak: 0,
                     totalFocusTime: 0,
-                    lastSessionDate: null
+                    lastSessionDate: null,
                 };
 
                 // Professional Execution System
@@ -149,16 +150,19 @@ export const Store = {
                         completedAt: null,
                         totalFocusTime: 0,
                         totalBreakTime: 0,
-                        pomodorosUsed: 0
-                    }
+                        pomodorosUsed: 0,
+                    },
                 };
                 // Ensure new fields exist on loaded state
                 if (!state.activeExecution.stepTimings) state.activeExecution.stepTimings = [];
                 if (!state.activeExecution.pauseCount) state.activeExecution.pauseCount = 0;
                 if (!state.activeExecution.sessionStats) {
                     state.activeExecution.sessionStats = {
-                        startedAt: null, completedAt: null,
-                        totalFocusTime: 0, totalBreakTime: 0, pomodorosUsed: 0
+                        startedAt: null,
+                        completedAt: null,
+                        totalFocusTime: 0,
+                        totalBreakTime: 0,
+                        pomodorosUsed: 0,
                     };
                 }
             }
@@ -180,16 +184,19 @@ export const Store = {
 
         const performSave = () => {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    tasks: state.tasks,
-                    nextId: state.nextId,
-                    goals: state.goals,
-                    templates: state.templates,
-                    weeklyInstances: state.weeklyInstances,
-                    migrated: state.migrated,
-                    focusStats: state.focusStats,
-                    activeExecution: state.activeExecution
-                }));
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify({
+                        tasks: state.tasks,
+                        nextId: state.nextId,
+                        goals: state.goals,
+                        templates: state.templates,
+                        weeklyInstances: state.weeklyInstances,
+                        migrated: state.migrated,
+                        focusStats: state.focusStats,
+                        activeExecution: state.activeExecution,
+                    })
+                );
                 console.log('[Store] Changes persisted to localStorage');
             } catch (e) {
                 console.error('Error saving to storage:', e);
@@ -232,7 +239,7 @@ export const Store = {
             completed: false,
             scheduledDay: null,
             scheduledTime: null,
-            createdAt: Date.now()
+            createdAt: Date.now(),
         };
         state.tasks.push(task);
         this.save();
@@ -257,8 +264,10 @@ export const Store = {
             // Update the instance for this week
             if (updates.completed !== undefined) resolved.instance.completed = updates.completed;
             if (updates.notes !== undefined) resolved.instance.notes = updates.notes;
-            if (updates.returnAnchor !== undefined) resolved.instance.returnAnchor = updates.returnAnchor;
-            if (updates.sessionResult !== undefined) resolved.instance.sessionResult = updates.sessionResult;
+            if (updates.returnAnchor !== undefined)
+                resolved.instance.returnAnchor = updates.returnAnchor;
+            if (updates.sessionResult !== undefined)
+                resolved.instance.sessionResult = updates.sessionResult;
         }
 
         this.save();
@@ -274,13 +283,15 @@ export const Store = {
         if (!resolved) return;
 
         if (resolved.type === 'legacy') {
-            state.tasks = state.tasks.filter(t => t.id !== taskId);
+            state.tasks = state.tasks.filter((t) => t.id !== taskId);
         } else if (resolved.type === 'week_standalone' || resolved.type === 'template') {
             const weekInstances = state.weeklyInstances[resolved.weekId];
             if (weekInstances) {
-                weekInstances.tasks = weekInstances.tasks.filter(t =>
-                    (resolved.type === 'week_standalone' && t.instanceId !== resolved.instance.instanceId) ||
-                    (resolved.type === 'template' && t.templateId !== resolved.templateId)
+                weekInstances.tasks = weekInstances.tasks.filter(
+                    (t) =>
+                        (resolved.type === 'week_standalone' &&
+                            t.instanceId !== resolved.instance.instanceId) ||
+                        (resolved.type === 'template' && t.templateId !== resolved.templateId)
                 );
             }
         }
@@ -306,12 +317,12 @@ export const Store = {
                 notes: resolved.instance.notes,
                 returnAnchor: resolved.instance.returnAnchor || '',
                 scheduledDay: resolved.instance.scheduledDay || resolved.template.scheduledDay,
-                scheduledTime: resolved.instance.scheduledTime || resolved.template.scheduledTime
+                scheduledTime: resolved.instance.scheduledTime || resolved.template.scheduledTime,
             };
         } else if (resolved.type === 'week_standalone') {
             return {
                 id: taskId,
-                ...resolved.instance
+                ...resolved.instance,
             };
         }
 
@@ -324,8 +335,11 @@ export const Store = {
      */
     _resolveTask(taskId) {
         // pattern 1: Legacy tasks (task_123)
-        if (!taskId.includes('_') || (!taskId.startsWith('week_') && !taskId.startsWith('template_'))) {
-            const task = state.tasks.find(t => t.id === taskId);
+        if (
+            !taskId.includes('_') ||
+            (!taskId.startsWith('week_') && !taskId.startsWith('template_'))
+        ) {
+            const task = state.tasks.find((t) => t.id === taskId);
             return task ? { type: 'legacy', task } : null;
         }
 
@@ -339,7 +353,7 @@ export const Store = {
             const suffix = parts.slice(2).join('_');
             let instance = null;
             if (suffix.startsWith('inst_')) {
-                instance = weekInstances.tasks.find(t => t.instanceId === suffix);
+                instance = weekInstances.tasks.find((t) => t.instanceId === suffix);
             } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
                 const idx = parseInt(suffix.split('_')[1]);
                 instance = weekInstances.tasks[idx];
@@ -353,11 +367,11 @@ export const Store = {
             const weekId = parts[parts.length - 1];
             const templateId = parts.slice(0, -1).join('_');
 
-            const template = state.templates.find(t => t.id === templateId);
+            const template = state.templates.find((t) => t.id === templateId);
             const weekInstances = state.weeklyInstances[weekId];
             if (!template || !weekInstances) return null;
 
-            const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+            const instance = weekInstances.tasks.find((t) => t.templateId === templateId);
             return instance ? { type: 'template', template, instance, weekId, templateId } : null;
         }
 
@@ -368,14 +382,14 @@ export const Store = {
      * Get all queue tasks (unscheduled)
      */
     getQueueTasks() {
-        return state.tasks.filter(t => !t.scheduledDay);
+        return state.tasks.filter((t) => !t.scheduledDay);
     },
 
     /**
      * Get all scheduled tasks
      */
     getScheduledTasks() {
-        return state.tasks.filter(t => t.scheduledDay && t.scheduledTime);
+        return state.tasks.filter((t) => t.scheduledDay && t.scheduledTime);
     },
 
     /**
@@ -391,14 +405,14 @@ export const Store = {
     getTasksForDay(day) {
         const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
         const weekTasks = this.getTasksForWeek(currentWeekId);
-        return weekTasks.filter(t => t.scheduledDay === day);
+        return weekTasks.filter((t) => t.scheduledDay === day);
     },
 
     /**
      * Schedule a task (adds to current week ONLY - does NOT create template)
      */
     scheduleTask(taskId, day, time, immediate = false) {
-        const task = state.tasks.find(t => t.id === taskId);
+        const task = state.tasks.find((t) => t.id === taskId);
         if (!task) return null;
 
         // Update the legacy task
@@ -412,13 +426,15 @@ export const Store = {
 
         const weekTasks = state.weeklyInstances[currentWeekId].tasks;
 
-        let existing = weekTasks.find(t => t.sourceTaskId === taskId);
+        let existing = weekTasks.find((t) => t.sourceTaskId === taskId);
         if (!existing) {
-            existing = weekTasks.find(t => t.title === task.title);
+            existing = weekTasks.find((t) => t.title === task.title);
         }
 
         if (existing) {
-            console.log(`[Store] Updating existing instance for task: ${task.title} to ${day} ${time}`);
+            console.log(
+                `[Store] Updating existing instance for task: ${task.title} to ${day} ${time}`
+            );
             // Update existing instance position
             existing.scheduledDay = day;
             existing.scheduledTime = time;
@@ -441,7 +457,7 @@ export const Store = {
                 completed: false,
                 notes: task.notes || '',
                 scheduledDay: day,
-                scheduledTime: time
+                scheduledTime: time,
             });
         }
 
@@ -473,14 +489,16 @@ export const Store = {
             let instance = null;
 
             if (suffix.startsWith('inst_')) {
-                instance = weekInstances.tasks.find(t => t.instanceId === suffix);
+                instance = weekInstances.tasks.find((t) => t.instanceId === suffix);
             } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
                 const taskIndex = parseInt(suffix.split('_')[1]);
                 instance = weekInstances.tasks[taskIndex];
             }
 
             if (instance) {
-                console.log(`[Store] Rescheduling week-standalone instance ${taskId} to ${day} ${time}`);
+                console.log(
+                    `[Store] Rescheduling week-standalone instance ${taskId} to ${day} ${time}`
+                );
                 instance.scheduledDay = day;
                 instance.scheduledTime = time;
                 this.save(true); // Force immediate save for DnD
@@ -500,7 +518,7 @@ export const Store = {
             const weekInstances = state.weeklyInstances[weekId];
             if (!weekInstances) return null;
 
-            const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+            const instance = weekInstances.tasks.find((t) => t.templateId === templateId);
             if (instance) {
                 console.log(`[Store] Rescheduling template instance ${taskId} to ${day} ${time}`);
                 instance.scheduledDay = day;
@@ -540,22 +558,24 @@ export const Store = {
                 completed: false,
                 scheduledDay: null,
                 scheduledTime: null,
-                createdAt: Date.now()
+                createdAt: Date.now(),
             };
             state.tasks.push(taskToQueue);
 
             // Remove from this week's instances
             const weekInstances = state.weeklyInstances[resolved.weekId];
             if (weekInstances) {
-                weekInstances.tasks = weekInstances.tasks.filter(t =>
-                    (resolved.type === 'week_standalone' && t.instanceId !== resolved.instance.instanceId) ||
-                    (resolved.type === 'template' && t.templateId !== resolved.templateId)
+                weekInstances.tasks = weekInstances.tasks.filter(
+                    (t) =>
+                        (resolved.type === 'week_standalone' &&
+                            t.instanceId !== resolved.instance.instanceId) ||
+                        (resolved.type === 'template' && t.templateId !== resolved.templateId)
                 );
             }
 
             // If it was a template task, we ALSO remove the template to prevent it reappearing
             if (resolved.type === 'template') {
-                state.templates = state.templates.filter(t => t.id !== resolved.templateId);
+                state.templates = state.templates.filter((t) => t.id !== resolved.templateId);
             }
         }
 
@@ -568,7 +588,7 @@ export const Store = {
      * Toggle task completion
      */
     toggleComplete(taskId) {
-        const task = state.tasks.find(t => t.id === taskId);
+        const task = state.tasks.find((t) => t.id === taskId);
         if (task) {
             task.completed = !task.completed;
             this.save();
@@ -605,7 +625,7 @@ export const Store = {
         state.templates = [];
 
         // Convert current week tasks to templates
-        currentWeekTasks.forEach(task => {
+        currentWeekTasks.forEach((task) => {
             const templateId = `template_${state.nextId++}`;
             state.templates.push({
                 id: templateId,
@@ -615,14 +635,14 @@ export const Store = {
                 duration: task.duration,
                 notes: task.notes || '',
                 scheduledDay: task.scheduledDay,
-                scheduledTime: task.scheduledTime
+                scheduledTime: task.scheduledTime,
             });
         });
 
         // Clear all weekly instances EXCEPT the current week
         // This forces future weeks to regenerate from the new template
         const weekIds = Object.keys(state.weeklyInstances);
-        weekIds.forEach(weekId => {
+        weekIds.forEach((weekId) => {
             if (weekId !== currentWeekId) {
                 delete state.weeklyInstances[weekId];
             }
@@ -675,13 +695,13 @@ export const Store = {
         }
 
         state.weeklyInstances[weekId] = {
-            tasks: state.templates.map(template => ({
+            tasks: state.templates.map((template) => ({
                 templateId: template.id,
                 completed: false,
                 notes: template.notes || '',
                 scheduledDay: template.scheduledDay,
-                scheduledTime: template.scheduledTime
-            }))
+                scheduledTime: template.scheduledTime,
+            })),
         };
         this.save();
     },
@@ -697,37 +717,39 @@ export const Store = {
 
         const instances = state.weeklyInstances[weekId]?.tasks || [];
 
-        return instances.map((instance, index) => {
-            // If it has a template ID, it's a recurring task
-            if (instance.templateId) {
-                const template = state.templates.find(t => t.id === instance.templateId);
-                if (!template) return null;
+        return instances
+            .map((instance, index) => {
+                // If it has a template ID, it's a recurring task
+                if (instance.templateId) {
+                    const template = state.templates.find((t) => t.id === instance.templateId);
+                    if (!template) return null;
 
-                return {
-                    ...template,
-                    id: `${template.id}_${weekId}`,  // Unique ID per week
-                    completed: instance.completed,
-                    notes: instance.notes,
-                    scheduledDay: instance.scheduledDay || template.scheduledDay,
-                    scheduledTime: instance.scheduledTime || template.scheduledTime
-                };
-            } else {
-                // Standalone week-specific task (no template)
-                // Use stable instanceId if available, fallback to index for migration
-                const taskIdSuffix = instance.instanceId || `idx_${index}`;
-                return {
-                    id: `week_${weekId}_${taskIdSuffix}`,  // Stable unique ID
-                    title: instance.title,
-                    goal: instance.goal || '',
-                    hierarchy: instance.hierarchy || [],
-                    duration: instance.duration,
-                    completed: instance.completed,
-                    notes: instance.notes,
-                    scheduledDay: instance.scheduledDay,
-                    scheduledTime: instance.scheduledTime
-                };
-            }
-        }).filter(Boolean);
+                    return {
+                        ...template,
+                        id: `${template.id}_${weekId}`, // Unique ID per week
+                        completed: instance.completed,
+                        notes: instance.notes,
+                        scheduledDay: instance.scheduledDay || template.scheduledDay,
+                        scheduledTime: instance.scheduledTime || template.scheduledTime,
+                    };
+                } else {
+                    // Standalone week-specific task (no template)
+                    // Use stable instanceId if available, fallback to index for migration
+                    const taskIdSuffix = instance.instanceId || `idx_${index}`;
+                    return {
+                        id: `week_${weekId}_${taskIdSuffix}`, // Stable unique ID
+                        title: instance.title,
+                        goal: instance.goal || '',
+                        hierarchy: instance.hierarchy || [],
+                        duration: instance.duration,
+                        completed: instance.completed,
+                        notes: instance.notes,
+                        scheduledDay: instance.scheduledDay,
+                        scheduledTime: instance.scheduledTime,
+                    };
+                }
+            })
+            .filter(Boolean);
     },
 
     /**
@@ -739,7 +761,7 @@ export const Store = {
         console.log('Migrating to per-week system...');
 
         // Create templates from currently scheduled tasks
-        const scheduledTasks = state.tasks.filter(t => t.scheduledDay && t.scheduledTime);
+        const scheduledTasks = state.tasks.filter((t) => t.scheduledDay && t.scheduledTime);
 
         state.templates = scheduledTasks.map((task, index) => ({
             id: `template_${state.nextId + index}`,
@@ -748,7 +770,7 @@ export const Store = {
             hierarchy: [...task.hierarchy],
             duration: task.duration,
             scheduledDay: task.scheduledDay,
-            scheduledTime: task.scheduledTime
+            scheduledTime: task.scheduledTime,
         }));
 
         state.nextId += scheduledTasks.length;
@@ -756,20 +778,21 @@ export const Store = {
         // Create current week instance with existing state
         const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
         state.weeklyInstances[currentWeekId] = {
-            tasks: state.templates.map(template => {
-                const originalTask = scheduledTasks.find(t =>
-                    t.title === template.title &&
-                    t.scheduledDay === template.scheduledDay &&
-                    t.scheduledTime === template.scheduledTime
+            tasks: state.templates.map((template) => {
+                const originalTask = scheduledTasks.find(
+                    (t) =>
+                        t.title === template.title &&
+                        t.scheduledDay === template.scheduledDay &&
+                        t.scheduledTime === template.scheduledTime
                 );
                 return {
                     templateId: template.id,
                     completed: originalTask?.completed || false,
                     notes: originalTask?.notes || '',
                     scheduledDay: template.scheduledDay,
-                    scheduledTime: template.scheduledTime
+                    scheduledTime: template.scheduledTime,
                 };
-            })
+            }),
         };
 
         state.migrated = true;
@@ -801,7 +824,7 @@ export const Store = {
             let instance = null;
 
             if (suffix.startsWith('inst_')) {
-                instance = weekInstances.tasks.find(t => t.instanceId === suffix);
+                instance = weekInstances.tasks.find((t) => t.instanceId === suffix);
             } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
                 const taskIndex = parseInt(suffix.split('_')[1]);
                 instance = weekInstances.tasks[taskIndex];
@@ -824,7 +847,7 @@ export const Store = {
 
             const weekInstances = state.weeklyInstances[weekId];
             if (weekInstances) {
-                const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+                const instance = weekInstances.tasks.find((t) => t.templateId === templateId);
                 if (instance) {
                     instance.completed = !instance.completed;
                     this.save();
@@ -838,9 +861,9 @@ export const Store = {
     },
 
     /**
-         * Advance task progress (complete next step or toggle task)
-         * Returns { task, stepAdvanced: boolean }
-         */
+     * Advance task progress (complete next step or toggle task)
+     * Returns { task, stepAdvanced: boolean }
+     */
     advanceTaskProgress(taskId) {
         const task = this.getTask(taskId);
         if (!task) return null;
@@ -850,7 +873,7 @@ export const Store = {
 
         // Find all lines that look like checklist items
         const lines = notes.split('\n');
-        const firstIncompleteIndex = lines.findIndex(line => line.includes('[ ]'));
+        const firstIncompleteIndex = lines.findIndex((line) => line.includes('[ ]'));
 
         if (firstIncompleteIndex !== -1) {
             // Advance the first incomplete step
@@ -860,7 +883,7 @@ export const Store = {
             stepAdvanced = true;
 
             // Check if all steps are now complete
-            const stillHasIncomplete = lines.some(line => line.includes('[ ]'));
+            const stillHasIncomplete = lines.some((line) => line.includes('[ ]'));
             if (!stillHasIncomplete && !task.completed) {
                 // If this was the last step, mark the whole task as complete
                 this.toggleCompleteForWeek(taskId);
@@ -875,13 +898,13 @@ export const Store = {
 
     /**
      * Update task notes for a specific week
- */
+     */
     updateTaskNotesForWeek(taskId, notes) {
         if (!taskId) return null;
 
         // Handle legacy tasks
         if (!taskId.includes('_')) {
-            const task = state.tasks.find(t => t.id === taskId);
+            const task = state.tasks.find((t) => t.id === taskId);
             if (task) {
                 task.notes = notes;
                 this.save();
@@ -902,7 +925,7 @@ export const Store = {
             let instance = null;
 
             if (suffix.startsWith('inst_')) {
-                instance = weekInstances.tasks.find(t => t.instanceId === suffix);
+                instance = weekInstances.tasks.find((t) => t.instanceId === suffix);
             } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
                 const taskIndex = parseInt(suffix.split('_')[1]);
                 instance = weekInstances.tasks[taskIndex];
@@ -926,7 +949,7 @@ export const Store = {
             const weekInstances = state.weeklyInstances[weekId];
             if (!weekInstances) return null;
 
-            const instance = weekInstances.tasks.find(t => t.templateId === templateId);
+            const instance = weekInstances.tasks.find((t) => t.templateId === templateId);
             if (instance) {
                 instance.notes = notes;
                 this.save();
@@ -962,7 +985,7 @@ export const Store = {
         const scheduled = this.getScheduledTasks();
         const byHierarchy = {};
 
-        scheduled.forEach(task => {
+        scheduled.forEach((task) => {
             const topLevel = task.hierarchy[0] || 'Uncategorized';
             if (!byHierarchy[topLevel]) {
                 byHierarchy[topLevel] = { total: 0, completed: 0 };
@@ -991,7 +1014,7 @@ export const Store = {
         let totalDuration = 0;
         let completedDuration = 0;
 
-        weekTasks.forEach(task => {
+        weekTasks.forEach((task) => {
             const topLevel = task.hierarchy[0] || 'Uncategorized';
             if (!byHierarchy[topLevel]) {
                 byHierarchy[topLevel] = { total: 0, completed: 0 };
@@ -1007,8 +1030,8 @@ export const Store = {
 
             // Count mini-tasks from notes
             if (task.notes) {
-                const lines = task.notes.split('\n').filter(l => l.trim() !== '');
-                lines.forEach(line => {
+                const lines = task.notes.split('\n').filter((l) => l.trim() !== '');
+                lines.forEach((line) => {
                     if (line.includes('[ ]') || line.includes('[x]')) {
                         totalMiniTasks++;
                         if (line.includes('[x]')) {
@@ -1023,7 +1046,7 @@ export const Store = {
             byHierarchy,
             miniTasks: { total: totalMiniTasks, completed: completedMiniTasks },
             tasks: { total: totalTasks, completed: completedTasks },
-            duration: { total: totalDuration, completed: completedDuration }
+            duration: { total: totalDuration, completed: completedDuration },
         };
     },
 
@@ -1036,19 +1059,19 @@ export const Store = {
         const weekTasks = this.getTasksForWeek(currentWeekId);
         const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-        return days.map(day => {
-            const dayTasks = weekTasks.filter(t => t.scheduledDay === day);
+        return days.map((day) => {
+            const dayTasks = weekTasks.filter((t) => t.scheduledDay === day);
             const total = dayTasks.length;
-            const completed = dayTasks.filter(t => t.completed).length;
+            const completed = dayTasks.filter((t) => t.completed).length;
             const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
             // Also count mini-tasks for that day
             let miniTotal = 0;
             let miniCompleted = 0;
-            dayTasks.forEach(task => {
+            dayTasks.forEach((task) => {
                 if (task.notes) {
-                    const lines = task.notes.split('\n').filter(l => l.trim() !== '');
-                    lines.forEach(line => {
+                    const lines = task.notes.split('\n').filter((l) => l.trim() !== '');
+                    lines.forEach((line) => {
                         if (line.includes('[ ]') || line.includes('[x]')) {
                             miniTotal++;
                             if (line.includes('[x]')) {
@@ -1064,7 +1087,7 @@ export const Store = {
             return {
                 day: day.charAt(0).toUpperCase() + day.slice(1, 3),
                 tasks: { total, completed, percent },
-                miniTasks: { total: miniTotal, completed: miniCompleted, percent: miniPercent }
+                miniTasks: { total: miniTotal, completed: miniCompleted, percent: miniPercent },
             };
         });
     },
@@ -1083,7 +1106,7 @@ export const Store = {
                 sessions: [],
                 currentStreak: 0,
                 totalFocusTime: 0,
-                lastSessionDate: null
+                lastSessionDate: null,
             };
         }
 
@@ -1093,7 +1116,7 @@ export const Store = {
             timestamp: Date.now(),
             duration,
             taskId,
-            stepsCompleted
+            stepsCompleted,
         };
 
         state.focusStats.sessions.push(session);
@@ -1130,12 +1153,14 @@ export const Store = {
      * @returns {Object} Focus stats including sessions, streak, and total time
      */
     getFocusStats() {
-        return state.focusStats || {
-            sessions: [],
-            currentStreak: 0,
-            totalFocusTime: 0,
-            lastSessionDate: null
-        };
+        return (
+            state.focusStats || {
+                sessions: [],
+                currentStreak: 0,
+                totalFocusTime: 0,
+                lastSessionDate: null,
+            }
+        );
     },
 
     /**
@@ -1225,19 +1250,19 @@ export const Store = {
         };
 
         // 1. Update queue tasks
-        state.tasks.forEach(task => {
+        state.tasks.forEach((task) => {
             task.hierarchy = updateHierarchy(task.hierarchy);
         });
 
         // 2. Update templates
-        state.templates.forEach(template => {
+        state.templates.forEach((template) => {
             template.hierarchy = updateHierarchy(template.hierarchy);
         });
 
         // 3. Update weekly instances
-        Object.values(state.weeklyInstances).forEach(week => {
+        Object.values(state.weeklyInstances).forEach((week) => {
             if (week.tasks) {
-                week.tasks.forEach(task => {
+                week.tasks.forEach((task) => {
                     task.hierarchy = updateHierarchy(task.hierarchy);
                 });
             }
@@ -1264,8 +1289,8 @@ export const Store = {
                 weeklyInstances: state.weeklyInstances,
                 goals: state.goals,
                 nextId: state.nextId,
-                migrated: state.migrated
-            }
+                migrated: state.migrated,
+            },
         };
     },
 
@@ -1310,27 +1335,27 @@ export const Store = {
                 title: sanitize(t.title),
                 goal: sanitize(t.goal),
                 notes: sanitize(t.notes),
-                hierarchy: Array.isArray(t.hierarchy) ? t.hierarchy.map(sanitize) : []
+                hierarchy: Array.isArray(t.hierarchy) ? t.hierarchy.map(sanitize) : [],
             });
 
             // 3. Process Data
             if (merge) {
                 if (data.tasks) {
-                    data.tasks.forEach(t => {
+                    data.tasks.forEach((t) => {
                         const task = sanitizeTask(t);
                         task.id = `task_${state.nextId++}`;
                         state.tasks.push(task);
                     });
                 }
                 if (data.templates) {
-                    data.templates.forEach(t => {
+                    data.templates.forEach((t) => {
                         const template = sanitizeTask(t);
                         template.id = `template_${state.nextId++}`;
                         state.templates.push(template);
                     });
                 }
                 if (data.goals) {
-                    Object.keys(data.goals).forEach(day => {
+                    Object.keys(data.goals).forEach((day) => {
                         state.goals[day] = sanitize(data.goals[day]);
                     });
                 }
@@ -1343,7 +1368,7 @@ export const Store = {
                 state.migrated = data.migrated || false;
 
                 // Sanitize weekly instances too
-                Object.values(state.weeklyInstances).forEach(week => {
+                Object.values(state.weeklyInstances).forEach((week) => {
                     if (week.tasks) {
                         week.tasks = week.tasks.map(sanitizeTask);
                     }
@@ -1398,7 +1423,7 @@ export const Store = {
             ...state.activePomodoro,
             ...data,
             taskId,
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
         };
         this.save();
         this.notify();
@@ -1414,9 +1439,9 @@ export const Store = {
             targetEpoch: null,
             running: false,
             mode: 'work',
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
         };
         this.save();
         this.notify();
-    }
+    },
 };

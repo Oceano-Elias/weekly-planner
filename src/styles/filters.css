@@ -43,7 +43,7 @@
     color: var(--text-secondary);
 }
 
-.filter-checkbox:checked+.filter-color+.filter-name {
+.filter-checkbox:checked + .filter-color + .filter-name {
     color: var(--text-primary);
     font-weight: var(--font-weight-medium);
 }

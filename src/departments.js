@@ -20,8 +20,8 @@ const DefaultDepartmentData = {
                             Filming: { abbr: 'FM' },
                             Editing: { abbr: 'ED' },
                             Thumbnail: { abbr: 'TH' },
-                            Upload: { abbr: 'UP' }
-                        }
+                            Upload: { abbr: 'UP' },
+                        },
                     },
                     Instagram: {
                         abbr: 'IG',
@@ -29,50 +29,50 @@ const DefaultDepartmentData = {
                             Reels: { abbr: 'RL' },
                             Stories: { abbr: 'ST' },
                             Posts: { abbr: 'PO' },
-                            Captions: { abbr: 'CP' }
-                        }
+                            Captions: { abbr: 'CP' },
+                        },
                     },
                     TikTok: {
                         abbr: 'TT',
                         children: {
                             Content: { abbr: 'CT' },
-                            Trends: { abbr: 'TR' }
-                        }
+                            Trends: { abbr: 'TR' },
+                        },
                     },
                     Twitter: {
                         abbr: 'TW',
                         children: {
                             Threads: { abbr: 'TH' },
-                            Engagement: { abbr: 'EG' }
-                        }
-                    }
-                }
+                            Engagement: { abbr: 'EG' },
+                        },
+                    },
+                },
             },
             Projects: {
                 abbr: 'PJ',
                 children: {
                     'Project Alpha': { abbr: 'PA' },
                     'Project Beta': { abbr: 'PB' },
-                    'Project Gamma': { abbr: 'PG' }
-                }
+                    'Project Gamma': { abbr: 'PG' },
+                },
             },
             Meetings: {
                 abbr: 'MT',
                 children: {
                     'Team Sync': { abbr: 'TS' },
                     'Client Call': { abbr: 'CC' },
-                    'One-on-One': { abbr: '1:1' }
-                }
+                    'One-on-One': { abbr: '1:1' },
+                },
             },
             Admin: {
                 abbr: 'AD',
                 children: {
                     Email: { abbr: 'EM' },
                     Planning: { abbr: 'PL' },
-                    Reports: { abbr: 'RP' }
-                }
-            }
-        }
+                    Reports: { abbr: 'RP' },
+                },
+            },
+        },
     },
     PERSONAL: {
         color: '#10B981',
@@ -84,25 +84,25 @@ const DefaultDepartmentData = {
                     Cleaning: { abbr: 'CL' },
                     Cooking: { abbr: 'CK' },
                     Maintenance: { abbr: 'MN' },
-                    Shopping: { abbr: 'SH' }
-                }
+                    Shopping: { abbr: 'SH' },
+                },
             },
             Family: {
                 abbr: 'FM',
                 children: {
                     Kids: { abbr: 'KD' },
                     Partner: { abbr: 'PT' },
-                    Parents: { abbr: 'PR' }
-                }
+                    Parents: { abbr: 'PR' },
+                },
             },
             Social: {
                 abbr: 'SC',
                 children: {
                     Friends: { abbr: 'FR' },
-                    Events: { abbr: 'EV' }
-                }
-            }
-        }
+                    Events: { abbr: 'EV' },
+                },
+            },
+        },
     },
     HEALTH: {
         color: '#F59E0B',
@@ -114,26 +114,26 @@ const DefaultDepartmentData = {
                     Gym: { abbr: 'GY' },
                     Running: { abbr: 'RN' },
                     Yoga: { abbr: 'YG' },
-                    Swimming: { abbr: 'SW' }
-                }
+                    Swimming: { abbr: 'SW' },
+                },
             },
             Medical: {
                 abbr: 'MD',
                 children: {
                     'Doctor Visits': { abbr: 'DV' },
-                    'Dental': { abbr: 'DN' },
-                    'Therapy': { abbr: 'TH' }
-                }
+                    Dental: { abbr: 'DN' },
+                    Therapy: { abbr: 'TH' },
+                },
             },
             Wellness: {
                 abbr: 'WL',
                 children: {
                     Meditation: { abbr: 'MT' },
                     Sleep: { abbr: 'SL' },
-                    Nutrition: { abbr: 'NT' }
-                }
-            }
-        }
+                    Nutrition: { abbr: 'NT' },
+                },
+            },
+        },
     },
     LEARNING: {
         color: '#8B5CF6',
@@ -144,26 +144,26 @@ const DefaultDepartmentData = {
                 children: {
                     Online: { abbr: 'ON' },
                     'In-Person': { abbr: 'IP' },
-                    Workshops: { abbr: 'WS' }
-                }
+                    Workshops: { abbr: 'WS' },
+                },
             },
             Reading: {
                 abbr: 'RD',
                 children: {
                     Books: { abbr: 'BK' },
                     Articles: { abbr: 'AR' },
-                    Research: { abbr: 'RS' }
-                }
+                    Research: { abbr: 'RS' },
+                },
             },
             Practice: {
                 abbr: 'PR',
                 children: {
                     Coding: { abbr: 'CD' },
                     Design: { abbr: 'DS' },
-                    Writing: { abbr: 'WR' }
-                }
-            }
-        }
+                    Writing: { abbr: 'WR' },
+                },
+            },
+        },
     },
     FINANCE: {
         color: '#EC4899',
@@ -173,24 +173,24 @@ const DefaultDepartmentData = {
                 abbr: 'BD',
                 children: {
                     'Monthly Review': { abbr: 'MR' },
-                    'Expense Tracking': { abbr: 'ET' }
-                }
+                    'Expense Tracking': { abbr: 'ET' },
+                },
             },
             Investing: {
                 abbr: 'IV',
                 children: {
                     Research: { abbr: 'RS' },
-                    'Portfolio Review': { abbr: 'PR' }
-                }
+                    'Portfolio Review': { abbr: 'PR' },
+                },
             },
             Bills: {
                 abbr: 'BL',
                 children: {
                     Utilities: { abbr: 'UT' },
-                    Subscriptions: { abbr: 'SB' }
-                }
-            }
-        }
+                    Subscriptions: { abbr: 'SB' },
+                },
+            },
+        },
     },
     ADMIN: {
         color: '#6366F1',
@@ -200,19 +200,19 @@ const DefaultDepartmentData = {
                 abbr: 'DC',
                 children: {
                     Filing: { abbr: 'FL' },
-                    Scanning: { abbr: 'SC' }
-                }
+                    Scanning: { abbr: 'SC' },
+                },
             },
             'Life Admin': {
                 abbr: 'LA',
                 children: {
                     Appointments: { abbr: 'AP' },
                     Errands: { abbr: 'ER' },
-                    'Phone Calls': { abbr: 'PC' }
-                }
-            }
-        }
-    }
+                    'Phone Calls': { abbr: 'PC' },
+                },
+            },
+        },
+    },
 };
 
 // Load custom departments from localStorage or use defaults
@@ -356,7 +356,7 @@ export const Departments = {
                     path: currentPath,
                     color: path.length === 0 ? data.color : null,
                     abbr: data.abbr,
-                    children: data.children ? buildTree(data.children, currentPath) : []
+                    children: data.children ? buildTree(data.children, currentPath) : [],
                 };
                 result.push(node);
             }
@@ -365,5 +365,5 @@ export const Departments = {
         };
 
         return buildTree(DepartmentData);
-    }
+    },
 };

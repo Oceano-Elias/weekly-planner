@@ -1,3 +1,5 @@
+import { DOMUtils } from '../utils/DOMUtils.js';
+
 /**
  * UpdateNotification - Shows update available banner
  */
@@ -17,34 +19,60 @@ export const UpdateNotification = {
      * Create the notification container in DOM
      */
     createContainer() {
-        const container = document.createElement('div');
-        container.id = 'updateNotification';
-        container.className = 'update-notification hidden';
-        container.innerHTML = `
-            <div class="update-content">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                <span>A new version is available!</span>
-            </div>
-            <div class="update-actions">
-                <button class="update-btn update-btn-primary" id="updateNowBtn">Update Now</button>
-                <button class="update-btn update-btn-secondary" id="dismissUpdateBtn">Later</button>
-            </div>
-        `;
+        const container = DOMUtils.createElement('div', {
+            id: 'updateNotification',
+            className: 'update-notification hidden',
+        });
+
+        const content = DOMUtils.createElement('div', { className: 'update-content' });
+        content.appendChild(
+            DOMUtils.createSVG(
+                'svg',
+                {
+                    width: '20',
+                    height: '20',
+                    viewBox: '0 0 24 24',
+                    fill: 'none',
+                    stroke: 'currentColor',
+                    'stroke-width': '2',
+                },
+                [
+                    DOMUtils.createSVG('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+                    DOMUtils.createSVG('polyline', { points: '7 10 12 15 17 10' }),
+                    DOMUtils.createSVG('line', { x1: '12', y1: '15', x2: '12', y2: '3' }),
+                ]
+            )
+        );
+        content.appendChild(
+            DOMUtils.createElement('span', { textContent: 'A new version is available!' })
+        );
+        container.appendChild(content);
+
+        const actions = DOMUtils.createElement('div', { className: 'update-actions' });
+        const updateBtn = DOMUtils.createElement('button', {
+            className: 'update-btn update-btn-primary',
+            id: 'updateNowBtn',
+            textContent: 'Update Now',
+        });
+        const dismissBtn = DOMUtils.createElement('button', {
+            className: 'update-btn update-btn-secondary',
+            id: 'dismissUpdateBtn',
+            textContent: 'Later',
+        });
+        actions.appendChild(updateBtn);
+        actions.appendChild(dismissBtn);
+        container.appendChild(actions);
 
         // Insert at top of body
         document.body.insertBefore(container, document.body.firstChild);
         this.container = container;
 
         // Setup button handlers
-        document.getElementById('updateNowBtn').addEventListener('click', () => {
+        updateBtn.addEventListener('click', () => {
             this.applyUpdate();
         });
 
-        document.getElementById('dismissUpdateBtn').addEventListener('click', () => {
+        dismissBtn.addEventListener('click', () => {
             this.hide();
         });
     },
@@ -61,7 +89,7 @@ export const UpdateNotification = {
             });
 
             // Also check for waiting service worker on page load
-            navigator.serviceWorker.ready.then(registration => {
+            navigator.serviceWorker.ready.then((registration) => {
                 if (registration.waiting) {
                     this.show();
                 }
@@ -109,7 +137,7 @@ export const UpdateNotification = {
     applyUpdate() {
         // Tell the waiting service worker to take over
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.ready.then(registration => {
+            navigator.serviceWorker.ready.then((registration) => {
                 if (registration.waiting) {
                     registration.waiting.postMessage({ type: 'SKIP_WAITING' });
                 }
@@ -118,5 +146,5 @@ export const UpdateNotification = {
 
         // Reload the page to get the new version
         window.location.reload();
-    }
+    },
 };

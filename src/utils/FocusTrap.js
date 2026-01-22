@@ -1,14 +1,14 @@
 /**
  * FocusTrap - Accessibility utility for trapping focus within modals
- * 
+ *
  * Usage:
  *   FocusTrap.activate(modalElement)  // Trap focus inside modal
  *   FocusTrap.deactivate()            // Release trap and restore focus
  */
 const FocusTrap = {
-    activeElement: null,    // Element that triggered the modal
-    trapElement: null,      // The modal element containing the trap
-    boundHandler: null,     // Bound keydown handler for cleanup
+    activeElement: null, // Element that triggered the modal
+    trapElement: null, // The modal element containing the trap
+    boundHandler: null, // Bound keydown handler for cleanup
 
     /**
      * Activate focus trap on an element
@@ -92,15 +92,15 @@ const FocusTrap = {
             'select:not([disabled]):not([tabindex="-1"])',
             'textarea:not([disabled]):not([tabindex="-1"])',
             'a[href]:not([tabindex="-1"])',
-            '[tabindex]:not([tabindex="-1"]):not([disabled])'
+            '[tabindex]:not([tabindex="-1"]):not([disabled])',
         ].join(', ');
 
         const elements = Array.from(container.querySelectorAll(selector));
         // Filter out invisible elements
-        return elements.filter(el => {
+        return elements.filter((el) => {
             return el.offsetWidth > 0 && el.offsetHeight > 0;
         });
-    }
+    },
 };
 
 export default FocusTrap;

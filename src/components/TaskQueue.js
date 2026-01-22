@@ -7,6 +7,7 @@ import { TaskCard } from './TaskCard.js';
 import { ConfirmModal } from './ConfirmModal.js';
 import { Filters } from './Filters.js';
 import { Analytics } from './Analytics.js';
+import { DOMUtils } from '../utils/DOMUtils.js';
 
 export const TaskQueue = {
     searchTerm: '',
@@ -60,20 +61,26 @@ export const TaskQueue = {
         const queuePanel = document.getElementById('queuePanel');
         const analyticsPanel = document.getElementById('analyticsPanel');
         const filtersPanel = document.getElementById('filtersPanel');
-        const searchBar = document.getElementById('sidebarSearch');
+        const searchBar = document.querySelector('.sidebar-search'); // Changed to class selector to match layout.css
 
-        tabs.forEach(tab => {
+        tabs.forEach((tab) => {
             tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
+                tabs.forEach((t) => t.classList.remove('active'));
                 tab.classList.add('active');
 
                 const tabName = tab.dataset.tab;
 
-                queuePanel.style.display = tabName === 'queue' ? 'block' : 'none';
-                analyticsPanel.style.display = tabName === 'analytics' ? 'block' : 'none';
-                filtersPanel.style.display = tabName === 'filters' ? 'block' : 'none';
+                // Toggle Panel Visibility
+                if (queuePanel) queuePanel.style.display = tabName === 'queue' ? 'block' : 'none';
+                if (analyticsPanel)
+                    analyticsPanel.style.display = tabName === 'analytics' ? 'block' : 'none';
+                if (filtersPanel)
+                    filtersPanel.style.display = tabName === 'filters' ? 'block' : 'none';
 
-                searchBar.style.display = tabName === 'queue' ? 'block' : 'none';
+                // Search Bar only for Queue
+                if (searchBar) {
+                    searchBar.style.display = tabName === 'queue' ? 'block' : 'none';
+                }
 
                 if (tabName === 'analytics' && Analytics) {
                     Analytics.render();
@@ -97,14 +104,14 @@ export const TaskQueue = {
 
         // Apply filters
         if (Filters || this.searchTerm) {
-            tasks = tasks.filter(task => {
+            tasks = tasks.filter((task) => {
                 if (this.searchTerm && !task.title.toLowerCase().includes(this.searchTerm)) {
                     return false;
                 }
 
                 if (Filters && Filters.selectedPaths) {
                     if (Filters.selectedPaths.length === 0) return true;
-                    return Filters.selectedPaths.some(filterPath => {
+                    return Filters.selectedPaths.some((filterPath) => {
                         if (!task.hierarchy || task.hierarchy.length === 0) return true;
                         for (let i = 0; i < filterPath.length; i++) {
                             if (task.hierarchy[i] !== filterPath[i]) return false;
@@ -117,8 +124,14 @@ export const TaskQueue = {
             });
         }
 
+        DOMUtils.clear(container);
+
         if (tasks.length === 0) {
             const isFiltered = activeFilters.length > 0;
+
+            // Reconstruct the empty state using innerHTML for the complex SVG illustration
+            // Moving the SVG to a separate file or component would be cleaner, but for now
+            // we'll keep it here to avoid breaking the visual design.
             container.innerHTML = `
         <div class="task-queue-empty">
           <div class="empty-state-illustration">
@@ -142,7 +155,7 @@ export const TaskQueue = {
                 <line x1="16" y1="60" x2="60" y2="60" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
                 
                 <!-- Checkmark circle -->
-                <circle cx="42" cy="80" r="14" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4 3" opacity="0.6"/>
+                <circle cx="42" cy="80" r="14" fill="none" stroke="var(--accent-success)" stroke-width="2" stroke-dasharray="4 3" opacity="0.6"/>
               </g>
               
               <!-- Sparkle -->
@@ -155,8 +168,8 @@ export const TaskQueue = {
                   <stop offset="100%" stop-color="#8b5cf6"/>
                 </linearGradient>
                 <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#10b981"/>
-                  <stop offset="100%" stop-color="#06b6d4"/>
+                  <stop offset="0%" stop-color="var(--accent-success)"/>
+                  <stop offset="100%" stop-color="var(--accent-secondary)"/>
                 </linearGradient>
                 <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stop-color="#1e3a5f"/>
@@ -172,9 +185,7 @@ export const TaskQueue = {
             return;
         }
 
-        container.innerHTML = '';
-
-        tasks.forEach(task => {
+        tasks.forEach((task) => {
             const card = new TaskCard(task);
             const el = card.render({ isDayView: false, isCompact: false });
             el.draggable = false;
@@ -182,7 +193,7 @@ export const TaskQueue = {
         });
 
         // Add event listeners
-        container.querySelectorAll('.task-block').forEach(block => {
+        container.querySelectorAll('.task-block').forEach((block) => {
             const taskId = block.dataset.taskId;
             const deleteBtn = block.querySelector('.task-delete');
 
@@ -222,7 +233,9 @@ export const TaskQueue = {
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('Delete button clicked for task:', taskId);
-                    const confirmed = await ConfirmModal.show('Are you sure you want to delete this task?');
+                    const confirmed = await ConfirmModal.show(
+                        'Are you sure you want to delete this task?'
+                    );
                     if (confirmed) {
                         console.log('User confirmed delete');
                         Store.deleteTask(taskId);
@@ -239,5 +252,5 @@ export const TaskQueue = {
      */
     refresh() {
         this.render();
-    }
+    },
 };

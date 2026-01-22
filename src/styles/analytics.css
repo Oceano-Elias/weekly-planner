@@ -21,7 +21,11 @@
     text-align: center;
     gap: 4px;
     padding: 10px 8px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -51,8 +55,8 @@
 
 /* Accent colors for each stat type */
 .stat-icon-tasks {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.12);
+    color: var(--accent-success);
+    background: color-mix(in srgb, var(--accent-success) 18%, transparent);
 }
 
 .stat-icon-mini {
@@ -103,7 +107,7 @@
 
 .stat-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #10b981, #22d3ee);
+    background: linear-gradient(90deg, var(--accent-success), var(--accent-secondary));
     border-radius: 2px;
     transition: width 0.5s ease;
 }
@@ -159,8 +163,8 @@
 }
 
 .progress-ring-fill.tasks {
-    stroke: #10b981;
-    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5));
+    stroke: var(--accent-success);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-success) 50%, transparent));
 }
 
 .progress-ring-fill.mini {
@@ -204,7 +208,7 @@
 }
 
 .sparkline-line.tasks {
-    filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.4));
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-success) 45%, transparent));
 }
 
 .sparkline-line.mini {
@@ -322,7 +326,8 @@
     background: linear-gradient(180deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
-    box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.6),
+    box-shadow:
+        0 25px 60px -10px rgba(0, 0, 0, 0.6),
         0 0 50px rgba(99, 102, 241, 0.15);
     overflow: hidden;
     animation: slideUp 0.3s ease-out;
@@ -349,7 +354,7 @@
 .summary-close:hover {
     background: rgba(239, 68, 68, 0.15);
     border-color: rgba(239, 68, 68, 0.3);
-    color: #EF4444;
+    color: #ef4444;
 }
 
 .summary-header {
@@ -495,8 +500,8 @@
 }
 
 .daily-bar-item.best .daily-bar-fill {
-    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    background: linear-gradient(180deg, var(--accent-success) 0%, var(--accent-secondary) 100%);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent-success) 45%, transparent);
 }
 
 .daily-bar-label {
@@ -518,8 +523,12 @@
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.08));
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--accent-success) 16%, transparent),
+        color-mix(in srgb, var(--accent-success) 10%, transparent)
+    );
+    border: 1px solid color-mix(in srgb, var(--accent-success) 25%, transparent);
     border-radius: 12px;
     margin-bottom: 20px;
 }
@@ -534,7 +543,7 @@
 }
 
 .highlight-text strong {
-    color: #10b981;
+    color: var(--accent-success);
 }
 
 /* Weekly Trend Sparkline */

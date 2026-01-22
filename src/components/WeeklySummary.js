@@ -5,6 +5,7 @@
 
 import { Store } from '../store.js';
 import { PlannerService } from '../services/PlannerService.js';
+import { DOMUtils } from '../utils/DOMUtils.js';
 
 export const WeeklySummary = {
     isOpen: false,
@@ -40,13 +41,13 @@ export const WeeklySummary = {
 
         // Calculate totals
         const totalTasks = tasks.length;
-        const completedTasks = tasks.filter(t => t.completed).length;
+        const completedTasks = tasks.filter((t) => t.completed).length;
         const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
         // Calculate total scheduled time
         let totalMinutes = 0;
         let completedMinutes = 0;
-        tasks.forEach(task => {
+        tasks.forEach((task) => {
             if (task.scheduledDay && task.scheduledTime) {
                 totalMinutes += task.duration;
                 if (task.completed) {
@@ -74,10 +75,10 @@ export const WeeklySummary = {
         // Calculate mini-task stats
         let totalMiniTasks = 0;
         let completedMiniTasks = 0;
-        tasks.forEach(task => {
+        tasks.forEach((task) => {
             if (task.notes) {
                 const lines = task.notes.split('\n');
-                lines.forEach(line => {
+                lines.forEach((line) => {
                     if (line.includes('[x]')) completedMiniTasks++;
                     if (line.includes('[ ]') || line.includes('[x]')) totalMiniTasks++;
                 });
@@ -108,9 +109,10 @@ export const WeeklySummary = {
             bestDayRate: Math.round(bestDayRate * 100),
             totalMiniTasks,
             completedMiniTasks,
-            miniTaskRate: totalMiniTasks > 0 ? Math.round((completedMiniTasks / totalMiniTasks) * 100) : 0,
+            miniTaskRate:
+                totalMiniTasks > 0 ? Math.round((completedMiniTasks / totalMiniTasks) * 100) : 0,
             currentStreak,
-            dailyStats
+            dailyStats,
         };
     },
 
@@ -128,41 +130,62 @@ export const WeeklySummary = {
      * Generate sparkline SVG for daily completion
      */
     generateSparkline(dailyStats) {
-        const values = dailyStats.map(d => d.tasks.percent);
+        const values = dailyStats.map((d) => d.tasks.percent);
         const max = Math.max(...values, 1);
         const width = 200;
         const height = 40;
         const padding = 4;
 
-        const points = values.map((v, i) => {
-            const x = padding + (i / (values.length - 1)) * (width - padding * 2);
-            const y = height - padding - (v / max) * (height - padding * 2);
-            return `${x},${y}`;
-        }).join(' ');
+        const points = values
+            .map((v, i) => {
+                const x = padding + (i / (values.length - 1)) * (width - padding * 2);
+                const y = height - padding - (v / max) * (height - padding * 2);
+                return `${x},${y}`;
+            })
+            .join(' ');
 
-        return `
-            <svg viewBox="0 0 ${width} ${height}" class="summary-sparkline">
-                <defs>
-                    <linearGradient id="summaryGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="rgba(99, 102, 241, 0.3)"/>
-                        <stop offset="100%" stop-color="rgba(99, 102, 241, 0)"/>
-                    </linearGradient>
-                </defs>
-                <polyline 
-                    fill="url(#summaryGrad)" 
-                    stroke="none"
-                    points="${padding},${height - padding} ${points} ${width - padding},${height - padding}"
-                />
-                <polyline 
-                    fill="none" 
-                    stroke="#6366f1" 
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    points="${points}"
-                />
-            </svg>
-        `;
+        const svg = DOMUtils.createSVG('svg', {
+            viewBox: `0 0 ${width} ${height}`,
+            className: 'summary-sparkline',
+        });
+
+        const defs = DOMUtils.createSVG('defs');
+        const grad = DOMUtils.createSVG('linearGradient', {
+            id: 'summaryGrad',
+            x1: '0%',
+            y1: '0%',
+            x2: '0%',
+            y2: '100%',
+        });
+        grad.appendChild(
+            DOMUtils.createSVG('stop', { offset: '0%', 'stop-color': 'rgba(99, 102, 241, 0.3)' })
+        );
+        grad.appendChild(
+            DOMUtils.createSVG('stop', { offset: '100%', 'stop-color': 'rgba(99, 102, 241, 0)' })
+        );
+        defs.appendChild(grad);
+        svg.appendChild(defs);
+
+        svg.appendChild(
+            DOMUtils.createSVG('polyline', {
+                fill: 'url(#summaryGrad)',
+                stroke: 'none',
+                points: `${padding},${height - padding} ${points} ${width - padding},${height - padding}`,
+            })
+        );
+
+        svg.appendChild(
+            DOMUtils.createSVG('polyline', {
+                fill: 'none',
+                stroke: '#6366f1',
+                'stroke-width': '2',
+                'stroke-linecap': 'round',
+                'stroke-linejoin': 'round',
+                points: points,
+            })
+        );
+
+        return svg;
     },
 
     /**
@@ -173,23 +196,49 @@ export const WeeklySummary = {
         const circumference = 2 * Math.PI * radius;
         const offset = circumference * (1 - percent / 100);
 
-        return `
-            <svg viewBox="0 0 100 100" class="summary-ring">
-                <circle cx="50" cy="50" r="${radius}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
-                <circle 
-                    cx="50" cy="50" r="${radius}" 
-                    fill="none" 
-                    stroke="${color}" 
-                    stroke-width="8"
-                    stroke-linecap="round"
-                    stroke-dasharray="${circumference}"
-                    stroke-dashoffset="${offset}"
-                    transform="rotate(-90 50 50)"
-                    class="ring-progress"
-                />
-                <text x="50" y="52" text-anchor="middle" dominant-baseline="middle" class="ring-text">${percent}%</text>
-            </svg>
-        `;
+        const svg = DOMUtils.createSVG('svg', {
+            viewBox: '0 0 100 100',
+            className: 'summary-ring',
+        });
+
+        svg.appendChild(
+            DOMUtils.createSVG('circle', {
+                cx: '50',
+                cy: '50',
+                r: `${radius}`,
+                fill: 'none',
+                stroke: 'rgba(255,255,255,0.1)',
+                'stroke-width': '8',
+            })
+        );
+
+        svg.appendChild(
+            DOMUtils.createSVG('circle', {
+                cx: '50',
+                cy: '50',
+                r: `${radius}`,
+                fill: 'none',
+                stroke: color,
+                'stroke-width': '8',
+                'stroke-linecap': 'round',
+                'stroke-dasharray': `${circumference}`,
+                'stroke-dashoffset': `${offset}`,
+                transform: 'rotate(-90 50 50)',
+                className: 'ring-progress',
+            })
+        );
+
+        const text = DOMUtils.createSVG('text', {
+            x: '50',
+            y: '52',
+            'text-anchor': 'middle',
+            'dominant-baseline': 'middle',
+            className: 'ring-text',
+        });
+        text.textContent = `${percent}%`;
+        svg.appendChild(text);
+
+        return svg;
     },
 
     /**
@@ -201,79 +250,142 @@ export const WeeklySummary = {
 
         const stats = this.getWeeklyStats();
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const fullDays = [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+        ];
 
-        container.innerHTML = `
-            <div class="summary-overlay" id="summaryOverlay">
-                <div class="summary-content">
-                    <button class="summary-close" id="closeSummary">×</button>
-                    
-                    <div class="summary-header">
-                        <h2>📊 Weekly Summary</h2>
-                        <span class="summary-week-label">${stats.weekId}</span>
-                    </div>
+        DOMUtils.clear(container);
 
-                    <div class="summary-body">
-                        <!-- Main Progress Ring -->
-                        <div class="summary-main-stat">
-                            ${this.generateProgressRing(stats.completionRate)}
-                            <div class="summary-main-label">Task Completion</div>
-                        </div>
+        const overlay = DOMUtils.createElement('div', {
+            className: 'summary-overlay',
+            id: 'summaryOverlay',
+        });
+        const content = DOMUtils.createElement('div', { className: 'summary-content' });
 
-                        <!-- Quick Stats Grid -->
-                        <div class="summary-stats-grid">
-                            <div class="summary-stat-card">
-                                <span class="stat-value">${stats.completedTasks}/${stats.totalTasks}</span>
-                                <span class="stat-label">Tasks Done</span>
-                            </div>
-                            <div class="summary-stat-card">
-                                <span class="stat-value">${this.formatDuration(stats.completedMinutes)}</span>
-                                <span class="stat-label">Time Completed</span>
-                            </div>
-                            <div class="summary-stat-card">
-                                <span class="stat-value">${stats.completedMiniTasks}/${stats.totalMiniTasks}</span>
-                                <span class="stat-label">Mini-Tasks</span>
-                            </div>
-                            <div class="summary-stat-card highlight">
-                                <span class="stat-value">${stats.currentStreak}</span>
-                                <span class="stat-label">Day Streak 🔥</span>
-                            </div>
-                        </div>
+        content.appendChild(
+            DOMUtils.createElement('button', {
+                className: 'summary-close',
+                id: 'closeSummary',
+                textContent: '×',
+            })
+        );
 
-                        <!-- Daily Breakdown -->
-                        <div class="summary-daily">
-                            <h4>Daily Breakdown</h4>
-                            <div class="daily-bars">
-                                ${stats.dailyStats.map((day, i) => `
-                                    <div class="daily-bar-item ${stats.bestDay === ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][i] ? 'best' : ''}">
-                                        <div class="daily-bar-fill" style="height: ${day.tasks.percent}%"></div>
-                                        <span class="daily-bar-label">${days[i]}</span>
-                                        <span class="daily-bar-value">${day.tasks.completed}/${day.tasks.total}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
+        // Header
+        const header = DOMUtils.createElement('div', { className: 'summary-header' }, [
+            DOMUtils.createElement('h2', { textContent: '📊 Weekly Summary' }),
+            DOMUtils.createElement('span', {
+                className: 'summary-week-label',
+                textContent: stats.weekId,
+            }),
+        ]);
+        content.appendChild(header);
 
-                        <!-- Best Day Highlight -->
-                        ${stats.bestDay ? `
-                            <div class="summary-highlight">
-                                <span class="highlight-icon">🏆</span>
-                                <span class="highlight-text">Best Day: <strong>${stats.bestDay}</strong> (${stats.bestDayRate}%)</span>
-                            </div>
-                        ` : ''}
+        // Body
+        const body = DOMUtils.createElement('div', { className: 'summary-body' });
 
-                        <!-- Weekly Trend Sparkline -->
-                        <div class="summary-trend">
-                            <h4>Weekly Trend</h4>
-                            ${this.generateSparkline(stats.dailyStats)}
-                        </div>
-                    </div>
+        // Main Stat
+        const mainStat = DOMUtils.createElement('div', { className: 'summary-main-stat' });
+        mainStat.appendChild(this.generateProgressRing(stats.completionRate));
+        mainStat.appendChild(
+            DOMUtils.createElement('div', {
+                className: 'summary-main-label',
+                textContent: 'Task Completion',
+            })
+        );
+        body.appendChild(mainStat);
 
-                    <div class="summary-footer">
-                        <button class="btn btn-secondary" id="closeSummaryBtn">Close</button>
-                    </div>
-                </div>
-            </div>
-        `;
+        // Grid
+        const grid = DOMUtils.createElement('div', { className: 'summary-stats-grid' });
+        const createCard = (val, label, highlight = false) => {
+            return DOMUtils.createElement(
+                'div',
+                { className: `summary-stat-card ${highlight ? 'highlight' : ''}` },
+                [
+                    DOMUtils.createElement('span', { className: 'stat-value', textContent: val }),
+                    DOMUtils.createElement('span', { className: 'stat-label', textContent: label }),
+                ]
+            );
+        };
+        grid.appendChild(createCard(`${stats.completedTasks}/${stats.totalTasks}`, 'Tasks Done'));
+        grid.appendChild(createCard(this.formatDuration(stats.completedMinutes), 'Time Completed'));
+        grid.appendChild(
+            createCard(`${stats.completedMiniTasks}/${stats.totalMiniTasks}`, 'Mini-Tasks')
+        );
+        grid.appendChild(createCard(`${stats.currentStreak}`, 'Day Streak 🔥', true));
+        body.appendChild(grid);
+
+        // Daily Breakdown
+        const daily = DOMUtils.createElement('div', { className: 'summary-daily' });
+        daily.appendChild(DOMUtils.createElement('h4', { textContent: 'Daily Breakdown' }));
+        const bars = DOMUtils.createElement('div', { className: 'daily-bars' });
+        stats.dailyStats.forEach((day, i) => {
+            const isBestDay = stats.bestDay === fullDays[i];
+            const item = DOMUtils.createElement('div', {
+                className: `daily-bar-item ${isBestDay ? 'best' : ''}`,
+            });
+            item.appendChild(
+                DOMUtils.createElement('div', {
+                    className: 'daily-bar-fill',
+                    style: { height: `${day.tasks.percent}%` },
+                })
+            );
+            item.appendChild(
+                DOMUtils.createElement('span', {
+                    className: 'daily-bar-label',
+                    textContent: days[i],
+                })
+            );
+            item.appendChild(
+                DOMUtils.createElement('span', {
+                    className: 'daily-bar-value',
+                    textContent: `${day.tasks.completed}/${day.tasks.total}`,
+                })
+            );
+            bars.appendChild(item);
+        });
+        daily.appendChild(bars);
+        body.appendChild(daily);
+
+        // Highlight
+        if (stats.bestDay) {
+            const highlight = DOMUtils.createElement('div', { className: 'summary-highlight' }, [
+                DOMUtils.createElement('span', { className: 'highlight-icon', textContent: '🏆' }),
+                DOMUtils.createElement('span', { className: 'highlight-text' }, [
+                    document.createTextNode('Best Day: '),
+                    DOMUtils.createElement('strong', { textContent: stats.bestDay }),
+                    document.createTextNode(` (${stats.bestDayRate}%)`),
+                ]),
+            ]);
+            body.appendChild(highlight);
+        }
+
+        // Trend
+        const trend = DOMUtils.createElement('div', { className: 'summary-trend' });
+        trend.appendChild(DOMUtils.createElement('h4', { textContent: 'Weekly Trend' }));
+        trend.appendChild(this.generateSparkline(stats.dailyStats));
+        body.appendChild(trend);
+
+        content.appendChild(body);
+
+        // Footer
+        const footer = DOMUtils.createElement('div', { className: 'summary-footer' });
+        footer.appendChild(
+            DOMUtils.createElement('button', {
+                className: 'btn btn-secondary',
+                id: 'closeSummaryBtn',
+                textContent: 'Close',
+            })
+        );
+        content.appendChild(footer);
+
+        overlay.appendChild(content);
+        container.appendChild(overlay);
 
         this.setupListeners();
     },
@@ -308,7 +420,7 @@ export const WeeklySummary = {
             }
         };
         document.addEventListener('keydown', keyHandler);
-    }
+    },
 };
 
 // Make globally available

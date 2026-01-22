@@ -82,7 +82,7 @@
     content: '';
     width: 8px;
     height: 8px;
-    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
     border-radius: 50%;
     box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
 }
@@ -105,7 +105,7 @@
 .dept-settings-close:hover {
     background: rgba(239, 68, 68, 0.15);
     border-color: rgba(239, 68, 68, 0.3);
-    color: #EF4444;
+    color: #ef4444;
 }
 
 /* Body */
@@ -138,9 +138,19 @@
     background: rgba(255, 255, 255, 0.02);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.06);
-    overflow: hidden;
+    /* No overflow:hidden to allow color palette to spill out */
     transition: all 0.2s ease;
     cursor: grab;
+    position: relative;
+    contain: layout;
+    /* Isolate for better drag snapshots */
+    z-index: 1;
+}
+
+.dept-section:hover,
+.dept-section:focus-within {
+    z-index: 100;
+    /* Raise above siblings so color palette is visible */
 }
 
 /* Drag handle */
@@ -161,11 +171,18 @@
 }
 
 /* Dragging state */
-.dept-section.dragging {
-    opacity: 0.5;
+[draggable="true"].dragging {
+    opacity: 0.1 !important;
+    /* Visual placeholder opacity */
     transform: scale(0.98);
     border-color: rgba(99, 102, 241, 0.3);
     cursor: grabbing;
+    background: rgba(139, 92, 246, 0.05) !important;
+}
+
+[draggable="true"].dragging * {
+    visibility: hidden;
+    /* Hide content of the origin element while dragging */
 }
 
 /* Drag over state */
@@ -184,13 +201,19 @@
     align-items: center;
     gap: 10px;
     padding: 12px 14px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 11px 11px 0 0;
+    /* Follow parent radius */
     transition: all 0.15s ease;
 }
 
 .dept-parent:hover {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%);
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.09) 0%,
+            rgba(255, 255, 255, 0.04) 100%);
 }
 
 .dept-parent:hover .dept-actions {
@@ -215,6 +238,8 @@
     position: relative;
     padding: 8px 10px 10px 38px;
     background: rgba(0, 0, 0, 0.15);
+    border-radius: 0 0 11px 11px;
+    /* Follow parent radius at bottom */
     animation: treeExpand 0.3s ease-out;
 }
 
@@ -225,10 +250,11 @@
     left: 24px;
     top: 0;
     bottom: 16px;
-    width: 1px;
+    width: 2px;
     background: linear-gradient(180deg,
-            rgba(255, 255, 255, 0.15) 0%,
-            rgba(255, 255, 255, 0.08) 100%);
+            rgba(99, 102, 241, 0.3) 0%,
+            rgba(139, 92, 246, 0.1) 100%);
+    border-radius: 1px;
     animation: treeFadeIn 0.4s ease-out;
 }
 
@@ -240,7 +266,7 @@
 
     to {
         opacity: 1;
-        max-height: 500px;
+        max-height: 1000px;
     }
 }
 
@@ -256,6 +282,8 @@
 
 .dept-child {
     position: relative;
+    z-index: 1;
+    contain: layout;
 }
 
 .dept-child-content {
@@ -265,10 +293,13 @@
     padding: 7px 10px;
     border-radius: 8px;
     transition: all 0.15s ease;
+    position: relative;
+    z-index: 2;
 }
 
 .dept-child-content:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .dept-child-content:hover .dept-actions {
@@ -278,33 +309,52 @@
 /* L-shaped connector line (horizontal part) */
 .dept-connector {
     position: relative;
-    width: 14px;
+    width: 16px;
     height: 2px;
-    background: linear-gradient(90deg,
-            rgba(255, 255, 255, 0.15),
-            rgba(255, 255, 255, 0.08));
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.3), rgba(255, 255, 255, 0.1));
     border-radius: 1px;
     margin-left: -20px;
     flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-tertiary);
+}
+
+.dept-connector:hover {
+    color: var(--text-primary);
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.5), rgba(255, 255, 255, 0.2));
 }
 
 /* Connector dot for visual emphasis */
 .dept-connector::before {
     content: '';
     position: absolute;
-    right: -1px;
+    right: -2px;
     top: 50%;
     transform: translateY(-50%);
-    width: 4px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.12);
+    width: 6px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     transition: all 0.2s ease;
+    display: none;
+    /* Hide if we have +/- */
+}
+
+/* If no children, show the dot */
+.dept-connector:empty::before {
+    display: block;
 }
 
 .dept-child-content:hover .dept-connector::before {
     background: rgba(99, 102, 241, 0.6);
-    box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Sub-children (level 3) with nested tree lines */
@@ -323,10 +373,11 @@
     left: 0;
     top: 0;
     bottom: 12px;
-    width: 1px;
+    width: 2px;
     background: linear-gradient(180deg,
-            rgba(255, 255, 255, 0.1) 0%,
-            rgba(255, 255, 255, 0.04) 100%);
+            rgba(139, 92, 246, 0.2) 0%,
+            rgba(255, 255, 255, 0.05) 100%);
+    border-radius: 1px;
 }
 
 .dept-subchild {
@@ -334,13 +385,16 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 8px;
+    padding: 6px 10px;
     border-radius: 6px;
     transition: all 0.15s ease;
+    z-index: 2;
+    contain: layout;
 }
 
 .dept-subchild:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .dept-subchild:hover .dept-actions {
@@ -348,27 +402,60 @@
 }
 
 .dept-connector.deep {
-    width: 12px;
-    background: linear-gradient(90deg,
-            rgba(255, 255, 255, 0.1),
-            rgba(255, 255, 255, 0.05));
+    width: 14px;
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.3), rgba(255, 255, 255, 0.08));
     margin-left: -16px;
 }
 
 .dept-connector.deep::before {
-    width: 3px;
-    height: 3px;
+    width: 4px;
+    height: 4px;
     background: rgba(255, 255, 255, 0.08);
 }
 
 .dept-subchild:hover .dept-connector.deep::before {
-    background: rgba(139, 92, 246, 0.5);
-    box-shadow: 0 0 4px rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
 }
 
 /* ============================================
    ELEMENTS: Color Picker, Badge, Name, Actions
    ============================================ */
+.dept-parent-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.dept-collapse-toggle {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 4px;
+    margin-right: -4px;
+    z-index: 2;
+}
+
+.dept-collapse-toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+.dept-collapse-toggle.collapsed {
+    transform: rotate(-90deg);
+}
+
+.dept-collapse-toggle svg {
+    width: 12px;
+    height: 12px;
+}
+
 .dept-color-picker {
     width: 22px;
     height: 22px;
@@ -400,7 +487,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 30px;
+    min-width: 32px;
     height: 20px;
     padding: 0 6px;
     font-size: 10px;
@@ -411,16 +498,23 @@
     text-transform: uppercase;
     letter-spacing: 0.3px;
     flex-shrink: 0;
+    cursor: text;
+    transition: all 0.2s ease;
+}
+
+.dept-badge:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
 .dept-badge.small {
-    min-width: 26px;
+    min-width: 28px;
     height: 18px;
     font-size: 9px;
 }
 
 .dept-badge.tiny {
-    min-width: 22px;
+    min-width: 24px;
     height: 16px;
     font-size: 8px;
     padding: 0 4px;
@@ -436,6 +530,15 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    cursor: text;
+    padding: 4px 8px;
+    margin-left: -8px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.dept-name:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .dept-child-content .dept-name,
@@ -443,6 +546,30 @@
     font-size: 12px;
     font-weight: 400;
     color: var(--text-secondary);
+}
+
+/* Inline Editing Input */
+.dept-inline-input {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    color: white;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    padding: 2px 6px;
+    width: 100%;
+    outline: none;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.dept-badge .dept-inline-input {
+    background: transparent;
+    border: none;
+    padding: 0;
+    text-align: center;
+    text-transform: uppercase;
+    box-shadow: none;
 }
 
 /* Actions */
@@ -478,13 +605,127 @@
 .dept-action-btn.delete:hover {
     background: rgba(239, 68, 68, 0.12);
     border-color: rgba(239, 68, 68, 0.25);
-    color: #EF4444;
+    color: #ef4444;
 }
 
 .dept-action-btn.add:hover {
-    background: rgba(16, 185, 129, 0.12);
-    border-color: rgba(16, 185, 129, 0.25);
-    color: #10B981;
+    background: color-mix(in srgb, var(--accent-success) 18%, transparent);
+    border-color: color-mix(in srgb, var(--accent-success) 30%, transparent);
+    color: var(--accent-success);
+}
+
+/* Header Actions */
+.dept-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-icon-text {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-icon-text:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Color Manager */
+.dept-color-manager {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.dept-color-swatch-trigger {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.dept-color-swatch-trigger:hover {
+    transform: scale(1.1);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.dept-swatch-grid {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 100;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dept-color-manager:hover .dept-swatch-grid,
+.dept-swatch-grid:hover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dept-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 2px solid transparent;
+}
+
+.dept-swatch:hover {
+    transform: scale(1.15);
+}
+
+.dept-swatch.active {
+    border-color: white;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Branch Highlighting */
+.dept-section:hover>.dept-parent {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dept-section.drag-over>.dept-parent {
+    background: rgba(99, 102, 241, 0.1) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+.dept-child.drag-over,
+.dept-subchild.drag-over {
+    background: rgba(99, 102, 241, 0.1) !important;
+    border: 1px dashed var(--accent-primary) !important;
+}
+
+/* Collapsed State */
+.dept-section.collapsed .dept-children {
+    display: none;
 }
 
 /* ============================================
@@ -535,7 +776,7 @@
 }
 
 .dept-settings-footer .btn-primary {
-    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
     border: none;
     color: white;
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);

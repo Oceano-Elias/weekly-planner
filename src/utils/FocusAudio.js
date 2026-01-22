@@ -106,7 +106,7 @@ export const FocusAudio = {
         // More satisfying ascending chord: E5 -> G5 -> C6
         this.playTone(659.25, 0.1, 'sine', 0.25); // E5
         setTimeout(() => this.playTone(783.99, 0.1, 'sine', 0.25), 80); // G5
-        setTimeout(() => this.playTone(1046.50, 0.2, 'sine', 0.3), 160); // C6
+        setTimeout(() => this.playTone(1046.5, 0.2, 'sine', 0.3), 160); // C6
     },
 
     /**
@@ -118,10 +118,10 @@ export const FocusAudio = {
         // Triumphant melody: C5 -> G5 -> C6
         const ctx = this.getContext();
         const start = ctx.currentTime;
-        
+
         this.playTone(523.25, 0.2, 'sine', 0.3); // C5
         setTimeout(() => this.playTone(783.99, 0.2, 'sine', 0.3), 150); // G5
-        setTimeout(() => this.playTone(1046.50, 0.6, 'sine', 0.4), 300); // C6
+        setTimeout(() => this.playTone(1046.5, 0.6, 'sine', 0.4), 300); // C6
     },
 
     /**
@@ -149,7 +149,7 @@ export const FocusAudio = {
      */
     isEnabled() {
         return this.enabled;
-    }
+    },
 };
 
 // Initialize on module load

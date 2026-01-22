@@ -4,14 +4,14 @@
 
 export const PlannerService = {
     // Calendar time constants
-    SLOT_DURATION: 30,      // minutes per slot
-    CELL_HEIGHT: 52,        // pixels per cell (matching CSS --calendar-cell-height)
-    DEFAULT_DURATION: 60,   // default task duration
-    MIN_DURATION: 15,       // minimum task duration
-    MAX_DURATION: 480,      // maximum task duration (8 hours)
-    START_HOUR: 8,          // calendar start hour
-    END_HOUR: 19,           // calendar end hour
-    MAX_DEPT_LEVELS: 4,     // max department hierarchy depth
+    SLOT_DURATION: 30, // minutes per slot
+    CELL_HEIGHT: 52, // pixels per cell (matching CSS --calendar-cell-height)
+    DEFAULT_DURATION: 60, // default task duration
+    MIN_DURATION: 15, // minimum task duration
+    MAX_DURATION: 480, // maximum task duration (8 hours)
+    START_HOUR: 8, // calendar start hour
+    END_HOUR: 19, // calendar end hour
+    MAX_DEPT_LEVELS: 4, // max department hierarchy depth
     DAYS: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
     DAY_LABELS: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
 
@@ -119,8 +119,8 @@ export const PlannerService = {
             if (!inThrottle) {
                 func.apply(context, args);
                 inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
+                setTimeout(() => (inThrottle = false), limit);
             }
         };
-    }
+    },
 };

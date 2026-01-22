@@ -1,12 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Weekly Planner | Hierarchical Task Management</title>
     <meta name="description"
-        content="Desktop weekly planner with hierarchical tasks, drag-and-drop scheduling, and department-based organization">
+        content="Desktop weekly planner with hierarchical tasks, drag-and-drop scheduling, and department-based organization" />
 
     <!-- PWA -->
     <link rel="manifest" href="./manifest.json" />
@@ -17,7 +17,7 @@
     <meta name="theme-color" content="#1a1d2e" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- CSS is bundled by Vite via main.js imports -->
     <script type="module" src="./src/main.js"></script>
@@ -31,7 +31,9 @@
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <h1 class="header-title">Weekly Planner <span class="version-badge" id="versionBadge"></span></h1>
+                <h1 class="header-title">
+                    Weekly Planner <span class="version-badge" id="versionBadge"></span>
+                </h1>
                 <div class="header-nav">
                     <div class="view-toggle">
                         <button class="view-btn active" data-view="week">Week</button>
@@ -51,30 +53,46 @@
                         </svg>
                     </button>
                     <button class="nav-btn" id="todayBtn" title="Go to Today"
-                        style="margin-left: 8px; width: auto; padding: 0 12px; font-size: 12px;">
+                        style="margin-left: 8px; width: auto; padding: 0 12px; font-size: 12px">
                         Today
                     </button>
-                    <div class="template-controls"
-                        style="display: flex; gap: 8px; border-left: 1px solid var(--border-color); padding-left: 12px; margin-left: 12px;">
-                        <button class="nav-btn" id="setTemplateBtn" title="Set Current Week as Default Template"
-                            style="width: auto; padding: 0 12px; display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                <polyline points="7 3 7 8 15 8"></polyline>
-                            </svg>
-                            <span style="font-size: 11px;">Set Template</span>
-                        </button>
-                        <button class="nav-btn" id="resetWeekBtn" title="Reset Week to Default Template"
-                            style="width: auto; padding: 0 12px; display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                                <path d="M3 3v5h5"></path>
-                            </svg>
-                            <span style="font-size: 11px;">Reset</span>
-                        </button>
+                    <div class="template-controls" id="viewOptionsContainer" style="
+                                display: flex;
+                                gap: 8px;
+                                border-left: 1px solid var(--border-color);
+                                padding-left: 12px;
+                                margin-left: 12px;
+                            ">
+                        <div class="dropdown" id="viewOptionsDropdown">
+                            <button class="nav-btn dropdown-toggle" id="viewOptionsBtn" title="View Options"
+                                style="width: auto; padding: 0 12px; font-size: 12px">
+                                <span>Options</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-left: 4px">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="dropdown-menu" id="viewOptionsMenu">
+                                <button class="dropdown-item" id="setTemplateBtn">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z">
+                                        </path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
+                                    <span>Set Template</span>
+                                </button>
+                                <button class="dropdown-item" id="resetWeekBtn">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                        <path d="M3 3v5h5"></path>
+                                    </svg>
+                                    <span>Reset Week</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -152,7 +170,7 @@
                             </button>
                         </div>
                     </div>
-                    <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                    <input type="file" id="importFileInput" accept=".json" style="display: none" />
                 </div>
 
                 <!-- Divider -->
@@ -195,7 +213,8 @@
                                 <circle cx="11" cy="11" r="8" />
                                 <path d="m21 21-4.3-4.3" />
                             </svg>
-                            <input type="text" id="taskSearchInput" placeholder="Search tasks..." class="search-input">
+                            <input type="text" id="taskSearchInput" placeholder="Search tasks..."
+                                class="search-input" />
                             <button class="search-clear" id="searchClearBtn" title="Clear search">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
@@ -211,20 +230,22 @@
                             <div class="task-queue-empty">
                                 <div class="task-queue-empty-icon">📋</div>
                                 <p>No tasks in queue</p>
-                                <p style="font-size: 12px; margin-top: 8px;">Click "New Task" to create one</p>
+                                <p style="font-size: 12px; margin-top: 8px">
+                                    Click "New Task" to create one
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Analytics Panel -->
-                    <div class="sidebar-content" id="analyticsPanel" style="display: none;">
+                    <div class="sidebar-content" id="analyticsPanel" style="display: none">
                         <div class="analytics-container" id="analyticsContainer">
                             <!-- Stats will be generated dynamically -->
                         </div>
                     </div>
 
                     <!-- Filters Panel -->
-                    <div class="sidebar-content" id="filtersPanel" style="display: none;">
+                    <div class="sidebar-content" id="filtersPanel" style="display: none">
                         <div class="filter-panel" id="filterTree"></div>
                     </div>
                 </div>
@@ -253,7 +274,7 @@
                 <div class="modal-header-main">
                     <div class="modal-header-title">
                         <h2 class="modal-title" id="modalTitle">Create New Task</h2>
-                        <p class="modal-subtitle" id="scheduleInfo" style="display: none;">
+                        <p class="modal-subtitle" id="scheduleInfo" style="display: none">
                             <span class="modal-subtitle-icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                                     <circle cx="12" cy="12" r="8"></circle>
@@ -282,10 +303,8 @@
                             <span class="form-label-chip">Auto‑generated</span>
                         </label>
                         <input type="text" class="form-input task-title-input" id="taskTitle"
-                            placeholder="Title generated from hierarchy" required readonly>
+                            placeholder="Title generated from hierarchy" required readonly />
                     </div>
-
-
 
                     <!-- Department Hierarchy -->
                     <div class="form-group">
@@ -297,19 +316,19 @@
                                     <option value="">Select Department</option>
                                 </select>
                             </div>
-                            <div class="hierarchy-level" id="deptLevel2" style="display: none;">
+                            <div class="hierarchy-level" id="deptLevel2" style="display: none">
                                 <span class="hierarchy-level-indicator">2</span>
                                 <select class="form-select" id="dept2">
                                     <option value="">Select Sub-Department</option>
                                 </select>
                             </div>
-                            <div class="hierarchy-level" id="deptLevel3" style="display: none;">
+                            <div class="hierarchy-level" id="deptLevel3" style="display: none">
                                 <span class="hierarchy-level-indicator">3</span>
                                 <select class="form-select" id="dept3">
                                     <option value="">Select Category</option>
                                 </select>
                             </div>
-                            <div class="hierarchy-level" id="deptLevel4" style="display: none;">
+                            <div class="hierarchy-level" id="deptLevel4" style="display: none">
                                 <span class="hierarchy-level-indicator">4</span>
                                 <select class="form-select" id="dept4">
                                     <option value="">Select Sub-Category</option>
@@ -322,30 +341,47 @@
                     <div class="form-group">
                         <label class="form-label">Duration *</label>
                         <div class="duration-selector">
-                            <button type="button" class="duration-option" data-duration="30">30m</button>
-                            <button type="button" class="duration-option selected" data-duration="60">1h</button>
-                            <button type="button" class="duration-option" data-duration="90">1.5h</button>
-                            <button type="button" class="duration-option" data-duration="120">2h</button>
-                            <button type="button" class="duration-option" data-duration="custom">Custom</button>
+                            <button type="button" class="duration-option" data-duration="30">
+                                30m
+                            </button>
+                            <button type="button" class="duration-option selected" data-duration="60">
+                                1h
+                            </button>
+                            <button type="button" class="duration-option" data-duration="90">
+                                1.5h
+                            </button>
+                            <button type="button" class="duration-option" data-duration="120">
+                                2h
+                            </button>
+                            <button type="button" class="duration-option" data-duration="custom">
+                                Custom
+                            </button>
                         </div>
-                        <div class="duration-custom" id="customDuration" style="display: none;">
+                        <div class="duration-custom" id="customDuration" style="display: none">
                             <input type="number" class="form-input duration-custom-input" id="customMinutes" min="15"
-                                max="480" step="15" placeholder="Min">
-                            <span
-                                style="color: var(--text-secondary); display: flex; align-items: center;">minutes</span>
+                                max="480" step="15" placeholder="Min" />
+                            <span style="
+                                        color: var(--text-secondary);
+                                        display: flex;
+                                        align-items: center;
+                                    ">minutes</span>
                         </div>
                     </div>
 
                     <!-- Mini-Tasks/Steps (Optional) -->
                     <div class="form-group">
-                        <label class="form-label">Steps / Mini-Tasks <span
-                                class="form-label-optional">(optional)</span></label>
+                        <label class="form-label">Steps / Mini-Tasks
+                            <span class="form-label-optional">(optional)</span></label>
                         <div class="steps-input-wrapper">
                             <input type="text" class="form-input" id="stepInput"
-                                placeholder="Add a step and press Enter...">
-                            <button type="button" class="btn-add-step" id="addStepBtn" title="Add Step">+</button>
+                                placeholder="Add a step and press Enter..." />
+                            <button type="button" class="btn-add-step" id="addStepBtn" title="Add Step">
+                                +
+                            </button>
                         </div>
-                        <div class="form-helper">Add short actionable steps to guide Focus Mode.</div>
+                        <div class="form-helper">
+                            Add short actionable steps to guide Focus Mode.
+                        </div>
                         <ul class="steps-list" id="stepsList"></ul>
                     </div>
                 </form>
@@ -366,7 +402,9 @@
         <div class="shortcuts-content">
             <div class="shortcuts-header">
                 <h3 id="shortcutsTitle">⌨️ Keyboard Shortcuts</h3>
-                <button class="shortcuts-close" id="closeShortcuts" aria-label="Close shortcuts">×</button>
+                <button class="shortcuts-close" id="closeShortcuts" aria-label="Close shortcuts">
+                    ×
+                </button>
             </div>
             <div class="shortcuts-body">
                 <div class="shortcut-group">
@@ -383,13 +421,19 @@
                 <div class="shortcut-group">
                     <h4>Tasks</h4>
                     <div class="shortcut-item"><kbd>N</kbd> <span>New Task</span></div>
-                    <div class="shortcut-item"><kbd>⌘</kbd> + <kbd>Enter</kbd> <span>Save Task</span></div>
-                    <div class="shortcut-item"><kbd>Double-click</kbd> <span>Edit Task</span></div>
+                    <div class="shortcut-item">
+                        <kbd>⌘</kbd> + <kbd>Enter</kbd> <span>Save Task</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Double-click</kbd> <span>Edit Task</span>
+                    </div>
                 </div>
                 <div class="shortcut-group">
                     <h4>Focus Mode</h4>
                     <div class="shortcut-item"><kbd>F</kbd> <span>Open/Close Focus</span></div>
-                    <div class="shortcut-item"><kbd>Space</kbd> <span>Pause/Resume Timer</span></div>
+                    <div class="shortcut-item">
+                        <kbd>Space</kbd> <span>Pause/Resume Timer</span>
+                    </div>
                 </div>
                 <div class="shortcut-group">
                     <h4>General</h4>

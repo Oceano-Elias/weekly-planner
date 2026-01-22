@@ -93,5 +93,5 @@ export const ConfirmModal = {
             };
             modal.addEventListener('keydown', handleTab);
         });
-    }
+    },
 };

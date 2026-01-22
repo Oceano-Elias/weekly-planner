@@ -6,6 +6,7 @@ import { Departments } from '../departments.js';
 import { PlannerService } from '../services/PlannerService.js';
 import { FocusAudio } from '../utils/FocusAudio.js';
 import { Store } from '../store.js';
+import { DOMUtils } from '../utils/DOMUtils.js';
 
 export const FocusModeUI = {
     /**
@@ -22,7 +23,7 @@ export const FocusModeUI = {
      */
     getActiveStepTitle(task, currentStepIndex) {
         if (!task || !task.notes) return 'Execute Phase';
-        const lines = task.notes.split('\n').filter(l => l.trim() !== '');
+        const lines = task.notes.split('\n').filter((l) => l.trim() !== '');
         if (currentStepIndex >= 0 && currentStepIndex < lines.length) {
             return lines[currentStepIndex].replace(/\[[ x]\]\s*/, '').trim();
         }
@@ -38,13 +39,25 @@ export const FocusModeUI = {
 
         // If task is fully completed, show celebration
         if (state.phase === 'completed') {
-            display.innerHTML = `<span class="completion-celebration">🏆</span>`;
+            DOMUtils.clear(display);
+            display.appendChild(
+                DOMUtils.createElement('span', {
+                    className: 'completion-celebration',
+                    textContent: '🏆',
+                })
+            );
             display.classList.add('timer-completed');
             display.classList.remove('timer-finished-pulse');
             const stepTitle = document.getElementById('activeStepTitle');
             const controls = document.querySelector('.ring-media-controls');
             if (stepTitle) {
-                stepTitle.innerHTML = `<span class="completion-text">All Done!</span>`;
+                DOMUtils.clear(stepTitle);
+                stepTitle.appendChild(
+                    DOMUtils.createElement('span', {
+                        className: 'completion-text',
+                        textContent: 'All Done!',
+                    })
+                );
                 stepTitle.classList.add('completion-title');
             }
             if (controls) controls.style.display = 'none';
@@ -61,11 +74,15 @@ export const FocusModeUI = {
 
         let secondsRemaining;
         if (state.mode === 'work') {
-            const currentSessionElapsed = state.sessionStartTime ? (Date.now() - state.sessionStartTime) : 0;
+            const currentSessionElapsed = state.sessionStartTime
+                ? Date.now() - state.sessionStartTime
+                : 0;
             const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
             secondsRemaining = Math.max(0, sessionDuration - Math.floor(totalElapsedMs / 1000));
         } else {
-            const breakElapsed = state.breakStartTime ? Math.floor((Date.now() - state.breakStartTime) / 1000) : 0;
+            const breakElapsed = state.breakStartTime
+                ? Math.floor((Date.now() - state.breakStartTime) / 1000)
+                : 0;
             secondsRemaining = Math.max(0, breakDuration - breakElapsed);
 
             // Pulse the timer when break is over
@@ -96,20 +113,20 @@ export const FocusModeUI = {
         if (!outerRing || !innerRing) return;
 
         // Outer Ring: Step-based progress
-        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
-        const taskLines = lines.filter(l => l.includes('[ ]') || l.includes('[x]'));
-        const completedCount = taskLines.filter(l => l.includes('[x]')).length;
+        const lines = (task.notes || '').split('\n').filter((l) => l.trim() !== '');
+        const taskLines = lines.filter((l) => l.includes('[ ]') || l.includes('[x]'));
+        const completedCount = taskLines.filter((l) => l.includes('[x]')).length;
         const totalCount = taskLines.length || 1;
 
         const outerCircumference = 2 * Math.PI * 56;
-        const isTotalComplete = taskLines.length > 0 && taskLines.every(l => l.includes('[x]'));
+        const isTotalComplete = taskLines.length > 0 && taskLines.every((l) => l.includes('[x]'));
 
         // --- SEGMENTATION LOGIC ---
         if (totalCount > 1) {
             const strokeWidth = 4;
             const targetGap = 6; // Total visible gap between segments
 
-            const segmentDash = (outerCircumference / totalCount) - targetGap;
+            const segmentDash = outerCircumference / totalCount - targetGap;
             const gapDash = targetGap;
 
             if (outerRingBg) {
@@ -150,7 +167,7 @@ export const FocusModeUI = {
             outerRing.style.strokeDashoffset = isTotalComplete ? 0 : outerCircumference;
         }
 
-        outerRing.style.opacity = completedCount > 0 ? "1" : "0.3";
+        outerRing.style.opacity = completedCount > 0 ? '1' : '0.3';
 
         // Inner Ring: Session time progress
         const innerCircumference = 2 * Math.PI * 48;
@@ -158,20 +175,21 @@ export const FocusModeUI = {
 
         if (isTotalComplete || state.phase === 'completed') {
             innerRing.style.strokeDashoffset = 0;
-            innerRing.style.opacity = "1";
+            innerRing.style.opacity = '1';
         } else if (state.mode === 'work') {
-            const currentSessionElapsed = (state.running && state.sessionStartTime) ? (Date.now() - state.sessionStartTime) : 0;
+            const currentSessionElapsed =
+                state.running && state.sessionStartTime ? Date.now() - state.sessionStartTime : 0;
             const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
             const innerProgress = Math.min(1, totalElapsedMs / (sessionDuration * 1000));
 
             innerRing.style.strokeDashoffset = innerCircumference * (1 - innerProgress);
-            innerRing.style.opacity = state.running ? "1" : "0.5";
+            innerRing.style.opacity = state.running ? '1' : '0.5';
         } else if (state.mode === 'break') {
             innerRing.style.strokeDashoffset = 0;
-            innerRing.style.opacity = "0.2";
+            innerRing.style.opacity = '0.2';
         } else {
             innerRing.style.strokeDashoffset = innerCircumference;
-            innerRing.style.opacity = "0.3";
+            innerRing.style.opacity = '0.3';
         }
     },
 
@@ -187,17 +205,32 @@ export const FocusModeUI = {
             if (state.running) {
                 btn.classList.add('running');
                 btn.classList.remove('waiting');
-                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+                DOMUtils.clear(btn);
+                btn.appendChild(
+                    DOMUtils.createSVG('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, [
+                        DOMUtils.createSVG('path', { d: 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' }),
+                    ])
+                );
                 btn.setAttribute('aria-label', 'Pause');
                 btn.setAttribute('title', 'Pause');
 
                 if (!stopBtn && mediaControls) {
-                    const newStopBtn = document.createElement('button');
-                    newStopBtn.className = 'ring-media-btn ring-media-stop';
-                    newStopBtn.id = 'stopSessionBtn';
-                    newStopBtn.setAttribute('aria-label', 'Stop');
-                    newStopBtn.setAttribute('title', 'Stop');
-                    newStopBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>`;
+                    const newStopBtn = DOMUtils.createElement(
+                        'button',
+                        {
+                            className: 'ring-media-btn ring-media-stop',
+                            id: 'stopSessionBtn',
+                            'aria-label': 'Stop',
+                            title: 'Stop',
+                        },
+                        [
+                            DOMUtils.createSVG(
+                                'svg',
+                                { viewBox: '0 0 24 24', fill: 'currentColor' },
+                                [DOMUtils.createSVG('path', { d: 'M6 6h12v12H6z' })]
+                            ),
+                        ]
+                    );
                     newStopBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         if (stopSessionCallback) stopSessionCallback();
@@ -208,7 +241,12 @@ export const FocusModeUI = {
                 btn.classList.remove('running');
                 const isWaiting = (state.accumulatedTime || 0) > 0;
                 btn.classList.toggle('waiting', isWaiting);
-                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+                DOMUtils.clear(btn);
+                btn.appendChild(
+                    DOMUtils.createSVG('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, [
+                        DOMUtils.createSVG('path', { d: 'M8 5v14l11-7z' }),
+                    ])
+                );
                 const label = isWaiting ? 'Resume' : 'Start Focus';
                 btn.setAttribute('aria-label', label);
                 btn.setAttribute('title', label);
@@ -228,12 +266,14 @@ export const FocusModeUI = {
         const enabled = FocusAudio.isEnabled();
         btn.classList.toggle('muted', !enabled);
         btn.title = enabled ? 'Mute sounds' : 'Enable sounds';
-        btn.innerHTML = enabled ? `
+        btn.innerHTML = enabled
+            ? `
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 5L6 9H2v6h4l5 4V5z"/>
                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
             </svg>
-        ` : `
+        `
+            : `
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 5L6 9H2v6h4l5 4V5z"/>
                 <line x1="23" y1="9" x2="17" y2="15"/>
@@ -270,7 +310,7 @@ export const FocusModeUI = {
             carouselNav.classList.toggle('disabled', state.running);
         }
 
-        const lines = (task?.notes || '').split('\n').filter(l => l.trim() !== '');
+        const lines = (task?.notes || '').split('\n').filter((l) => l.trim() !== '');
         const currentIndex = state.currentStepIndex || 0;
 
         const hasPrevStep = currentIndex > 0;
@@ -334,24 +374,55 @@ export const FocusModeUI = {
         const stepLabel = index >= 0 ? `Step ${index + 1}` : '';
         const visualState = stateClass === 'below' ? 'done' : stateClass;
 
-        const icon = isCompleted
-            ? '<div class="carousel-icon done">✓</div>'
-            : (visualState === 'active'
-                ? '<div class="carousel-icon active">●</div>'
-                : '<div class="carousel-icon upcoming">○</div>');
+        const fragment = document.createDocumentFragment();
 
-        const badge = (visualState === 'active' && !isCompleted) ? '<div class="carousel-badge">NOW</div>' : '';
+        let iconEl;
+        if (isCompleted) {
+            iconEl = DOMUtils.createElement('div', {
+                className: 'carousel-icon done',
+                textContent: '✓',
+            });
+        } else if (visualState === 'active') {
+            iconEl = DOMUtils.createElement('div', {
+                className: 'carousel-icon active',
+                textContent: '●',
+            });
+        } else {
+            iconEl = DOMUtils.createElement('div', {
+                className: 'carousel-icon upcoming',
+                textContent: '○',
+            });
+        }
+
         const completedClass = isCompleted ? 'is-completed' : '';
-        const textHtml = `<div class="carousel-text ${completedClass}">${PlannerService.escapeHtml(cleanText)}</div>`;
+        const header = DOMUtils.createElement(
+            'div',
+            { className: `carousel-header ${completedClass}` },
+            [
+                iconEl,
+                DOMUtils.createElement('div', {
+                    className: 'carousel-step',
+                    textContent: stepLabel,
+                }),
+            ]
+        );
 
-        return `
-            <div class="carousel-header ${completedClass}">
-                ${icon}
-                <div class="carousel-step">${stepLabel}</div>
-                ${badge}
-            </div>
-            ${textHtml}
-        `;
+        if (visualState === 'active' && !isCompleted) {
+            header.appendChild(
+                DOMUtils.createElement('div', { className: 'carousel-badge', textContent: 'NOW' })
+            );
+        }
+
+        fragment.appendChild(header);
+
+        fragment.appendChild(
+            DOMUtils.createElement('div', {
+                className: `carousel-text ${completedClass}`,
+                textContent: cleanText,
+            })
+        );
+
+        return fragment;
     },
 
     /**
@@ -359,73 +430,182 @@ export const FocusModeUI = {
      */
     getQuestStack(task, activeIndex) {
         const notes = task.notes || '';
-        if (!notes) return '<div class="pills-empty">Define your journey steps...</div>';
+        const fragment = document.createDocumentFragment();
 
-        const lines = notes.split('\n').filter(l => l.trim() !== '');
-        if (lines.length === 0) return '<div class="pills-empty">Define your journey steps...</div>';
+        if (!notes) {
+            fragment.appendChild(
+                DOMUtils.createElement('div', {
+                    className: 'pills-empty',
+                    textContent: 'Define your journey steps...',
+                })
+            );
+            return fragment;
+        }
+
+        const lines = notes.split('\n').filter((l) => l.trim() !== '');
+        if (lines.length === 0) {
+            fragment.appendChild(
+                DOMUtils.createElement('div', {
+                    className: 'pills-empty',
+                    textContent: 'Define your journey steps...',
+                })
+            );
+            return fragment;
+        }
 
         const prevDone = activeIndex - 1;
         const nextIndex = activeIndex + 1 < lines.length ? activeIndex + 1 : -1;
         const behindIndex = activeIndex + 2 < lines.length ? activeIndex + 2 : -1;
 
-        const buildCardInner = (role, idx) => {
-            if (idx === -1) return '';
+        const buildCard = (role, idx, depth) => {
+            const card = DOMUtils.createElement('div', {
+                className: `carousel-card ${role}`,
+                dataset: { role, index: idx },
+                style: { '--depth': depth },
+            });
+
+            if (idx === -1) {
+                card.classList.add('empty');
+                return card;
+            }
+
             const raw = lines[idx];
             const isCompleted = raw.includes('[x]');
             const cleanText = raw.replace(/\[[ x]\]\s*/, '').trim();
-            return this.getCarouselCardInner(role, idx, cleanText, isCompleted);
+
+            if (isCompleted) card.classList.add('is-completed');
+            card.appendChild(this.getCarouselCardInner(role, idx, cleanText, isCompleted));
+            return card;
         };
 
-        const doneInner = buildCardInner('done', prevDone);
-        const activeInner = buildCardInner('active', activeIndex);
-        const upcomingInner = buildCardInner('upcoming', nextIndex);
-        const behindInner = buildCardInner('behind', behindIndex);
+        const carousel = DOMUtils.createElement('div', {
+            className: 'quest-carousel no-initial-transition',
+            dataset: { carousel: 'drum' },
+        });
 
-        const getCompletedClass = (idx) => {
-            if (idx === -1) return '';
-            return lines[idx].includes('[x]') ? 'is-completed' : '';
-        };
+        carousel.appendChild(buildCard('done', prevDone, 1));
+        carousel.appendChild(buildCard('active', activeIndex, 0));
+        carousel.appendChild(buildCard('upcoming', nextIndex, 1));
+        carousel.appendChild(buildCard('behind', behindIndex, 2));
 
-        return `
-            <div class="quest-carousel no-initial-transition" data-carousel="drum">
-                <div class="carousel-card done ${prevDone === -1 ? 'empty' : ''} ${getCompletedClass(prevDone)}" data-role="done" data-index="${prevDone}" style="--depth: 1;">${doneInner}</div>
-                <div class="carousel-card active ${getCompletedClass(activeIndex)}" data-role="active" data-index="${activeIndex}" style="--depth: 0;">${activeInner}</div>
-                <div class="carousel-card upcoming ${nextIndex === -1 ? 'empty' : ''} ${getCompletedClass(nextIndex)}" data-role="upcoming" data-index="${nextIndex}" style="--depth: 1;">${upcomingInner}</div>
-                <div class="carousel-card behind ${behindIndex === -1 ? 'empty' : ''} ${getCompletedClass(behindIndex)}" data-role="behind" data-index="${behindIndex}" style="--depth: 2;">${behindInner}</div>
-            </div>
-            <button class="step-action-btn complete-btn carousel-complete-btn" id="carouselCompleteBtn" title="Mark step complete (Enter)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 6L9 17l-5-5"/>
-                </svg>
-                Complete
-            </button>
-            <div class="carousel-nav" id="carouselNav" aria-label="Step navigation">
-                <button class="carousel-nav-btn" id="carouselNavUpBtn" title="Previous step (↑)" aria-label="Previous step">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 5l-7 7h14l-7-7z"/>
-                    </svg>
-                </button>
-                <button class="carousel-nav-btn" id="carouselNavDownBtn" title="Next step (↓)" aria-label="Next step">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 19l7-7H5l7 7z"/>
-                    </svg>
-                </button>
-            </div>
-        `;
+        fragment.appendChild(carousel);
+
+        // Complete Button
+        const completeBtn = DOMUtils.createElement(
+            'button',
+            {
+                className: 'step-action-btn complete-btn carousel-complete-btn',
+                id: 'carouselCompleteBtn',
+                title: 'Mark step complete (Enter)',
+            },
+            [
+                DOMUtils.createSVG(
+                    'svg',
+                    {
+                        width: '16',
+                        height: '16',
+                        viewBox: '0 0 24 24',
+                        fill: 'none',
+                        stroke: 'currentColor',
+                        'stroke-width': '2',
+                    },
+                    [DOMUtils.createSVG('path', { d: 'M20 6L9 17l-5-5' })]
+                ),
+                document.createTextNode(' Complete'),
+            ]
+        );
+        fragment.appendChild(completeBtn);
+
+        // Navigation
+        const nav = DOMUtils.createElement(
+            'div',
+            {
+                className: 'carousel-nav',
+                id: 'carouselNav',
+                'aria-label': 'Step navigation',
+            },
+            [
+                DOMUtils.createElement(
+                    'button',
+                    {
+                        className: 'carousel-nav-btn',
+                        id: 'carouselNavUpBtn',
+                        title: 'Previous step (↑)',
+                        'aria-label': 'Previous step',
+                    },
+                    [
+                        DOMUtils.createSVG(
+                            'svg',
+                            {
+                                width: '18',
+                                height: '18',
+                                viewBox: '0 0 24 24',
+                                fill: 'none',
+                                stroke: 'currentColor',
+                                'stroke-width': '2',
+                            },
+                            [DOMUtils.createSVG('path', { d: 'M12 5l-7 7h14l-7-7z' })]
+                        ),
+                    ]
+                ),
+                DOMUtils.createElement(
+                    'button',
+                    {
+                        className: 'carousel-nav-btn',
+                        id: 'carouselNavDownBtn',
+                        title: 'Next step (↓)',
+                        'aria-label': 'Next step',
+                    },
+                    [
+                        DOMUtils.createSVG(
+                            'svg',
+                            {
+                                width: '18',
+                                height: '18',
+                                viewBox: '0 0 24 24',
+                                fill: 'none',
+                                stroke: 'currentColor',
+                                'stroke-width': '2',
+                            },
+                            [DOMUtils.createSVG('path', { d: 'M12 19l7-7H5l7 7z' })]
+                        ),
+                    ]
+                ),
+            ]
+        );
+        fragment.appendChild(nav);
+
+        return fragment;
     },
 
     /**
      * Update a carousel card element's state and content
      */
     updateCarouselCard(cardEl, stateClass, index, lines) {
-        cardEl.classList.remove('active', 'upcoming', 'done', 'behind', 'below', 'empty', 'is-completed', 'sliding-down', 'sliding-to-active', 'sliding-behind-to-upcoming', 'sliding-out', 'sliding-done-to-active', 'sliding-active-to-upcoming', 'sliding-upcoming-to-behind', 'sliding-below-to-done');
+        cardEl.classList.remove(
+            'active',
+            'upcoming',
+            'done',
+            'behind',
+            'below',
+            'empty',
+            'is-completed',
+            'sliding-down',
+            'sliding-to-active',
+            'sliding-behind-to-upcoming',
+            'sliding-out',
+            'sliding-done-to-active',
+            'sliding-active-to-upcoming',
+            'sliding-upcoming-to-behind',
+            'sliding-below-to-done'
+        );
         cardEl.classList.add(stateClass);
 
         if (index === -1) {
             cardEl.classList.add('empty');
             cardEl.dataset.index = '-1';
             cardEl.style.setProperty('--depth', 1);
-            cardEl.innerHTML = '';
+            DOMUtils.clear(cardEl);
             return;
         }
 
@@ -437,10 +617,13 @@ export const FocusModeUI = {
             cardEl.classList.add('is-completed');
         }
 
-        const depth = stateClass === 'active' ? 0 : (stateClass === 'behind' || stateClass === 'below' ? 2 : 1);
+        const depth =
+            stateClass === 'active' ? 0 : stateClass === 'behind' || stateClass === 'below' ? 2 : 1;
         cardEl.dataset.index = String(index);
         cardEl.style.setProperty('--depth', depth);
-        cardEl.innerHTML = this.getCarouselCardInner(stateClass, index, cleanText, isCompleted);
+
+        DOMUtils.clear(cardEl);
+        cardEl.appendChild(this.getCarouselCardInner(stateClass, index, cleanText, isCompleted));
     },
 
     /**
@@ -448,9 +631,16 @@ export const FocusModeUI = {
      */
     animateForwardRoll({ fromIndex, toIndex, task, onStepComplete, onFinish }) {
         const els = this.getCarouselElements();
-        if (!els.carousel || !els.doneCard || !els.activeCard || !els.upcomingCard || !els.behindCard) return;
+        if (
+            !els.carousel ||
+            !els.doneCard ||
+            !els.activeCard ||
+            !els.upcomingCard ||
+            !els.behindCard
+        )
+            return;
 
-        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        const lines = (task.notes || '').split('\n').filter((l) => l.trim() !== '');
 
         // Pre-update upcoming/behind for smooth entry
         const nextIndexBefore = toIndex;
@@ -471,11 +661,7 @@ export const FocusModeUI = {
             const nextUpcoming = toIndex + 1 < lines.length ? toIndex + 1 : -1;
             const nextBehind = toIndex + 2 < lines.length ? toIndex + 2 : -1;
 
-            this.finalizeForwardRoll(
-                els,
-                { fromIndex, toIndex, nextUpcoming, nextBehind },
-                lines
-            );
+            this.finalizeForwardRoll(els, { fromIndex, toIndex, nextUpcoming, nextBehind }, lines);
 
             this.updateActiveStepTitle(task, toIndex);
             this.setCarouselRolling(false);
@@ -497,9 +683,16 @@ export const FocusModeUI = {
      */
     animateBackwardRoll({ fromIndex, toIndex, task, onFinish }) {
         const els = this.getCarouselElements();
-        if (!els.carousel || !els.doneCard || !els.activeCard || !els.upcomingCard || !els.behindCard) return;
+        if (
+            !els.carousel ||
+            !els.doneCard ||
+            !els.activeCard ||
+            !els.upcomingCard ||
+            !els.behindCard
+        )
+            return;
 
-        const lines = (task.notes || '').split('\n').filter(l => l.trim() !== '');
+        const lines = (task.notes || '').split('\n').filter((l) => l.trim() !== '');
 
         // Pre-update done card for smooth backward entry
         this.updateCarouselCard(els.doneCard, 'done', toIndex, lines);
@@ -516,11 +709,7 @@ export const FocusModeUI = {
             const nextUpcoming = toIndex + 1 < lines.length ? toIndex + 1 : -1;
             const nextBehind = toIndex + 2 < lines.length ? toIndex + 2 : -1;
 
-            this.finalizeBackwardRoll(
-                els,
-                { toIndex, nextDone, nextUpcoming, nextBehind },
-                lines
-            );
+            this.finalizeBackwardRoll(els, { toIndex, nextDone, nextUpcoming, nextBehind }, lines);
 
             this.updateActiveStepTitle(task, toIndex);
             this.setCarouselRolling(false);
@@ -611,50 +800,139 @@ export const FocusModeUI = {
      */
     getDecisionOverlay(state) {
         const title = state.mode === 'break' ? 'Break Time' : 'Session Complete';
-        const subtitle = state.mode === 'break' ? 'Recharge before the next push.' : 'Choose how to continue.';
+        const subtitle =
+            state.mode === 'break' ? 'Recharge before the next push.' : 'Choose how to continue.';
 
-        return `
-            <div class="decision-overlay">
-                <div class="decision-card">
-                    <div class="decision-title">${title}</div>
-                    <div class="decision-subtitle">${subtitle}</div>
-                    <div class="decision-actions primary-actions">
-                        <button class="decision-btn primary" id="decisionComplete">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 6L9 17l-5-5"/>
-                            </svg>
-                            Mark step complete
-                        </button>
-                        <button class="decision-btn" id="decisionContinue">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 5v14l11-7z"/>
-                            </svg>
-                            Continue this step
-                        </button>
-                    </div>
-                    <div class="decision-divider"></div>
-                    <div class="decision-actions secondary-actions">
-                        <button class="decision-btn secondary" id="decisionBreak">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
-                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
-                                <line x1="6" y1="1" x2="6" y2="4"/>
-                                <line x1="10" y1="1" x2="10" y2="4"/>
-                                <line x1="14" y1="1" x2="14" y2="4"/>
-                            </svg>
-                            Take a break
-                        </button>
-                        <button class="decision-btn secondary" id="decisionStop">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                                <line x1="12" y1="2" x2="12" y2="12"/>
-                            </svg>
-                            End Focus session
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
+        const fragment = document.createDocumentFragment();
+
+        const overlay = DOMUtils.createElement('div', { className: 'decision-overlay' }, [
+            DOMUtils.createElement('div', { className: 'decision-card' }, [
+                DOMUtils.createElement('div', { className: 'decision-title', textContent: title }),
+                DOMUtils.createElement('div', {
+                    className: 'decision-subtitle',
+                    textContent: subtitle,
+                }),
+                // Primary Actions
+                DOMUtils.createElement('div', { className: 'decision-actions primary-actions' }, [
+                    DOMUtils.createElement(
+                        'button',
+                        { className: 'decision-btn primary', id: 'decisionComplete' },
+                        [
+                            DOMUtils.createSVG(
+                                'svg',
+                                {
+                                    width: '20',
+                                    height: '20',
+                                    viewBox: '0 0 24 24',
+                                    fill: 'none',
+                                    stroke: 'currentColor',
+                                    'stroke-width': '2',
+                                },
+                                [DOMUtils.createSVG('path', { d: 'M20 6L9 17l-5-5' })]
+                            ),
+                            document.createTextNode(' Mark step complete'),
+                        ]
+                    ),
+                    DOMUtils.createElement(
+                        'button',
+                        { className: 'decision-btn', id: 'decisionContinue' },
+                        [
+                            DOMUtils.createSVG(
+                                'svg',
+                                {
+                                    width: '20',
+                                    height: '20',
+                                    viewBox: '0 0 24 24',
+                                    fill: 'none',
+                                    stroke: 'currentColor',
+                                    'stroke-width': '2',
+                                },
+                                [DOMUtils.createSVG('path', { d: 'M12 5v14l11-7z' })]
+                            ),
+                            document.createTextNode(' Continue this step'),
+                        ]
+                    ),
+                ]),
+                DOMUtils.createElement('div', { className: 'decision-divider' }),
+                // Secondary Actions
+                DOMUtils.createElement('div', { className: 'decision-actions secondary-actions' }, [
+                    DOMUtils.createElement(
+                        'button',
+                        { className: 'decision-btn secondary', id: 'decisionBreak' },
+                        [
+                            DOMUtils.createSVG(
+                                'svg',
+                                {
+                                    width: '20',
+                                    height: '20',
+                                    viewBox: '0 0 24 24',
+                                    fill: 'none',
+                                    stroke: 'currentColor',
+                                    'stroke-width': '2',
+                                },
+                                [
+                                    DOMUtils.createSVG('path', { d: 'M18 8h1a4 4 0 0 1 0 8h-1' }),
+                                    DOMUtils.createSVG('path', {
+                                        d: 'M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z',
+                                    }),
+                                    DOMUtils.createSVG('line', {
+                                        x1: '6',
+                                        y1: '1',
+                                        x2: '6',
+                                        y2: '4',
+                                    }),
+                                    DOMUtils.createSVG('line', {
+                                        x1: '10',
+                                        y1: '1',
+                                        x2: '10',
+                                        y2: '4',
+                                    }),
+                                    DOMUtils.createSVG('line', {
+                                        x1: '14',
+                                        y1: '1',
+                                        x2: '14',
+                                        y2: '4',
+                                    }),
+                                ]
+                            ),
+                            document.createTextNode(' Take a break'),
+                        ]
+                    ),
+                    DOMUtils.createElement(
+                        'button',
+                        { className: 'decision-btn secondary', id: 'decisionStop' },
+                        [
+                            DOMUtils.createSVG(
+                                'svg',
+                                {
+                                    width: '20',
+                                    height: '20',
+                                    viewBox: '0 0 24 24',
+                                    fill: 'none',
+                                    stroke: 'currentColor',
+                                    'stroke-width': '2',
+                                },
+                                [
+                                    DOMUtils.createSVG('path', {
+                                        d: 'M18.36 6.64a9 9 0 1 1-12.73 0',
+                                    }),
+                                    DOMUtils.createSVG('line', {
+                                        x1: '12',
+                                        y1: '2',
+                                        x2: '12',
+                                        y2: '12',
+                                    }),
+                                ]
+                            ),
+                            document.createTextNode(' End Focus session'),
+                        ]
+                    ),
+                ]),
+            ]),
+        ]);
+
+        fragment.appendChild(overlay);
+        return fragment;
     },
 
     /**
@@ -664,29 +942,45 @@ export const FocusModeUI = {
         // Remove any existing confirmation
         document.getElementById('stopConfirmOverlay')?.remove();
 
-        const overlay = document.createElement('div');
-        overlay.id = 'stopConfirmOverlay';
-        overlay.className = 'stop-confirm-overlay';
-        overlay.innerHTML = `
-            <div class="stop-confirm-modal">
-                <div class="stop-confirm-icon">🔄</div>
-                <div class="stop-confirm-title">Reset Timer?</div>
-                <div class="stop-confirm-message">Timer will go back to 25:00. Your steps will stay.</div>
-                <div class="stop-confirm-buttons">
-                    <button class="stop-confirm-btn cancel" id="stopConfirmCancel">Cancel</button>
-                    <button class="stop-confirm-btn confirm" id="stopConfirmYes">Reset</button>
-                </div>
-            </div>
-        `;
+        const overlay = DOMUtils.createElement('div', {
+            id: 'stopConfirmOverlay',
+            className: 'stop-confirm-overlay',
+        });
+
+        const modal = DOMUtils.createElement('div', { className: 'stop-confirm-modal' }, [
+            DOMUtils.createElement('div', { className: 'stop-confirm-icon', textContent: '🔄' }),
+            DOMUtils.createElement('div', {
+                className: 'stop-confirm-title',
+                textContent: 'Reset Timer?',
+            }),
+            DOMUtils.createElement('div', {
+                className: 'stop-confirm-message',
+                textContent: 'Timer will go back to 25:00. Your steps will stay.',
+            }),
+            DOMUtils.createElement('div', { className: 'stop-confirm-buttons' }, [
+                DOMUtils.createElement('button', {
+                    className: 'stop-confirm-btn cancel',
+                    id: 'stopConfirmCancel',
+                    textContent: 'Cancel',
+                }),
+                DOMUtils.createElement('button', {
+                    className: 'stop-confirm-btn confirm',
+                    id: 'stopConfirmYes',
+                    textContent: 'Reset',
+                }),
+            ]),
+        ]);
+
+        overlay.appendChild(modal);
 
         document.querySelector('.focus-overlay')?.appendChild(overlay);
 
         // Add listeners
-        document.getElementById('stopConfirmCancel')?.addEventListener('click', () => {
+        overlay.querySelector('#stopConfirmCancel')?.addEventListener('click', () => {
             overlay.remove();
         });
 
-        document.getElementById('stopConfirmYes')?.addEventListener('click', () => {
+        overlay.querySelector('#stopConfirmYes')?.addEventListener('click', () => {
             overlay.remove();
             if (onConfirm) onConfirm();
         });
@@ -702,10 +996,12 @@ export const FocusModeUI = {
      */
     spawnConfetti() {
         // Fallback to focus-card if rings container is hidden
-        const container = document.querySelector('.execution-rings-container') || document.querySelector('.focus-card');
+        const container =
+            document.querySelector('.execution-rings-container') ||
+            document.querySelector('.focus-card');
         if (!container) return;
 
-        const colors = ['#3b82f6', '#10b981', '#fbbf24', '#f87171', '#a78bfa'];
+        const colors = ['#3b82f6', 'var(--accent-success)', '#fbbf24', '#f87171', '#a78bfa'];
         const particleCount = 60; // Increased for better effect
 
         for (let i = 0; i < particleCount; i++) {
@@ -751,7 +1047,12 @@ export const FocusModeUI = {
         const activeCard = carousel?.querySelector('.carousel-card.active');
 
         // Hide button if no active card, or card is completed, or carousel is currently rolling
-        if (!carousel || !activeCard || activeCard.classList.contains('is-completed') || carousel.classList.contains('carousel-rolling')) {
+        if (
+            !carousel ||
+            !activeCard ||
+            activeCard.classList.contains('is-completed') ||
+            carousel.classList.contains('carousel-rolling')
+        ) {
             btn.classList.add('hidden');
             return;
         }
@@ -765,8 +1066,12 @@ export const FocusModeUI = {
             return;
         }
 
-        const scaleX = stackContainer.offsetWidth ? (stackRect.width / stackContainer.offsetWidth) : 1;
-        const scaleY = stackContainer.offsetHeight ? (stackRect.height / stackContainer.offsetHeight) : 1;
+        const scaleX = stackContainer.offsetWidth
+            ? stackRect.width / stackContainer.offsetWidth
+            : 1;
+        const scaleY = stackContainer.offsetHeight
+            ? stackRect.height / stackContainer.offsetHeight
+            : 1;
 
         const cardLeft = (cardRect.left - stackRect.left) / scaleX;
         const cardTop = (cardRect.top - stackRect.top) / scaleY;
@@ -780,7 +1085,7 @@ export const FocusModeUI = {
 
         if (isNarrow) {
             // Mobile: Position on the right side of the bottom to leave room for nav on the left
-            const navTotalWidth = (36 * 2) + 8 + 10; // (btn width * 2) + gap between arrows + gap to complete btn
+            const navTotalWidth = 36 * 2 + 8 + 10; // (btn width * 2) + gap between arrows + gap to complete btn
             const width = Math.max(0, cardWidth - inset * 2 - navTotalWidth);
             btn.style.width = `${width}px`;
             btn.style.setProperty('--complete-tx', `-100%`);
@@ -818,8 +1123,12 @@ export const FocusModeUI = {
             return;
         }
 
-        const scaleX = stackContainer.offsetWidth ? (stackRect.width / stackContainer.offsetWidth) : 1;
-        const scaleY = stackContainer.offsetHeight ? (stackRect.height / stackContainer.offsetHeight) : 1;
+        const scaleX = stackContainer.offsetWidth
+            ? stackRect.width / stackContainer.offsetWidth
+            : 1;
+        const scaleY = stackContainer.offsetHeight
+            ? stackRect.height / stackContainer.offsetHeight
+            : 1;
 
         const cardLeft = (cardRect.left - stackRect.left) / scaleX;
         const cardTop = (cardRect.top - stackRect.top) / scaleY;
@@ -844,7 +1153,7 @@ export const FocusModeUI = {
         } else {
             // Desktop: Position to the right of the card
             navLeft = cardLeft + cardWidth + gap;
-            navTop = cardTop + (cardHeight / 2);
+            navTop = cardTop + cardHeight / 2;
             navTx = '0%';
             nav.style.setProperty('--nav-ty', `-50%`);
             nav.style.flexDirection = 'column';
@@ -862,100 +1171,335 @@ export const FocusModeUI = {
         const color = Departments.getColor(task.hierarchy);
         const streak = Store.getStreak();
 
-        return `
-            <div class="focus-overlay phase-${state.phase}" id="focusOverlay">
-                <div class="focus-ambient-bg">
-                    <div class="ambient-blob blob-1" style="background: ${color}"></div>
-                    <div class="ambient-blob blob-2" style="background: ${color}"></div>
-                    <div class="ambient-blob blob-3" style="background: ${color}"></div>
-                    <div class="focus-particles"></div>
-                </div>
-                <div class="focus-card glass-surface-deep" style="--task-color: ${color}">
-                    <button class="focus-close" id="closeFocus">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12"/>
-                        </svg>
-                    </button>
-                    <button class="focus-sound-toggle ${FocusAudio.isEnabled() ? '' : 'muted'}" id="soundToggle" title="${FocusAudio.isEnabled() ? 'Mute sounds' : 'Enable sounds'}">
-                        ${FocusAudio.isEnabled() ? `
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                            </svg>
-                        ` : `
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-                                <line x1="23" y1="9" x2="17" y2="15"/>
-                                <line x1="17" y1="9" x2="23" y2="15"/>
-                            </svg>
-                        `}
-                    </button>
+        const fragment = document.createDocumentFragment();
 
-                    <div class="focus-header-topleft">
-                        <span class="focus-title" id="focusTaskTitle">${PlannerService.escapeHtml(task.title)}</span>
-                        ${streak > 0 ? `<span class="focus-streak-badge" title="Focus streak: ${streak} day${streak > 1 ? 's' : ''}">🔥 ${streak}</span>` : ''}
-                    </div>
+        const overlay = DOMUtils.createElement('div', {
+            className: `focus-overlay phase-${state.phase}`,
+            id: 'focusOverlay',
+        });
 
-                    <div class="focus-engine-side">
-                    ${state.phase !== 'completed' ? `
-                        <div class="execution-rings-container ${state.phase === 'decision' ? 'decision-flip' : ''}">
-                            <div class="ring-flip-surface">
-                                <div class="ring-face ring-face-front">
-                                    <svg class="execution-ring-svg" viewBox="0 0 120 120" style="position: absolute; width: 100%; height: 100%; transform: rotate(-90deg);">
-                                        <defs>
-                                            <linearGradient id="outerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                <stop offset="0%" stop-color="var(--task-color)" stop-opacity="0.4" />
-                                                <stop offset="100%" stop-color="var(--task-color)" stop-opacity="1" />
-                                            </linearGradient>
-                                            <linearGradient id="innerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" stop-color="white" />
-                                                <stop offset="100%" stop-color="var(--task-color)" />
-                                            </linearGradient>
-                                            <filter id="innerGlow">
-                                                <feGaussianBlur stdDeviation="2" result="blur" />
-                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                                            </filter>
-                                        </defs>
-                                        <circle class="outer-ring-bg" cx="60" cy="60" r="56"/>
-                                        <circle class="outer-ring-fill" id="outerRing" cx="60" cy="60" r="56" stroke="url(#outerGradient)"/>
-                                        <circle class="inner-ring-bg" cx="60" cy="60" r="48"/>
-                                        <circle class="inner-ring-fill" id="innerRing" cx="60" cy="60" r="48" stroke="url(#innerGradient)"/>
-                                    </svg>
-                                    <div class="ring-center">
-                                        <div class="ring-step-title" id="activeStepTitle">
-                                            ${state.mode === 'work' ? activeStepTitle : 'Coffee & Recharge'}
-                                        </div>
-                                        <div class="ring-time" id="sessionTimeDisplay">00:00</div>
-                                        <div class="ring-media-controls" aria-label="Focus controls">
-                                            <button class="ring-media-btn ring-media-primary ${state.running ? 'running' : ''}" id="sessionToggleBtn" aria-label="${state.running ? 'Pause' : ((state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus')}" title="${state.running ? 'Pause' : ((state.accumulatedTime || 0) > 0 ? 'Resume' : 'Start Focus')}">
-                                                ${!state.running ? `
-                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                                                ` : `
-                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                                                `}
-                                            </button>
-                                            ${state.running ? `
-                                                <button class="ring-media-btn ring-media-stop" id="stopSessionBtn" aria-label="Stop" title="Stop">
-                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="ring-face ring-face-back">
-                                    ${state.phase === 'decision' ? this.getDecisionOverlay(state) : ''}
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
+        // Ambient Background
+        overlay.appendChild(
+            DOMUtils.createElement('div', { className: 'focus-ambient-bg' }, [
+                DOMUtils.createElement('div', {
+                    className: 'ambient-blob blob-1',
+                    style: { background: color },
+                }),
+                DOMUtils.createElement('div', {
+                    className: 'ambient-blob blob-2',
+                    style: { background: color },
+                }),
+                DOMUtils.createElement('div', {
+                    className: 'ambient-blob blob-3',
+                    style: { background: color },
+                }),
+                DOMUtils.createElement('div', { className: 'focus-particles' }),
+            ])
+        );
 
-                        <div class="quest-stack-container" id="questStack">
-                            ${state.phase === 'completed' ? this.getResultsCard(state) : this.getQuestStack(task, state.currentStepIndex)}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        const card = DOMUtils.createElement('div', {
+            className: 'focus-card glass-surface-deep',
+            style: { '--task-color': color },
+        });
+
+        // Close Button
+        card.appendChild(
+            DOMUtils.createElement('button', { className: 'focus-close', id: 'closeFocus' }, [
+                DOMUtils.createSVG(
+                    'svg',
+                    {
+                        width: '24',
+                        height: '24',
+                        viewBox: '0 0 24 24',
+                        fill: 'none',
+                        stroke: 'currentColor',
+                        'stroke-width': '2',
+                    },
+                    [DOMUtils.createSVG('path', { d: 'M18 6L6 18M6 6l12 12' })]
+                ),
+            ])
+        );
+
+        // Sound Toggle
+        const soundBtn = DOMUtils.createElement('button', {
+            className: `focus-sound-toggle ${FocusAudio.isEnabled() ? '' : 'muted'}`,
+            id: 'soundToggle',
+            title: FocusAudio.isEnabled() ? 'Mute sounds' : 'Enable sounds',
+        });
+        if (FocusAudio.isEnabled()) {
+            soundBtn.appendChild(
+                DOMUtils.createSVG(
+                    'svg',
+                    {
+                        width: '20',
+                        height: '20',
+                        viewBox: '0 0 24 24',
+                        fill: 'none',
+                        stroke: 'currentColor',
+                        'stroke-width': '2',
+                    },
+                    [
+                        DOMUtils.createSVG('path', { d: 'M11 5L6 9H2v6h4l5 4V5z' }),
+                        DOMUtils.createSVG('path', {
+                            d: 'M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07',
+                        }),
+                    ]
+                )
+            );
+        } else {
+            soundBtn.appendChild(
+                DOMUtils.createSVG(
+                    'svg',
+                    {
+                        width: '20',
+                        height: '20',
+                        viewBox: '0 0 24 24',
+                        fill: 'none',
+                        stroke: 'currentColor',
+                        'stroke-width': '2',
+                    },
+                    [
+                        DOMUtils.createSVG('path', { d: 'M11 5L6 9H2v6h4l5 4V5z' }),
+                        DOMUtils.createSVG('line', { x1: '23', y1: '9', x2: '17', y2: '15' }),
+                        DOMUtils.createSVG('line', { x1: '17', y1: '9', x2: '23', y2: '15' }),
+                    ]
+                )
+            );
+        }
+        card.appendChild(soundBtn);
+
+        // Header
+        const header = DOMUtils.createElement('div', { className: 'focus-header-topleft' }, [
+            DOMUtils.createElement('span', {
+                className: 'focus-title',
+                id: 'focusTaskTitle',
+                textContent: task.title,
+            }),
+        ]);
+        if (streak > 0) {
+            header.appendChild(
+                DOMUtils.createElement('span', {
+                    className: 'focus-streak-badge',
+                    title: `Focus streak: ${streak} day${streak > 1 ? 's' : ''}`,
+                    textContent: `🔥 ${streak}`,
+                })
+            );
+        }
+        card.appendChild(header);
+
+        // Focus Engine Side
+        const engineSide = DOMUtils.createElement('div', { className: 'focus-engine-side' });
+
+        if (state.phase !== 'completed') {
+            const ringsContainer = DOMUtils.createElement('div', {
+                className: `execution-rings-container ${state.phase === 'decision' ? 'decision-flip' : ''}`,
+            });
+            const flipSurface = DOMUtils.createElement('div', { className: 'ring-flip-surface' });
+
+            // Front Face
+            const frontFace = DOMUtils.createElement('div', {
+                className: 'ring-face ring-face-front',
+            });
+
+            // SVG Rings
+            const svg = DOMUtils.createSVG('svg', {
+                className: 'execution-ring-svg',
+                viewBox: '0 0 120 120',
+                style: {
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    transform: 'rotate(-90deg)',
+                },
+            });
+            // Defs
+            const defs = DOMUtils.createSVG('defs');
+            const grad1 = DOMUtils.createSVG('linearGradient', {
+                id: 'outerGradient',
+                x1: '0%',
+                y1: '0%',
+                x2: '100%',
+                y2: '100%',
+            });
+            grad1.appendChild(
+                DOMUtils.createSVG('stop', {
+                    offset: '0%',
+                    'stop-color': 'var(--task-color)',
+                    'stop-opacity': '0.4',
+                })
+            );
+            grad1.appendChild(
+                DOMUtils.createSVG('stop', {
+                    offset: '100%',
+                    'stop-color': 'var(--task-color)',
+                    'stop-opacity': '1',
+                })
+            );
+            defs.appendChild(grad1);
+
+            const grad2 = DOMUtils.createSVG('linearGradient', {
+                id: 'innerGradient',
+                x1: '0%',
+                y1: '0%',
+                x2: '0%',
+                y2: '100%',
+            });
+            grad2.appendChild(DOMUtils.createSVG('stop', { offset: '0%', 'stop-color': 'white' }));
+            grad2.appendChild(
+                DOMUtils.createSVG('stop', {
+                    offset: '100%',
+                    'stop-color': 'var(--task-color)',
+                })
+            );
+            defs.appendChild(grad2);
+
+            const filter = DOMUtils.createSVG('filter', { id: 'innerGlow' });
+            filter.appendChild(
+                DOMUtils.createSVG('feGaussianBlur', { stdDeviation: '2', result: 'blur' })
+            );
+            filter.appendChild(
+                DOMUtils.createSVG('feComposite', {
+                    in: 'SourceGraphic',
+                    in2: 'blur',
+                    operator: 'over',
+                })
+            );
+            defs.appendChild(filter);
+            svg.appendChild(defs);
+
+            svg.appendChild(
+                DOMUtils.createSVG('circle', {
+                    className: 'outer-ring-bg',
+                    cx: '60',
+                    cy: '60',
+                    r: '56',
+                })
+            );
+            svg.appendChild(
+                DOMUtils.createSVG('circle', {
+                    className: 'outer-ring-fill',
+                    id: 'outerRing',
+                    cx: '60',
+                    cy: '60',
+                    r: '56',
+                    stroke: 'url(#outerGradient)',
+                })
+            );
+            svg.appendChild(
+                DOMUtils.createSVG('circle', {
+                    className: 'inner-ring-bg',
+                    cx: '60',
+                    cy: '60',
+                    r: '48',
+                })
+            );
+            svg.appendChild(
+                DOMUtils.createSVG('circle', {
+                    className: 'inner-ring-fill',
+                    id: 'innerRing',
+                    cx: '60',
+                    cy: '60',
+                    r: '48',
+                    stroke: 'url(#innerGradient)',
+                })
+            );
+            frontFace.appendChild(svg);
+
+            // Ring Center
+            const center = DOMUtils.createElement('div', { className: 'ring-center' }, [
+                DOMUtils.createElement('div', {
+                    className: 'ring-step-title',
+                    id: 'activeStepTitle',
+                    textContent: state.mode === 'work' ? activeStepTitle : 'Coffee & Recharge',
+                }),
+                DOMUtils.createElement('div', {
+                    className: 'ring-time',
+                    id: 'sessionTimeDisplay',
+                    textContent: '00:00',
+                }),
+            ]);
+
+            const controls = DOMUtils.createElement('div', {
+                className: 'ring-media-controls',
+                'aria-label': 'Focus controls',
+            });
+            const toggleBtn = DOMUtils.createElement('button', {
+                className: `ring-media-btn ring-media-primary ${state.running ? 'running' : ''}`,
+                id: 'sessionToggleBtn',
+                'aria-label': state.running
+                    ? 'Pause'
+                    : (state.accumulatedTime || 0) > 0
+                      ? 'Resume'
+                      : 'Start Focus',
+                title: state.running
+                    ? 'Pause'
+                    : (state.accumulatedTime || 0) > 0
+                      ? 'Resume'
+                      : 'Start Focus',
+            });
+            if (!state.running) {
+                toggleBtn.appendChild(
+                    DOMUtils.createSVG('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, [
+                        DOMUtils.createSVG('path', { d: 'M8 5v14l11-7z' }),
+                    ])
+                );
+            } else {
+                toggleBtn.appendChild(
+                    DOMUtils.createSVG('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, [
+                        DOMUtils.createSVG('path', { d: 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' }),
+                    ])
+                );
+            }
+            controls.appendChild(toggleBtn);
+
+            if (state.running) {
+                const stopBtn = DOMUtils.createElement('button', {
+                    className: 'ring-media-btn ring-media-stop',
+                    id: 'stopSessionBtn',
+                    'aria-label': 'Stop',
+                    title: 'Stop',
+                });
+                stopBtn.appendChild(
+                    DOMUtils.createSVG('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, [
+                        DOMUtils.createSVG('path', { d: 'M6 6h12v12H6z' }),
+                    ])
+                );
+                controls.appendChild(stopBtn);
+            }
+            center.appendChild(controls);
+            frontFace.appendChild(center);
+
+            flipSurface.appendChild(frontFace);
+
+            // Back Face
+            const backFace = DOMUtils.createElement('div', {
+                className: 'ring-face ring-face-back',
+            });
+            if (state.phase === 'decision') {
+                backFace.appendChild(this.getDecisionOverlay(state));
+            }
+            flipSurface.appendChild(backFace);
+
+            ringsContainer.appendChild(flipSurface);
+            engineSide.appendChild(ringsContainer);
+        }
+
+        const stackContainer = DOMUtils.createElement('div', {
+            className: 'quest-stack-container',
+            id: 'questStack',
+        });
+        if (state.phase === 'completed') {
+            stackContainer.appendChild(this.getResultsCard(state));
+        } else {
+            stackContainer.appendChild(this.getQuestStack(task, state.currentStepIndex));
+        }
+        engineSide.appendChild(stackContainer);
+
+        card.appendChild(engineSide);
+        overlay.appendChild(card);
+
+        fragment.appendChild(overlay);
+        return fragment;
     },
     /**
      * Update pomodoro timer display
@@ -982,7 +1526,7 @@ export const FocusModeUI = {
             ringEl.style.stroke = '#3b82f6';
         } else {
             if (modeEl) modeEl.textContent = '☕ Break Time';
-            ringEl.style.stroke = '#10b981';
+            ringEl.style.stroke = 'var(--accent-success)';
         }
     },
 
@@ -1026,14 +1570,14 @@ export const FocusModeUI = {
             modeEl.textContent = mode === 'work' ? 'Focus' : 'Break';
             startPauseEl.textContent = running ? 'Pause' : 'Start';
             if (modeDot) {
-                const dotColor = mode === 'work' ? '#3b82f6' : '#10b981';
+                const dotColor = mode === 'work' ? '#3b82f6' : 'var(--accent-success)';
                 modeDot.style.background = dotColor;
                 modeDot.style.boxShadow = `0 0 12px ${dotColor}66`;
             }
             if (ringEl && totalSeconds) {
                 const circumference = 2 * Math.PI * 40;
                 const progress = Math.max(0, Math.min(1, seconds / totalSeconds));
-                ringEl.style.stroke = mode === 'work' ? '#3b82f6' : '#10b981';
+                ringEl.style.stroke = mode === 'work' ? '#3b82f6' : 'var(--accent-success)';
                 ringEl.style.strokeDasharray = `${circumference}`;
                 ringEl.style.strokeDashoffset = `${circumference * (1 - progress)}`;
             }
@@ -1085,9 +1629,10 @@ export const FocusModeUI = {
         const ringCenter = document.querySelector('.ring-center');
 
         if (!counterEl && ringCenter) {
-            counterEl = document.createElement('div');
-            counterEl.id = 'pomodoroCounterDisplay';
-            counterEl.className = 'pomodoro-counter-display';
+            counterEl = DOMUtils.createElement('div', {
+                id: 'pomodoroCounterDisplay',
+                className: 'pomodoro-counter-display',
+            });
             ringCenter.insertBefore(counterEl, ringCenter.firstChild);
         }
 
@@ -1097,13 +1642,28 @@ export const FocusModeUI = {
             const empty = '⚪'.repeat(total - completed);
             const isNearLongBreak = completed >= total - 1 && completed > 0;
 
-            counterEl.innerHTML = `
-                <div class="pomodoro-dots ${isNearLongBreak ? 'near-long-break' : ''}">
-                    ${tomatoes}${empty}
-                </div>
-                <div class="pomodoro-count-text">${completed}/${total}</div>
-                ${todayTotal > 0 ? `<div class="pomodoro-today-total">Today: ${todayTotal}</div>` : ''}
-            `;
+            DOMUtils.clear(counterEl);
+            counterEl.appendChild(
+                DOMUtils.createElement(
+                    'div',
+                    { className: `pomodoro-dots ${isNearLongBreak ? 'near-long-break' : ''}` },
+                    [document.createTextNode(`${tomatoes}${empty}`)]
+                )
+            );
+            counterEl.appendChild(
+                DOMUtils.createElement('div', {
+                    className: 'pomodoro-count-text',
+                    textContent: `${completed}/${total}`,
+                })
+            );
+            if (todayTotal > 0) {
+                counterEl.appendChild(
+                    DOMUtils.createElement('div', {
+                        className: 'pomodoro-today-total',
+                        textContent: `Today: ${todayTotal}`,
+                    })
+                );
+            }
         }
 
         // Also update floating badge if visible
@@ -1111,9 +1671,10 @@ export const FocusModeUI = {
         if (badge) {
             let badgeCounter = badge.querySelector('#badgeCounter');
             if (!badgeCounter) {
-                badgeCounter = document.createElement('span');
-                badgeCounter.id = 'badgeCounter';
-                badgeCounter.style.cssText = 'font-size:14px;margin-right:4px;';
+                badgeCounter = DOMUtils.createElement('span', {
+                    id: 'badgeCounter',
+                    style: { fontSize: '14px', marginRight: '4px' },
+                });
                 badge.insertBefore(badgeCounter, badge.firstChild);
             }
             badgeCounter.textContent = `🍅${completed}/${total}`;
@@ -1133,7 +1694,7 @@ export const FocusModeUI = {
             doneCard: carousel.querySelector('.carousel-card[data-role="done"]'),
             activeCard: carousel.querySelector('.carousel-card[data-role="active"]'),
             upcomingCard: carousel.querySelector('.carousel-card[data-role="upcoming"]'),
-            behindCard: carousel.querySelector('.carousel-card[data-role="behind"]')
+            behindCard: carousel.querySelector('.carousel-card[data-role="behind"]'),
         };
     },
 
@@ -1154,7 +1715,7 @@ export const FocusModeUI = {
             navUp: document.getElementById('carouselNavUpBtn'),
             navDown: document.getElementById('carouselNavDownBtn'),
             completeBtn: document.getElementById('carouselCompleteBtn'),
-            questCards: document.querySelectorAll('.carousel-card')
+            questCards: document.querySelectorAll('.carousel-card'),
         };
     },
 
@@ -1200,10 +1761,12 @@ export const FocusModeUI = {
         if (!stackContainer) return;
 
         const state = Store.getActiveExecution();
+        DOMUtils.clear(stackContainer);
+
         if (state.phase === 'completed') {
-            stackContainer.innerHTML = this.getResultsCard(state);
+            stackContainer.appendChild(this.getResultsCard(state));
         } else {
-            stackContainer.innerHTML = this.getQuestStack(task, currentStepIndex);
+            stackContainer.appendChild(this.getQuestStack(task, currentStepIndex));
             if (onCardClick) {
                 this.setupCarouselListeners(stackContainer, onCardClick);
             }
@@ -1233,7 +1796,7 @@ export const FocusModeUI = {
 
         // Hover effect listeners for 3D cards
         const cards = carousel.querySelectorAll('.carousel-card');
-        cards.forEach(card => {
+        cards.forEach((card) => {
             card.addEventListener('mousemove', (e) => {
                 this.updateCardHover(card, e);
             });
@@ -1308,7 +1871,11 @@ export const FocusModeUI = {
      */
     hideBadge() {
         if (this.badgeEl) {
-            try { this.badgeEl.remove(); } catch { }
+            try {
+                this.badgeEl.remove();
+            } catch {
+                // Ignore removal errors
+            }
             this.badgeEl = null;
         }
     },
@@ -1336,7 +1903,13 @@ export const FocusModeUI = {
         document.body.appendChild(el);
 
         // Position it
-        const savedPos = (() => { try { return JSON.parse(localStorage.getItem('floatingPomodoroBadgePos') || 'null'); } catch { return null; } })();
+        const savedPos = (() => {
+            try {
+                return JSON.parse(localStorage.getItem('floatingPomodoroBadgePos') || 'null');
+            } catch {
+                return null;
+            }
+        })();
         if (savedPos && typeof savedPos.left === 'number' && typeof savedPos.top === 'number') {
             el.style.left = `${savedPos.left}px`;
             el.style.top = `${savedPos.top}px`;
@@ -1353,14 +1926,23 @@ export const FocusModeUI = {
 
         // Setup dragging
         let dragging = false;
-        let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+        let startX = 0,
+            startY = 0,
+            startLeft = 0,
+            startTop = 0;
 
         const onMouseMove = (e) => {
             if (!dragging) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
-            const newLeft = Math.min(Math.max(0, startLeft + dx), window.innerWidth - el.offsetWidth);
-            const newTop = Math.min(Math.max(0, startTop + dy), window.innerHeight - el.offsetHeight);
+            const newLeft = Math.min(
+                Math.max(0, startLeft + dx),
+                window.innerWidth - el.offsetWidth
+            );
+            const newTop = Math.min(
+                Math.max(0, startTop + dy),
+                window.innerHeight - el.offsetHeight
+            );
             el.style.left = `${newLeft}px`;
             el.style.top = `${newTop}px`;
         };
@@ -1372,8 +1954,13 @@ export const FocusModeUI = {
             document.removeEventListener('mouseup', endDrag);
             try {
                 const rect = el.getBoundingClientRect();
-                localStorage.setItem('floatingPomodoroBadgePos', JSON.stringify({ left: rect.left, top: rect.top }));
-            } catch { }
+                localStorage.setItem(
+                    'floatingPomodoroBadgePos',
+                    JSON.stringify({ left: rect.left, top: rect.top })
+                );
+            } catch {
+                // Ignore storage errors
+            }
         };
 
         el.addEventListener('mousedown', (e) => {
@@ -1401,9 +1988,10 @@ export const FocusModeUI = {
         const existing = document.getElementById('phaseNotification');
         if (existing) existing.remove();
 
-        const toast = document.createElement('div');
-        toast.id = 'phaseNotification';
-        toast.className = 'phase-toast';
+        const toast = DOMUtils.createElement('div', {
+            id: 'phaseNotification',
+            className: 'phase-toast',
+        });
 
         let text = '';
         let icon = '';
@@ -1425,7 +2013,13 @@ export const FocusModeUI = {
 
         if (!text) return;
 
-        toast.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-text">${text}</span>`;
+        toast.appendChild(
+            DOMUtils.createElement('span', { className: 'toast-icon', textContent: icon })
+        );
+        toast.appendChild(
+            DOMUtils.createElement('span', { className: 'toast-text', textContent: text })
+        );
+
         container.appendChild(toast);
 
         // Auto-remove after 3 seconds
@@ -1442,15 +2036,27 @@ export const FocusModeUI = {
         const btn = document.getElementById('pomodoroStartPause');
         if (!btn) return;
 
+        DOMUtils.clear(btn);
+
         if (running) {
-            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="5" y="4" width="4" height="16"/>
-                <rect x="15" y="4" width="4" height="16"/>
-            </svg>`;
+            btn.appendChild(
+                DOMUtils.createSVG(
+                    'svg',
+                    { width: '20', height: '20', viewBox: '0 0 24 24', fill: 'currentColor' },
+                    [
+                        DOMUtils.createSVG('rect', { x: '5', y: '4', width: '4', height: '16' }),
+                        DOMUtils.createSVG('rect', { x: '15', y: '4', width: '4', height: '16' }),
+                    ]
+                )
+            );
         } else {
-            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5,3 19,12 5,21"/>
-            </svg>`;
+            btn.appendChild(
+                DOMUtils.createSVG(
+                    'svg',
+                    { width: '20', height: '20', viewBox: '0 0 24 24', fill: 'currentColor' },
+                    [DOMUtils.createSVG('polygon', { points: '5,3 19,12 5,21' })]
+                )
+            );
         }
     },
 
@@ -1467,87 +2073,151 @@ export const FocusModeUI = {
             return `${min}m ${sec}s`;
         };
 
-        const maxDuration = Math.max(...timings.map(t => t.duration || 0), 1);
-
-        const rows = timings.map(t => {
-            const percent = Math.min(100, (t.duration / maxDuration) * 100);
-            const icon = t.status === 'completed' ? '✓' : '⏭';
-            return `
-                <div class="results-row ${t.status}">
-                    <div class="results-row-header">
-                        <span class="results-icon">${icon}</span>
-                        <span class="results-text">${t.stepText}</span>
-                        <span class="results-time">${formatDuration(t.duration)}</span>
-                    </div>
-                    <div class="results-bar-container">
-                        <div class="results-bar" style="width: ${percent}%;"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        const maxDuration = Math.max(...timings.map((t) => t.duration || 0), 1);
 
         const totalFocus = timings.reduce((acc, t) => acc + (t.duration || 0), 0);
         const pomodoroCount = Store.getActiveExecution().sessionStats?.pomodorosUsed || 0;
         const stats = state.sessionStats || {};
-        const totalDuration = stats.completedAt && stats.startedAt ? stats.completedAt - stats.startedAt : 0;
-        const focusScore = totalDuration > 0 ? Math.min(100, Math.round((totalFocus / totalDuration) * 100)) : 0;
+        const totalDuration =
+            stats.completedAt && stats.startedAt ? stats.completedAt - stats.startedAt : 0;
+        const focusScore =
+            totalDuration > 0 ? Math.min(100, Math.round((totalFocus / totalDuration) * 100)) : 0;
 
         const formatTime = (ts) => {
             if (!ts) return '--:--';
             return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         };
 
-        return `
-            <div class="results-card-wrapper animate-in-up">
-                <div class="completion-celebration results-celebration">
-                    <div class="completion-trophy">🏆</div>
-                    <div class="completion-text">All Done!</div>
-                </div>
-                <div class="results-card-container glass-surface">
-                    <div class="results-header">
-                        SESSION ANALYSIS
-                        <div class="results-session-meta">
-                            ${formatTime(stats.startedAt)} – ${formatTime(stats.completedAt)}
-                        </div>
-                    </div>
-                    <div class="results-scroll-area">
-                        ${rows.length > 0 ? rows : '<div class="results-empty">No step data recorded</div>'}
-                    </div>
-                    <div class="results-footer">
-                        <div class="results-stat-group">
-                            <div class="results-stat">
-                                <span class="stat-label">FOCUS TIME</span>
-                                <span class="stat-value">${formatDuration(totalFocus)}</span>
-                            </div>
-                            <div class="results-stat">
-                                <span class="stat-label">TOTAL TIME</span>
-                                <span class="stat-value">${formatDuration(totalDuration)}</span>
-                            </div>
-                            <div class="results-stat">
-                                <span class="stat-label">PAUSES</span>
-                                <span class="stat-value">${state.pauseCount || 0}</span>
-                            </div>
-                            <div class="results-stat">
-                                <span class="stat-label">TOMATOES</span>
-                                <span class="stat-value">${pomodoroCount} 🍅</span>
-                            </div>
-                            <div class="results-stat">
-                                <span class="stat-label">FOCUS SCORE</span>
-                                <span class="stat-value">${focusScore}%</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="results-hint">Share your focus achievement! 📸</div>
-                <div class="results-actions">
-                    <button class="results-restart-btn" id="restartSessionBtn">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.65 6.35c-1.63-1.63-3.94-2.57-6.48-2.25-3.52.44-6.42 3.33-6.86 6.85-.56 4.5 3 8.35 7.42 8.35 3.32 0 6.13-2.13 7.15-5.08.18-.53-.22-1.07-.78-1.07h-.05c-.39 0-.74.24-.87.61-.75 2.19-2.85 3.76-5.45 3.76-2.56 0-4.74-1.74-5.38-4.14-.39-1.48.06-2.92.93-3.94a5.02 5.02 0 013.91-1.63c1.39.02 2.62.59 3.49 1.48l-1.79 1.79c-.31.31-.09.85.35.85H20c.28 0 .5-.22.5-.5V10.7c0-.45-.54-.67-.85-.35l-2-2z"/>
-                        </svg>
-                        RESTART FOCUS
-                    </button>
-                </div>
-            </div>
-        `;
-    }
+        const fragment = document.createDocumentFragment();
+
+        const wrapper = DOMUtils.createElement('div', {
+            className: 'results-card-wrapper animate-in-up',
+        });
+
+        // Celebration Header
+        wrapper.appendChild(
+            DOMUtils.createElement(
+                'div',
+                { className: 'completion-celebration results-celebration' },
+                [
+                    DOMUtils.createElement('div', {
+                        className: 'completion-trophy',
+                        textContent: '🏆',
+                    }),
+                    DOMUtils.createElement('div', {
+                        className: 'completion-text',
+                        textContent: 'All Done!',
+                    }),
+                ]
+            )
+        );
+
+        const cardContainer = DOMUtils.createElement('div', {
+            className: 'results-card-container glass-surface',
+        });
+
+        // Header
+        const header = DOMUtils.createElement('div', { className: 'results-header' }, [
+            document.createTextNode('SESSION ANALYSIS'),
+            DOMUtils.createElement('div', {
+                className: 'results-session-meta',
+                textContent: `${formatTime(stats.startedAt)} – ${formatTime(stats.completedAt)}`,
+            }),
+        ]);
+        cardContainer.appendChild(header);
+
+        // Scroll Area
+        const scrollArea = DOMUtils.createElement('div', { className: 'results-scroll-area' });
+        if (timings.length > 0) {
+            timings.forEach((t) => {
+                const percent = Math.min(100, (t.duration / maxDuration) * 100);
+                const icon = t.status === 'completed' ? '✓' : '⏭';
+
+                const row = DOMUtils.createElement(
+                    'div',
+                    { className: `results-row ${t.status}` },
+                    [
+                        DOMUtils.createElement('div', { className: 'results-row-header' }, [
+                            DOMUtils.createElement('span', {
+                                className: 'results-icon',
+                                textContent: icon,
+                            }),
+                            DOMUtils.createElement('span', {
+                                className: 'results-text',
+                                textContent: t.stepText,
+                            }),
+                            DOMUtils.createElement('span', {
+                                className: 'results-time',
+                                textContent: formatDuration(t.duration),
+                            }),
+                        ]),
+                        DOMUtils.createElement('div', { className: 'results-bar-container' }, [
+                            DOMUtils.createElement('div', {
+                                className: 'results-bar',
+                                style: { width: `${percent}%` },
+                            }),
+                        ]),
+                    ]
+                );
+                scrollArea.appendChild(row);
+            });
+        } else {
+            scrollArea.appendChild(
+                DOMUtils.createElement('div', {
+                    className: 'results-empty',
+                    textContent: 'No step data recorded',
+                })
+            );
+        }
+        cardContainer.appendChild(scrollArea);
+
+        // Footer (Stats)
+        const footer = DOMUtils.createElement('div', { className: 'results-footer' });
+        const statGroup = DOMUtils.createElement('div', { className: 'results-stat-group' });
+
+        const createStat = (label, value) => {
+            return DOMUtils.createElement('div', { className: 'results-stat' }, [
+                DOMUtils.createElement('span', { className: 'stat-label', textContent: label }),
+                DOMUtils.createElement('span', { className: 'stat-value', textContent: value }),
+            ]);
+        };
+
+        statGroup.appendChild(createStat('FOCUS TIME', formatDuration(totalFocus)));
+        statGroup.appendChild(createStat('TOTAL TIME', formatDuration(totalDuration)));
+        statGroup.appendChild(createStat('PAUSES', (state.pauseCount || 0).toString()));
+        statGroup.appendChild(createStat('TOMATOES', `${pomodoroCount} 🍅`));
+        statGroup.appendChild(createStat('FOCUS SCORE', `${focusScore}%`));
+
+        footer.appendChild(statGroup);
+        cardContainer.appendChild(footer);
+
+        wrapper.appendChild(cardContainer);
+
+        wrapper.appendChild(
+            DOMUtils.createElement('div', {
+                className: 'results-hint',
+                textContent: 'Share your focus achievement! 📸',
+            })
+        );
+
+        // Actions
+        const actions = DOMUtils.createElement('div', { className: 'results-actions' }, [
+            DOMUtils.createElement(
+                'button',
+                { className: 'results-restart-btn', id: 'restartSessionBtn' },
+                [
+                    DOMUtils.createSVG('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, [
+                        DOMUtils.createSVG('path', {
+                            d: 'M17.65 6.35c-1.63-1.63-3.94-2.57-6.48-2.25-3.52.44-6.42 3.33-6.86 6.85-.56 4.5 3 8.35 7.42 8.35 3.32 0 6.13-2.13 7.15-5.08.18-.53-.22-1.07-.78-1.07h-.05c-.39 0-.74.24-.87.61-.75 2.19-2.85 3.76-5.45 3.76-2.56 0-4.74-1.74-5.38-4.14-.39-1.48.06-2.92.93-3.94a5.02 5.02 0 013.91-1.63c1.39.02 2.62.59 3.49 1.48l-1.79 1.79c-.31.31-.09.85.35.85H20c.28 0 .5-.22.5-.5V10.7c0-.45-.54-.67-.85-.35l-2-2z',
+                        }),
+                    ]),
+                    document.createTextNode(' RESTART FOCUS'),
+                ]
+            ),
+        ]);
+        wrapper.appendChild(actions);
+
+        fragment.appendChild(wrapper);
+        return fragment;
+    },
 };

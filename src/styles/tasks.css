@@ -17,17 +17,21 @@
     transition: all var(--transition-spring);
     color: var(--text-primary);
     z-index: 1;
-    /* Base layer */
+
+    /* NEW: High-contrast card background */
+    background: color-mix(in srgb, var(--task-color) 12%, var(--bg-elevated));
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .task-block:hover {
     border-color: var(--task-color);
     transform: translateY(-4px) scale(1.02);
+    /* Brighter hover state */
+    background: color-mix(in srgb, var(--task-color) 18%, var(--bg-elevated));
     box-shadow:
         var(--shadow-lg),
         0 0 25px color-mix(in srgb, var(--task-color) 35%, transparent);
     z-index: 20;
-    /* Lift above everything */
 }
 
 /* Day View - Increased volumetric tint */
@@ -40,9 +44,11 @@
     -webkit-backdrop-filter: blur(8px);
 
     /* 2. SHEEN - Increased color ratio for better distinction */
-    background: linear-gradient(to bottom,
-            color-mix(in srgb, var(--task-color) 65%, var(--bg-secondary)) 0%,
-            color-mix(in srgb, var(--task-color) 35%, var(--bg-primary)) 100%);
+    background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--task-color) 65%, var(--bg-secondary)) 0%,
+        color-mix(in srgb, var(--task-color) 35%, var(--bg-primary)) 100%
+    );
 
     border-radius: var(--radius-lg);
 
@@ -115,7 +121,8 @@
 .task-block:hover {
     border-color: var(--task-color);
     transform: translateY(-2px) scale(1.01);
-    box-shadow: var(--shadow-md),
+    box-shadow:
+        var(--shadow-md),
         0 0 20px color-mix(in srgb, var(--task-color) 25%, transparent);
 }
 
@@ -131,24 +138,20 @@
 
 /* Neutralized completion dimming to keep vibrant until all steps done */
 .task-block.completed {
-    /* opacity: 0.5; */
-    /* background: var(--bg-secondary); */
-}
-
-.task-block.completed::before {
-    /* display: none; */
+    /* Keep vibrant background but dim text slightly */
+    /* opacity: 0.9; */
 }
 
 .task-block.completed .task-title {
-    /* text-decoration: line-through; */
-    /* color: var(--text-tertiary); */
+    color: var(--text-secondary);
 }
 
 .task-block.dragging {
     opacity: 0.95;
     cursor: grabbing;
     transform: scale(1.03) rotate(1deg);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.4),
         0 0 30px color-mix(in srgb, var(--task-color) 40%, transparent);
     overflow: visible;
     z-index: 1000;
@@ -220,9 +223,11 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: linear-gradient(90deg,
-            var(--task-color, var(--accent-primary)),
-            color-mix(in srgb, var(--task-color, var(--accent-primary)) 70%, white));
+    background: linear-gradient(
+        90deg,
+        var(--task-color, var(--accent-primary)),
+        color-mix(in srgb, var(--task-color, var(--accent-primary)) 70%, white)
+    );
     border-radius: var(--radius-full);
     transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 0 6px var(--task-color, var(--accent-primary));
@@ -240,14 +245,15 @@
    CELEBRATION EFFECT - 100% Complete
    ========================================= */
 .task-step-progress.complete {
-    background: rgba(16, 185, 129, 0.3);
+    background: color-mix(in srgb, var(--accent-success) 28%, rgba(0, 0, 0, 0.35));
     animation: celebration-pulse 2s ease-in-out infinite;
 }
 
 .task-step-progress.complete .step-fill {
-    background: linear-gradient(90deg, #10b981, #34d399);
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.8),
-        0 0 24px rgba(16, 185, 129, 0.4);
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-success));
+    box-shadow:
+        0 0 12px color-mix(in srgb, var(--accent-success) 70%, transparent),
+        0 0 24px color-mix(in srgb, var(--accent-success) 40%, transparent);
 }
 
 .task-step-progress.complete .step-text {
@@ -256,14 +262,13 @@
 }
 
 @keyframes celebration-pulse {
-
     0%,
     100% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-success) 0%, transparent);
     }
 
     50% {
-        box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.4);
+        box-shadow: 0 0 8px 2px color-mix(in srgb, var(--accent-success) 45%, transparent);
     }
 }
 
@@ -478,7 +483,11 @@
 
 .notes-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--task-color), color-mix(in srgb, var(--task-color) 70%, white));
+    background: linear-gradient(
+        90deg,
+        var(--task-color),
+        color-mix(in srgb, var(--task-color) 70%, white)
+    );
     box-shadow: 0 0 10px var(--task-color);
     transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -503,7 +512,6 @@
     transition: all var(--transition-fast);
     font-size: 12px;
 }
-
 
 .task-block:hover .task-delete {
     display: flex;
@@ -657,10 +665,12 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg,
-            rgba(255, 255, 255, 0.5) 0%,
-            rgba(255, 255, 255, 0.3) 50%,
-            rgba(255, 255, 255, 0.1) 100%);
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.5) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0.1) 100%
+    );
     pointer-events: none;
     z-index: 3;
     border-radius: inherit;
