@@ -57,8 +57,8 @@
     /* Slate-300 */
     --text-tertiary: #94a3b8;
     /* Slate-400 */
-    --text-muted: #64748b;
-    /* Slate-500 */
+    --text-muted: #8ba2bd;
+    /* Lightened for better contrast */
 
     /* Accent Colors */
     --accent-primary: #6366f1;

@@ -288,8 +288,7 @@ const App = {
      */
     setupDropdowns() {
         const dropdownConfigs = [
-            { id: 'moreActionsDropdown', btnId: 'moreActionsBtn', menuId: 'moreActionsMenu' },
-            { id: 'viewOptionsDropdown', btnId: 'viewOptionsBtn', menuId: 'viewOptionsMenu' }
+            { id: 'moreActionsDropdown', btnId: 'moreActionsBtn', menuId: 'moreActionsMenu' }
         ];
 
         dropdownConfigs.forEach(config => {

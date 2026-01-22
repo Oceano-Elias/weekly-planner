@@ -180,6 +180,7 @@
 }
 
 @keyframes btn-glow-pulse {
+
     0%,
     100% {
         box-shadow:
@@ -270,6 +271,15 @@
     flex-shrink: 0;
     color: var(--text-tertiary);
     transition: color var(--transition-fast);
+}
+
+.dropdown-header {
+    padding: 10px 12px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
 }
 
 .dropdown-divider {

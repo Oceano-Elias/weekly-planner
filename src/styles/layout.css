@@ -253,7 +253,8 @@ header {
 .search-input {
     width: 100%;
     padding: 10px 14px 10px 36px;
-    background: var(--bg-tertiary); /* Higher contrast input bg */
+    background: var(--bg-tertiary);
+    /* Higher contrast input bg */
     border: 1px solid var(--border-secondary);
     border-radius: var(--radius-full);
     color: var(--text-primary);
@@ -391,6 +392,7 @@ header {
 }
 
 @keyframes floatBob {
+
     0%,
     100% {
         transform: translateY(0);
@@ -406,6 +408,7 @@ header {
 }
 
 @keyframes sparklePulse {
+
     0%,
     100% {
         opacity: 0.8;
@@ -592,6 +595,21 @@ header {
     justify-content: center;
 }
 
+.day-header-nav {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.day-header-nav:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.day-header-nav:hover .calendar-day-date {
+    transform: scale(1.1);
+    color: var(--accent-primary);
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
 .day-header-goal {
     width: 100%;
     padding: 10px 16px;
@@ -620,6 +638,7 @@ header {
 }
 
 @keyframes goal-focus-pulse {
+
     0%,
     100% {
         box-shadow:
@@ -747,6 +766,7 @@ header {
 }
 
 @keyframes laser-pulse {
+
     0%,
     100% {
         transform: scale(1);
@@ -779,6 +799,7 @@ header {
 }
 
 @keyframes pulse {
+
     0%,
     100% {
         transform: scale(1);
@@ -876,10 +897,12 @@ header {
 
 /* Shake Animation for Errors */
 @keyframes shake {
+
     0%,
     100% {
         transform: translateX(0);
     }
+
     10%,
     30%,
     50%,
@@ -887,6 +910,7 @@ header {
     90% {
         transform: translateX(-4px);
     }
+
     20%,
     40%,
     60%,

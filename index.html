@@ -56,44 +56,6 @@
                         style="margin-left: 8px; width: auto; padding: 0 12px; font-size: 12px">
                         Today
                     </button>
-                    <div class="template-controls" id="viewOptionsContainer" style="
-                                display: flex;
-                                gap: 8px;
-                                border-left: 1px solid var(--border-color);
-                                padding-left: 12px;
-                                margin-left: 12px;
-                            ">
-                        <div class="dropdown" id="viewOptionsDropdown">
-                            <button class="nav-btn dropdown-toggle" id="viewOptionsBtn" title="View Options"
-                                style="width: auto; padding: 0 12px; font-size: 12px">
-                                <span>Options</span>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" style="margin-left: 4px">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                            </button>
-                            <div class="dropdown-menu" id="viewOptionsMenu">
-                                <button class="dropdown-item" id="setTemplateBtn">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z">
-                                        </path>
-                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                        <polyline points="7 3 7 8 15 8"></polyline>
-                                    </svg>
-                                    <span>Set Template</span>
-                                </button>
-                                <button class="dropdown-item" id="resetWeekBtn">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                                        <path d="M3 3v5h5"></path>
-                                    </svg>
-                                    <span>Reset Week</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="header-right">
@@ -122,6 +84,7 @@
                             <span class="btn-label">More</span>
                         </button>
                         <div class="dropdown-menu" id="moreActionsMenu">
+                            <div class="dropdown-header">Configuration</div>
                             <button class="dropdown-item" id="settingsBtn">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
@@ -129,7 +92,7 @@
                                     <path
                                         d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                                 </svg>
-                                <span>Departments</span>
+                                <span>Departments Manager</span>
                             </button>
                             <button class="dropdown-item" id="weeklySummaryBtn">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -137,9 +100,30 @@
                                     <path d="M3 3v18h18" />
                                     <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
                                 </svg>
-                                <span>Weekly Summary</span>
+                                <span>Performance Summary</span>
+                            </button>
+
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-header">Templates</div>
+                            <button class="dropdown-item" id="setTemplateBtn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                <span>Save Week as Template</span>
+                            </button>
+                            <button class="dropdown-item" id="resetWeekBtn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                    <path d="M3 3v5h5"></path>
+                                </svg>
+                                <span>Reset Week to Template</span>
                             </button>
                             <div class="dropdown-divider"></div>
+                            <div class="dropdown-header">Export & Print</div>
                             <button class="dropdown-item" id="printPdfBtn">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">

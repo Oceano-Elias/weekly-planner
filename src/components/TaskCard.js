@@ -161,7 +161,9 @@ export class TaskCard {
             stepProgress.appendChild(
                 DOMUtils.createElement('span', {
                     className: 'step-text',
-                    textContent: stepText,
+                    innerHTML: isAllComplete
+                        ? '<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4\" style=\"margin-right:4px\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>Complete'
+                        : stepText,
                 })
             );
             progressRow.appendChild(stepProgress);
