@@ -59,6 +59,7 @@ export const TaskQueue = {
     setupTabs() {
         const tabs = document.querySelectorAll('.sidebar-tab');
         const queuePanel = document.getElementById('queuePanel');
+        const palettePanel = document.getElementById('palettePanel');
         const analyticsPanel = document.getElementById('analyticsPanel');
         const filtersPanel = document.getElementById('filtersPanel');
         const searchBar = document.querySelector('.sidebar-search'); // Changed to class selector to match layout.css
@@ -72,6 +73,8 @@ export const TaskQueue = {
 
                 // Toggle Panel Visibility
                 if (queuePanel) queuePanel.style.display = tabName === 'queue' ? 'block' : 'none';
+                if (palettePanel)
+                    palettePanel.style.display = tabName === 'palette' ? 'block' : 'none';
                 if (analyticsPanel)
                     analyticsPanel.style.display = tabName === 'analytics' ? 'block' : 'none';
                 if (filtersPanel)
@@ -80,6 +83,10 @@ export const TaskQueue = {
                 // Search Bar only for Queue
                 if (searchBar) {
                     searchBar.style.display = tabName === 'queue' ? 'block' : 'none';
+                }
+
+                if (tabName === 'palette' && window.QuickPalette) {
+                    window.QuickPalette.render();
                 }
 
                 if (tabName === 'analytics' && Analytics) {

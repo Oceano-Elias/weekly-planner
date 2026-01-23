@@ -1,0 +1,125 @@
+/**
+ * QuickPalette Styles - "Stamp Tool" Aesthetics
+ */
+
+.palette-container {
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.palette-header {
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.palette-header h3 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.palette-header p {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+}
+
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+.palette-stamp {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    cursor: grab;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.palette-stamp::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--dept-color) 0%, transparent 70%);
+    opacity: 0.15;
+    transition: opacity var(--transition-fast);
+}
+
+.palette-stamp:hover {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: var(--dept-color);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--dept-color) 20%, transparent);
+}
+
+.palette-stamp:hover::before {
+    opacity: 0.25;
+}
+
+.palette-stamp:active {
+    cursor: grabbing;
+    transform: scale(0.96);
+}
+
+.palette-stamp.dragging {
+    opacity: 0.5;
+    transform: scale(0.9);
+}
+
+.stamp-badge {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stamp-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Response/Animations */
+@keyframes stamp-spawn {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.task-block.spawned {
+    animation: stamp-spawn 0.4s var(--transition-spring);
+}

@@ -35,7 +35,11 @@ export class TaskCard {
         const isFull = task.duration >= 90;
 
         // Use a unified layout class for base styling
-        const className = `glass-surface glass-surface-hover task-block ${task.completed ? 'completed' : ''} ${isDayView ? 'day-view' : ''} ${isCompact ? 'layout-compact' : isStandard ? 'layout-standard' : isFull ? 'layout-full' : ''}`;
+        // Use a unified layout class with Day View adjustments
+        const actualStandard = isDayView ? (task.duration >= 45 && task.duration < 60) : isStandard;
+        const actualFull = isDayView ? (task.duration >= 60) : isFull;
+
+        const className = `glass-surface glass-surface-hover task-block ${task.completed ? 'completed' : ''} ${isDayView ? 'day-view' : ''} ${isCompact ? 'layout-compact' : actualStandard ? 'layout-standard' : actualFull ? 'layout-full' : ''}`;
 
         const el = DOMUtils.createElement('div', {
             className,
@@ -107,12 +111,33 @@ export class TaskCard {
         );
         header.appendChild(headerLeft);
 
-        // Step Progress (Day View)
         const { completed, total } = this.getStepCounts();
         const progressPercent = total > 0 ? (completed / total) * 100 : 0;
         const isAllComplete = total > 0 && completed === total;
         const stepText = isAllComplete ? '✓ Complete' : `${completed}/${total} steps`;
         const completeClass = isAllComplete ? 'complete' : '';
+
+        // Prepare Progress Element (if needed)
+        let stepProgress = null;
+        if (total > 0) {
+            stepProgress = DOMUtils.createElement('span', {
+                className: `task-step-progress ${isDayView ? 'header-pill' : 'full-width'} ${completeClass}`,
+            });
+            stepProgress.appendChild(
+                DOMUtils.createElement('span', {
+                    className: 'step-fill',
+                    style: { width: `${progressPercent}%` },
+                })
+            );
+            stepProgress.appendChild(
+                DOMUtils.createElement('span', {
+                    className: 'step-text',
+                    innerHTML: isAllComplete
+                        ? '<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4\" style=\"margin-right:4px\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>Complete'
+                        : stepText,
+                })
+            );
+        }
 
         // Minimal Status Indicator (UX Polish)
         if (task.completed) {
@@ -131,6 +156,11 @@ export class TaskCard {
             );
             header.appendChild(statusIcon);
         } else {
+            // Support for horizontal minitasks in Day View
+            if (isDayView && stepProgress) {
+                header.appendChild(stepProgress);
+            }
+
             // Duration only if not completed or if space allows
             const durationDiv = DOMUtils.createElement('div', { className: 'task-duration' });
             durationDiv.appendChild(
@@ -143,40 +173,23 @@ export class TaskCard {
 
         el.appendChild(header);
 
-        // Additional Content
-        if (!isDayView && total > 0) {
+        // Additional Content - Progress Row for Week View or Hierarchy
+        if (total > 0 && !isDayView) {
             // Week View Progress Row
             const progressRow = DOMUtils.createElement('div', {
                 className: `task-progress-row ${isCompact ? 'compact' : ''}`,
             });
-            const stepProgress = DOMUtils.createElement('span', {
-                className: `task-step-progress full-width ${completeClass}`,
-            });
-            stepProgress.appendChild(
-                DOMUtils.createElement('span', {
-                    className: 'step-fill',
-                    style: { width: `${progressPercent}%` },
-                })
-            );
-            stepProgress.appendChild(
-                DOMUtils.createElement('span', {
-                    className: 'step-text',
-                    innerHTML: isAllComplete
-                        ? '<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4\" style=\"margin-right:4px\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>Complete'
-                        : stepText,
-                })
-            );
             progressRow.appendChild(stepProgress);
             el.appendChild(progressRow);
-        } else if (isDayView && task.duration >= 60 && (topDept || hierarchyPath)) {
-            // Day View Hierarchy Path
-            const fullPath = [topDept, ...task.hierarchy.slice(1)].filter(Boolean).join(' › ');
-            el.appendChild(
-                DOMUtils.createElement('div', {
-                    className: 'task-hierarchy-row',
-                    textContent: fullPath,
-                })
-            );
+        }
+
+        // Add Resize Handle (only for non-completed tasks)
+        if (!task.completed) {
+            const resizeHandle = DOMUtils.createElement('div', {
+                className: 'task-resize-handle',
+                title: 'Drag to resize duration',
+            });
+            el.appendChild(resizeHandle);
         }
 
         return el;

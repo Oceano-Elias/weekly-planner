@@ -60,6 +60,7 @@ export const Calendar = {
         this.setupNavigation();
         this.setupViewToggle();
         this.setupProgressTimer();
+        this.setupResizeInteraction();
     },
 
     /**
@@ -136,11 +137,10 @@ export const Calendar = {
         const goals = Store.getGoals();
 
         // Empty corner cell
-        if (this.viewMode === 'week') {
-            header.appendChild(
-                DOMUtils.createElement('div', { className: 'calendar-header-cell' })
-            );
-        }
+        // Empty corner cell (aligns with time column)
+        header.appendChild(
+            DOMUtils.createElement('div', { className: 'calendar-header-cell' })
+        );
 
         if (this.viewMode === 'week') {
             dates.forEach((date, index) => {
@@ -199,7 +199,7 @@ export const Calendar = {
 
             const headerCell = DOMUtils.createElement(
                 'div',
-                { className: 'calendar-header-cell day-view-header-new' },
+                { className: 'day-view-header-new' },
                 [
                     DOMUtils.createElement('div', { className: 'day-header-left' }, [
                         DOMUtils.createElement('span', {
@@ -889,4 +889,78 @@ export const Calendar = {
             }, 600);
         }
     },
+
+    /**
+     * Setup Visual Resizing Interaction
+     */
+    setupResizeInteraction() {
+        let resizingTask = null;
+        let startY = 0;
+        let startHeight = 0;
+        let currentTaskEl = null;
+        let cellHeight = 0;
+
+        const onPointerMove = (e) => {
+            if (!resizingTask || !currentTaskEl) return;
+
+            const deltaY = e.clientY - startY;
+            const newHeight = Math.max(cellHeight, startHeight + deltaY);
+
+            // Snap to grid (full-cell for 30m slots)
+            const snappedHeight = Math.round(newHeight / cellHeight) * cellHeight;
+
+            currentTaskEl.style.height = `${snappedHeight - 2}px`;
+
+            // Highlight the card while resizing
+            currentTaskEl.classList.add('resizing');
+        };
+
+        const onPointerUp = () => {
+            if (!resizingTask) return;
+
+            const finalHeight = parseInt(currentTaskEl.style.height) + 2;
+            const newDuration = (finalHeight / cellHeight) * PlannerService.SLOT_DURATION;
+
+            if (newDuration !== resizingTask.duration) {
+                Store.updateTask(resizingTask.id, { duration: newDuration });
+                this.renderScheduledTasks();
+                if (window.TaskQueue) window.TaskQueue.refresh();
+                if (window.Analytics) window.Analytics.render();
+            }
+
+            document.body.classList.remove('resizing');
+            if (currentTaskEl) currentTaskEl.classList.remove('resizing');
+
+            resizingTask = null;
+            currentTaskEl = null;
+
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+        };
+
+        document.addEventListener('pointerdown', (e) => {
+            const handle = e.target.closest('.task-resize-handle');
+            if (!handle) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const taskEl = handle.closest('.calendar-task');
+            const taskBlock = taskEl.querySelector('.task-block');
+            const taskId = taskBlock.dataset.taskId;
+
+            resizingTask = Store.getTask(taskId);
+            currentTaskEl = taskEl;
+            startY = e.clientY;
+            startHeight = taskEl.offsetHeight;
+
+            const firstCell = document.querySelector('.calendar-cell');
+            cellHeight = firstCell ? firstCell.offsetHeight : PlannerService.CELL_HEIGHT;
+
+            document.body.classList.add('resizing');
+
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
+        });
+    }
 };

@@ -76,9 +76,10 @@
 }
 
 .view-btn.active {
-    background: white;
+    background: #f1f5f9;
+    /* Softened from pure white */
     color: #0f172a !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transform: scale(1.05);
 }
 
@@ -127,10 +128,11 @@
 }
 
 .nav-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     border-color: var(--glass-border-light);
     transform: translateY(-1px);
-    color: white !important;
+    color: var(--text-primary) !important;
+    /* Softened from pure white */
 }
 
 .nav-btn:hover svg {

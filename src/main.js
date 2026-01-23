@@ -15,6 +15,7 @@ import { UpdateNotification } from './components/UpdateNotification.js';
 import { DepartmentSettings } from './components/DepartmentSettings.js';
 import { Confetti } from './components/Confetti.js';
 import { WeeklySummary } from './components/WeeklySummary.js';
+import { QuickPalette } from './components/QuickPalette.js';
 import { APP_VERSION } from './version.js';
 
 // Services
@@ -37,6 +38,7 @@ import './styles/utilities.css';
 import './styles/modal.css';
 import './styles/confirm-modal.css';
 import './styles/settings.css';
+import './styles/palette.css';
 
 // Export modules for use in other components without window pollution
 export { App };
@@ -71,6 +73,7 @@ const App = {
             DragDropService.init();
             ModalService.init();
             FormHandler.init();
+            QuickPalette.init();
             KeyboardService.init();
 
             this.setupUI();
