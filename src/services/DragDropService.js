@@ -19,22 +19,25 @@ export const DragDropService = {
 
     getCellFromPointerEvent(e) {
         if (!e) return null;
+        return this.getCellFromCoords(e.clientX, e.clientY, e.target);
+    },
 
-        if (!Number.isFinite(e.clientX) || !Number.isFinite(e.clientY)) return null;
-        if (e.clientX === 0 && e.clientY === 0) return null;
+    getCellFromCoords(clientX, clientY, targetEl) {
+        if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+        if (clientX === 0 && clientY === 0) return null;
 
         if (this.hitTestCache) {
-            return this.getCellFromHitTestCache(e.clientX, e.clientY);
+            return this.getCellFromHitTestCache(clientX, clientY);
         }
 
         const fromPoint =
             typeof document !== 'undefined'
-                ? document.elementFromPoint(e.clientX, e.clientY)
+                ? document.elementFromPoint(clientX, clientY)
                 : null;
-        if (fromPoint?.closest?.('.time-column') || e.target?.closest?.('.time-column'))
+        if (fromPoint?.closest?.('.time-column') || targetEl?.closest?.('.time-column'))
             return null;
 
-        const column = fromPoint?.closest?.('.day-column') || e.target?.closest?.('.day-column');
+        const column = fromPoint?.closest?.('.day-column') || targetEl?.closest?.('.day-column');
         if (!column) return null;
 
         const cells = column.querySelectorAll('.calendar-cell');
@@ -42,7 +45,7 @@ export const DragDropService = {
 
         const firstCellRect = cells[0].getBoundingClientRect();
         const cellHeight = cells[0].offsetHeight || PlannerService.CELL_HEIGHT;
-        const rawIndex = Math.floor((e.clientY - firstCellRect.top) / cellHeight);
+        const rawIndex = Math.floor((clientY - firstCellRect.top) / cellHeight);
         const index = Math.min(Math.max(0, rawIndex), cells.length - 1);
         return cells[index] || null;
     },
@@ -261,42 +264,66 @@ export const DragDropService = {
      */
     setupDragEvents() {
         let pointerCandidate = null;
+        let pointerGhost = null;
+        let pointerGrabRect = null; // Store the exact starting position of the block
         let pointerStartX = 0;
         let pointerStartY = 0;
         let pointerId = null;
         let pointerDragging = false;
-        let pointerGhost = null;
-        let pointerGhostOffsetX = 0;
-        let pointerGhostOffsetY = 0;
         let pointerContextMenuBlocked = false;
         let pointerMoveRaf = 0;
         let pointerLatestX = 0;
         let pointerLatestY = 0;
+        let pointerGhostOriginX = 0;
+        let pointerGhostOriginY = 0;
 
         document.addEventListener(
             'pointerdown',
             (e) => {
                 if (e.button !== 0) return;
                 const taskBlock = e.target?.closest?.('.task-block');
-                if (!taskBlock) return;
-                const inCalendar = !!taskBlock.closest('.calendar-task');
-                const inQueue = !!taskBlock.closest('#taskQueue');
-                if (!inCalendar && !inQueue) return;
+                const stampBlock = e.target?.closest?.('.palette-stamp');
+
+                if (!taskBlock && !stampBlock) return;
+
+                if (taskBlock) {
+                    const inCalendar = !!taskBlock.closest('.calendar-task');
+                    const inQueue = !!taskBlock.closest('#taskQueue');
+                    if (!inCalendar && !inQueue) return;
+                }
+
                 if (e.target?.closest?.('.task-delete')) return;
+                if (e.target?.closest?.('.task-resize-handle')) return;
                 if (e.target?.closest?.('input, textarea, select, button')) return;
                 if (e.detail && e.detail > 1) return;
 
-                const taskId = taskBlock.dataset.taskId;
-                const task = Store.getTask(taskId);
-                if (!task) return;
+                const targetBlock = taskBlock || stampBlock;
+                const isStamp = !!stampBlock;
 
-                const rect = taskBlock.getBoundingClientRect();
-                pointerGhostOffsetX = e.clientX - rect.left;
-                pointerGhostOffsetY = e.clientY - rect.top;
+                let taskId = null;
+                let taskData = null;
 
-                pointerCandidate = { taskId, taskBlock };
+                if (isStamp) {
+                    taskData = {
+                        title: stampBlock.dataset.dept,
+                        hierarchy: [stampBlock.dataset.dept],
+                        duration: 60, // Default for stamps
+                        color: stampBlock.dataset.color,
+                        isStamp: true
+                    };
+                } else {
+                    taskId = taskBlock.dataset.taskId;
+                    taskData = Store.getTask(taskId);
+                }
+
+                if (!taskData && !taskId) return;
+
+                // Capture the exact rect and start coordinates
+                pointerGrabRect = targetBlock.getBoundingClientRect();
                 pointerStartX = e.clientX;
                 pointerStartY = e.clientY;
+
+                pointerCandidate = { taskId, taskBlock: targetBlock, isStamp, taskData };
                 pointerId = e.pointerId;
                 pointerDragging = false;
                 pointerContextMenuBlocked = false;
@@ -333,49 +360,53 @@ export const DragDropService = {
                     this.prepareHitTestCache();
                     this.ensureDropIndicator();
 
-                    const task = Store.getTask(pointerCandidate.taskId);
+                    const task = pointerCandidate.isStamp ? pointerCandidate.taskData : Store.getTask(pointerCandidate.taskId);
                     this.draggedTask = task;
                     this.draggedElement = pointerCandidate.taskBlock;
+
+                    // Use full task block as drag ghost for accurate placement
+                    const actualWidth = pointerGrabRect.width;
+                    const actualHeight = pointerGrabRect.height;
+
                     this.draggedElement.classList.add('dragging');
 
-                    const ghost = pointerCandidate.taskBlock.cloneNode(true);
+                    // Clone the element
+                    const ghost = this.draggedElement.cloneNode(true);
                     ghost.classList.add('drag-ghost');
+                    ghost.classList.remove('dragging');
+                    if (pointerCandidate.isStamp) ghost.classList.add('task-block');
 
-                    // Use DOMUtils to set styles if possible, but for individual properties it's fine
+                    // Reset ghost dimensions to match original block
                     Object.assign(ghost.style, {
                         zIndex: '9999',
+                        position: 'fixed',
                         top: '0',
                         left: '0',
                         margin: '0',
-                        opacity: '0.9',
-                        pointerEvents: 'none',
-                    });
-
-                    // Hide original to prevent hit-test interference
-                    this.draggedElement.style.opacity = '0';
-                    this.draggedElement.style.pointerEvents = 'none';
-
-                    const rect = pointerCandidate.taskBlock.getBoundingClientRect();
-
-                    // Keep the exact width/height of the original card for the ghost
-                    const actualWidth = rect.width;
-                    const actualHeight = rect.height;
-
-                    Object.assign(ghost.style, {
                         width: `${actualWidth}px`,
                         height: `${actualHeight}px`,
                         maxHeight: `${actualHeight}px`,
                         minHeight: `${actualHeight}px`,
                         maxWidth: `${actualWidth}px`,
+                        opacity: '1',
+                        pointerEvents: 'none',
+                        transformOrigin: 'center center', // Center for 1:1 feel
                     });
 
-                    // Set initial position using the precise offsets calculated in pointerdown
-                    const initialX = e.clientX - pointerGhostOffsetX;
-                    const initialY = e.clientY - pointerGhostOffsetY;
-                    ghost.style.transform = `translate3d(${initialX}px, ${initialY}px, 0)`;
+                    // Hide original
+                    if (!pointerCandidate.isStamp) {
+                        this.draggedElement.style.opacity = '0';
+                        this.draggedElement.style.pointerEvents = 'none';
+                    }
+
+                    pointerGhostOriginX = pointerGrabRect.left;
+                    pointerGhostOriginY = pointerGrabRect.top;
+                    ghost.style.transform = `translate3d(${pointerGhostOriginX}px, ${pointerGhostOriginY}px, 0)`;
 
                     document.body.appendChild(ghost);
                     pointerGhost = ghost;
+
+                    // Update moving offsets to keep it anchored to grab point
 
                     if (!pointerContextMenuBlocked) {
                         pointerContextMenuBlocked = true;
@@ -393,7 +424,10 @@ export const DragDropService = {
                     fromPoint?.closest?.('#taskQueue') ||
                     fromPoint?.closest?.('#queuePanel') ||
                     fromPoint?.closest?.('.sidebar');
-                const cell = this.getCellFromPointerEvent(e);
+                const ghostTopY = pointerGhost
+                    ? pointerGhostOriginY + (e.clientY - pointerStartY) + 1
+                    : e.clientY;
+                const cell = this.getCellFromCoords(e.clientX, ghostTopY, e.target);
 
                 if (pointerGhost) {
                     if (window.getSelection) {
@@ -411,8 +445,8 @@ export const DragDropService = {
                         pointerMoveRaf = requestAnimationFrame(() => {
                             pointerMoveRaf = 0;
                             if (!pointerGhost) return;
-                            const x = pointerLatestX - pointerGhostOffsetX;
-                            const y = pointerLatestY - pointerGhostOffsetY;
+                            const x = pointerGhostOriginX + (pointerLatestX - pointerStartX);
+                            const y = pointerGhostOriginY + (pointerLatestY - pointerStartY);
                             pointerGhost.style.transform = `translate3d(${x}px, ${y}px, 0)`;
                         });
                     }
@@ -473,7 +507,10 @@ export const DragDropService = {
                 const fromPoint = document.elementFromPoint(e.clientX, e.clientY);
 
                 // Prioritize CURRENT targets over stale last-hover states
-                let cell = this.getCellFromPointerEvent(e);
+                const ghostTopY = pointerGhost
+                    ? pointerGhostOriginY + (e.clientY - pointerStartY) + 1
+                    : e.clientY;
+                let cell = this.getCellFromCoords(e.clientX, ghostTopY, e.target);
                 let queue =
                     fromPoint?.closest?.('#taskQueue') ||
                     fromPoint?.closest?.('#queuePanel') ||
@@ -494,14 +531,32 @@ export const DragDropService = {
                 finishVisuals();
 
                 let updated = false;
-                if (queue) {
+                if (queue && !pointerCandidate.isStamp) {
                     Store.unscheduleTask(taskId, true);
                     updated = true;
                 } else if (day && time) {
                     this.dayTasksCache = {};
                     const bestTime = this.findNearestAvailableStart(day, time, duration, taskId);
+
                     if (bestTime) {
-                        Store.rescheduleTaskInWeek(taskId, day, bestTime);
+                        if (pointerCandidate.isStamp) {
+                            // CREATE NEW TASK from stamp
+                            const newTask = Store.addTask({
+                                title: pointerCandidate.taskData.title,
+                                hierarchy: pointerCandidate.taskData.hierarchy,
+                                duration: pointerCandidate.taskData.duration,
+                                notes: ''
+                            });
+                            Store.scheduleTask(newTask.id, day, bestTime);
+
+                            // Visual feedback for spawn
+                            setTimeout(() => {
+                                const newEl = document.querySelector(`.calendar-task[data-task-id="${newTask.id}"] .task-block`);
+                                if (newEl) newEl.classList.add('spawned');
+                            }, 50);
+                        } else {
+                            Store.rescheduleTaskInWeek(taskId, day, bestTime);
+                        }
                         updated = true;
                     }
                 }
@@ -516,6 +571,9 @@ export const DragDropService = {
             pointerCandidate = null;
             pointerId = null;
             pointerDragging = false;
+            pointerGrabRect = null;
+            pointerGhostOriginX = 0;
+            pointerGhostOriginY = 0;
             this.draggedTask = null;
             this.draggedElement = null;
             this.dayTasksCache = {};
