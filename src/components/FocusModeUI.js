@@ -1626,23 +1626,26 @@ export const FocusModeUI = {
     /**
      * Get PIP window content
      */
+    /**
+     * Get PIP window content
+     */
     getPipContent() {
         return `
-            <div id="pipRoot" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px;background:linear-gradient(160deg,rgba(15,23,42,0.98) 0%,rgba(2,6,23,0.98) 100%);color:#e2e8f0;height:100%;box-sizing:border-box;border-radius:16px;border:1px solid rgba(255,255,255,0.12);box-shadow:0 18px 50px rgba(0,0,0,0.55), inset 0 1px 1px rgba(255,255,255,0.06);">
+            <div id="pipRoot" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px;background:linear-gradient(160deg,#0f1117 0%,#05080f 100%);color:#f0f6fc;height:100%;box-sizing:border-box;border-radius:0;font-family:'Outfit',system-ui,sans-serif;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <div id="pipModeDot" style="width:8px;height:8px;border-radius:999px;background:#3b82f6;box-shadow:0 0 12px rgba(59,130,246,0.6);"></div>
-                    <div id="pipMode" style="font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;opacity:0.85"></div>
+                    <div id="pipModeDot" style="width:8px;height:8px;border-radius:999px;background:#6366f1;box-shadow:0 0 12px rgba(99,102,241,0.6);"></div>
+                    <div id="pipMode" style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8b949e;"></div>
                 </div>
                 <div style="position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;">
                     <svg width="96" height="96" viewBox="0 0 96 96" style="position:absolute;inset:0;">
-                        <circle cx="48" cy="48" r="40" stroke="rgba(255,255,255,0.08)" stroke-width="6" fill="none"></circle>
-                        <circle id="pipRing" cx="48" cy="48" r="40" stroke="#3b82f6" stroke-width="6" fill="none" stroke-linecap="round" transform="rotate(-90 48 48)"></circle>
+                        <circle cx="48" cy="48" r="40" stroke="rgba(240,246,252,0.1)" stroke-width="6" fill="none"></circle>
+                        <circle id="pipRing" cx="48" cy="48" r="40" stroke="#6366f1" stroke-width="6" fill="none" stroke-linecap="round" transform="rotate(-90 48 48)"></circle>
                     </svg>
-                    <div id="pipTime" style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff"></div>
+                    <div id="pipTime" style="font-size:24px;font-weight:700;letter-spacing:-0.5px;color:#f0f6fc;text-shadow:0 0 20px rgba(99,102,241,0.2)"></div>
                 </div>
                 <div style="display:flex;gap:8px;">
-                    <button id="pipStartPause" style="padding:7px 12px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:700;font-size:12px;box-shadow:0 8px 18px rgba(59,130,246,0.35)">Start</button>
-                    <button id="pipReset" style="padding:7px 12px;border:1px solid rgba(255,255,255,0.16);border-radius:10px;background:rgba(15,23,42,0.6);color:#cbd5f5;font-weight:700;font-size:12px">Reset</button>
+                    <button id="pipStartPause" style="padding:7px 14px;border:none;border-radius:100px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:600;font-size:12px;box-shadow:0 4px 12px rgba(99,102,241,0.3);cursor:pointer;">Start</button>
+                    <button id="pipReset" style="padding:7px 14px;border:1px solid rgba(240,246,252,0.1);border-radius:100px;background:rgba(255,255,255,0.05);color:#8b949e;font-weight:600;font-size:12px;cursor:pointer;">Reset</button>
                 </div>
             </div>`;
     },
@@ -1987,7 +1990,27 @@ export const FocusModeUI = {
 
         document.body.appendChild(el);
 
-        // Click interaction - Open Focus Mode
+        // Wire up buttons with stopPropagation to prevent opening the full mode
+        const startPauseBtn = el.querySelector('#badgeStartPause');
+        const resetBtn = el.querySelector('#badgeReset');
+
+        if (startPauseBtn && onStartPause) {
+            startPauseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onStartPause();
+            });
+        }
+
+        if (resetBtn && onReset) {
+            resetBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onReset();
+            });
+        }
+
+        // Click interaction - Open Focus Mode (on container)
         if (onOpen) {
             el.style.cursor = 'pointer';
             el.addEventListener('click', (e) => {
@@ -1995,22 +2018,8 @@ export const FocusModeUI = {
             });
         }
 
-        // Bind controls (prevent bubble up to open)
-        const startBtn = el.querySelector('#badgeStartPause');
-        const resetBtn = el.querySelector('#badgeReset');
 
-        if (startBtn) {
-            startBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                onStartPause();
-            });
-        }
-        if (resetBtn) {
-            resetBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                onReset();
-            });
-        }
+
 
         // Position it
         const savedPos = (() => {

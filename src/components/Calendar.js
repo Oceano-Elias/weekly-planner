@@ -395,8 +395,8 @@ export const Calendar = {
         const slotsCount = task.duration / PlannerService.SLOT_DURATION;
 
         const cellHeight = PlannerService.CELL_HEIGHT;
-        const top = slotIndex * cellHeight + 1;
-        const height = slotsCount * cellHeight - 2;
+        const top = slotIndex * cellHeight;
+        const height = slotsCount * cellHeight;
 
         const isCompact = task.duration <= PlannerService.SLOT_DURATION;
         const taskEl = DOMUtils.createElement('div', {
