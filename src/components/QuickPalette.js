@@ -8,6 +8,10 @@ import { DOMUtils } from '../utils/DOMUtils.js';
 export const QuickPalette = {
     init() {
         this.render();
+        // Listen for department updates to live-refresh the sidebar
+        window.addEventListener('departmentsUpdated', () => {
+            this.render();
+        });
     },
 
     /**

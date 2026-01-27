@@ -28,6 +28,12 @@ export const Filters = {
             console.log('Filters: Store updated, refreshing task counts...');
             this.refresh();
         });
+
+        // Listen for department updates
+        window.addEventListener('departmentsUpdated', () => {
+            console.log('Filters: Departments updated, re-rendering...');
+            this.refresh();
+        });
     },
 
     /**

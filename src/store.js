@@ -1314,9 +1314,13 @@ export const Store = {
      * Export all data as JSON
      * @returns {Object} Complete data export
      */
+    /**
+     * Export all data as JSON
+     * @returns {Object} Complete data export
+     */
     exportData() {
         return {
-            version: '3.0',
+            version: '3.1', // Bumped version for new format
             exportedAt: new Date().toISOString(),
             data: {
                 tasks: state.tasks,
@@ -1325,6 +1329,9 @@ export const Store = {
                 goals: state.goals,
                 nextId: state.nextId,
                 migrated: state.migrated,
+                focusStats: state.focusStats,
+                // Include Custom Departments
+                customDepartments: this.getCustomDepartments(),
             },
         };
     },
@@ -1394,6 +1401,7 @@ export const Store = {
                         state.goals[day] = sanitize(data.goals[day]);
                     });
                 }
+                // NOTE: We do NOT merge departments to avoid structural conflicts
             } else {
                 state.tasks = (data.tasks || []).map(sanitizeTask);
                 state.templates = (data.templates || []).map(sanitizeTask);
@@ -1401,6 +1409,12 @@ export const Store = {
                 state.goals = data.goals || {};
                 state.nextId = data.nextId || 1;
                 state.migrated = data.migrated || false;
+                state.focusStats = data.focusStats || {
+                    sessions: [],
+                    currentStreak: 0,
+                    totalFocusTime: 0,
+                    lastSessionDate: null
+                };
 
                 // Sanitize weekly instances too
                 Object.values(state.weeklyInstances).forEach((week) => {
@@ -1408,6 +1422,11 @@ export const Store = {
                         week.tasks = week.tasks.map(sanitizeTask);
                     }
                 });
+
+                // Restore Custom Departments if present
+                if (data.customDepartments) {
+                    this.saveCustomDepartments(data.customDepartments);
+                }
             }
 
             this.save(true); // Save immediately after import

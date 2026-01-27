@@ -9,6 +9,19 @@ import { DOMUtils } from '../utils/DOMUtils.js';
 
 export const Analytics = {
     /**
+     * Initialize Analytics
+     */
+    init() {
+        // Initial render
+        this.render();
+
+        // Listen for department updates (colors/names)
+        window.addEventListener('departmentsUpdated', () => {
+            this.render();
+        });
+    },
+
+    /**
      * SVG Icons for stats - professional line icons
      */
     icons: {

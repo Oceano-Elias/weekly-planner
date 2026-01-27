@@ -68,6 +68,7 @@ const App = {
             Calendar.init();
             TaskQueue.init();
             Filters.init();
+            Analytics.init();
 
             // Initialize Services
             DragDropService.init();
