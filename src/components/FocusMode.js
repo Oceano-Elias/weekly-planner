@@ -162,7 +162,8 @@ export const FocusMode = {
     render(task) {
         const container = document.getElementById('focusModeContainer');
         const state = Store.getActiveExecution();
-        const activeStepTitle = FocusModeUI.getActiveStepTitle(task, state.currentStepIndex);
+        const isBreak = state.mode === 'break';
+        const activeStepTitle = FocusModeUI.getActiveStepTitle(task, state.currentStepIndex, isBreak);
 
         DOMUtils.clear(container);
         container.appendChild(FocusModeUI.getMainTemplate(task, state, activeStepTitle));
@@ -261,15 +262,15 @@ export const FocusMode = {
             task,
             onStepComplete: markComplete
                 ? () => {
-                      this.toggleMiniTask(fromIndex, true);
-                      this.recordStepCompletion(fromIndex, 'completed');
-                      FocusAudio.playStepComplete();
-                      this.showSuccessVisuals();
-                  }
+                    this.toggleMiniTask(fromIndex, true);
+                    this.recordStepCompletion(fromIndex, 'completed');
+                    FocusAudio.playStepComplete();
+                    this.showSuccessVisuals();
+                }
                 : () => {
-                      // If not markComplete, it's a skip or manual navigaton
-                      this.recordStepCompletion(fromIndex, 'skipped');
-                  },
+                    // If not markComplete, it's a skip or manual navigaton
+                    this.recordStepCompletion(fromIndex, 'skipped');
+                },
             onFinish: () => {
                 this.lastDoneStepIndex = fromIndex;
                 Store.updateActiveExecution({ currentStepIndex: toIndex });
@@ -541,7 +542,20 @@ export const FocusMode = {
         const task = Store.getTask(this.activeTaskId);
         const steps = (task.notes || '').split('\n').filter((l) => l.trim() !== '');
         if (steps.length === 0) {
-            alert('Please define at least one step before starting.');
+            FocusModeUI.showMissingStepsModal(
+                // onClose
+                () => {
+                    /* Just close modal, do nothing */
+                },
+                // onEdit - close Focus Mode so they can edit
+                () => {
+                    const taskId = this.activeTaskId;
+                    this.close();
+                    window.dispatchEvent(
+                        new CustomEvent('edit-task', { detail: { taskId } })
+                    );
+                }
+            );
             return;
         }
 
@@ -643,10 +657,9 @@ export const FocusMode = {
             ) {
                 Store.updateActiveExecution({ phase: 'closure' });
                 FocusAudio.playClosureWarning();
-                this.notifyPhaseChange('closure');
             }
 
-            // Check for session completion
+            // Check for session completion -> MOVE TO BREAK
             if (elapsedSeconds >= this.sessionDuration) {
                 // Count steps completed before recording
                 const task = Store.getTask(this.activeTaskId);
@@ -658,34 +671,44 @@ export const FocusMode = {
                     taskId: this.activeTaskId,
                     duration: this.sessionDuration,
                     stepsCompleted,
+                    interruptions: state.pauseCount || 0,
                 });
 
                 // Finalize current step timing
                 this.recordStepCompletion(state.currentStepIndex);
 
+                // AUTO-TRANSITION TO BREAK
                 Store.updateActiveExecution({
-                    running: false,
+                    running: true,
                     mode: 'break',
                     breakStartTime: Date.now(),
-                    phase: 'decision',
+                    phase: 'execution',
                     accumulatedTime: 0,
                 });
+
                 FocusAudio.playSessionComplete();
                 this.render(Store.getTask(this.activeTaskId));
-                requestAnimationFrame(() => {
-                    setTimeout(() => {
-                        this.showSuccessVisuals();
-                    }, 100);
-                });
+                this.showSuccessVisuals();
             }
         } else if (state.mode === 'break') {
             // Break mode - count down
             const breakElapsed = state.breakStartTime
                 ? Math.floor((Date.now() - state.breakStartTime) / 1000)
                 : 0;
+
+            // Check for break completion -> MOVE TO WORK
             if (breakElapsed >= this.breakDuration) {
-                // Break finished
-                // Keep in break mode but maybe pulse the timer or show a notification
+                Store.updateActiveExecution({
+                    running: true,
+                    mode: 'work',
+                    phase: 'execution',
+                    sessionStartTime: Date.now(),
+                    accumulatedTime: 0,
+                    breakStartTime: null,
+                });
+
+                FocusAudio.playBreakComplete();
+                this.render(Store.getTask(this.activeTaskId));
             }
         }
 

@@ -639,11 +639,12 @@ export const Store = {
             });
         });
 
-        // Clear all weekly instances EXCEPT the current week
+        // Clear all weekly instances for FUTURE weeks only
         // This forces future weeks to regenerate from the new template
+        // Past weeks are preserved as history
         const weekIds = Object.keys(state.weeklyInstances);
         weekIds.forEach((weekId) => {
-            if (weekId !== currentWeekId) {
+            if (weekId > currentWeekId) {
                 delete state.weeklyInstances[weekId];
             }
         });
@@ -1097,10 +1098,42 @@ export const Store = {
     // ========================================
 
     /**
-     * Record a focus session
-     * @param {Object} sessionData - { taskId, duration, stepsCompleted }
+     * Get aggregated focus metrics for the current week
+     * Used for "Deep Focus Time" and "Distraction Rate" cards
      */
-    recordFocusSession({ taskId, duration, stepsCompleted = 0 }) {
+    getFocusMetricsForWeek() {
+        const currentWeekStart = state.currentWeekStart || new Date();
+        const weekStart = PlannerService.getWeekStart(currentWeekStart).getTime();
+        const weekEnd = weekStart + 7 * 24 * 60 * 60 * 1000;
+
+        const sessions = state.focusStats.sessions.filter((s) => {
+            // Handle both 'date' string (YYYY-MM-DD) and 'timestamp'
+            const ts = s.timestamp ? s.timestamp : new Date(s.date).getTime();
+            return ts >= weekStart && ts < weekEnd;
+        });
+
+        const totalFocusTimeMs = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+        const totalInterruptions = sessions.reduce((sum, s) => sum + (s.interruptions || 0), 0);
+        const totalSessions = sessions.length;
+
+        // Distraction Rate = Interruptions / Hour of Focus
+        // Avoid division by zero
+        const hoursOfFocus = totalFocusTimeMs / (1000 * 60 * 60);
+        const distractionRate =
+            hoursOfFocus > 0 ? Math.round((totalInterruptions / hoursOfFocus) * 10) / 10 : 0;
+
+        return {
+            totalFocusTime: totalFocusTimeMs,
+            avgInterruptions: distractionRate, // Interruptions per hour
+            totalSessions,
+        };
+    },
+
+    /**
+     * Record a focus session
+     * @param {Object} sessionData - { taskId, duration, stepsCompleted, interruptions }
+     */
+    recordFocusSession({ taskId, duration, stepsCompleted = 0, interruptions = 0 }) {
         if (!state.focusStats) {
             state.focusStats = {
                 sessions: [],
@@ -1117,6 +1150,7 @@ export const Store = {
             duration,
             taskId,
             stepsCompleted,
+            interruptions,
         };
 
         state.focusStats.sessions.push(session);

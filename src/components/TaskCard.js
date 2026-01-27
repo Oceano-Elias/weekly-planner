@@ -51,15 +51,17 @@ export class TaskCard {
             style: { '--task-color': color },
         });
 
+        // Add click listener to track last selected task for shortcuts
+        el.addEventListener('click', (e) => {
+            window.lastClickedTaskId = task.id;
+        });
+
         // Add keyboard support
         el.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 // Simulate click for selection
                 window.lastClickedTaskId = task.id;
-                // If double keypress (like dblclick), edit?
-                // For now just allow selection via keyboard.
-                // Editing usually requires a dedicated shortcut or button.
             }
         });
 

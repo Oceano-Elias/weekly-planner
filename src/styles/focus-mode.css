@@ -164,6 +164,7 @@
 }
 
 @keyframes streakGlow {
+
     0%,
     100% {
         box-shadow: 0 0 8px rgba(251, 146, 60, 0.3);
@@ -264,6 +265,7 @@
 }
 
 @keyframes innerPulse {
+
     0%,
     100% {
         opacity: 0.8;
@@ -331,6 +333,7 @@
 }
 
 @keyframes premiumTimePulse {
+
     0%,
     100% {
         transform: scale(1);
@@ -404,6 +407,7 @@
 }
 
 @keyframes waitingBeat {
+
     0%,
     100% {
         transform: scale(1);
@@ -512,11 +516,9 @@
     position: absolute;
     width: 200px;
     height: 200px;
-    background: radial-gradient(
-        circle,
-        color-mix(in srgb, var(--task-color) 20%, transparent) 0%,
-        transparent 70%
-    );
+    background: radial-gradient(circle,
+            color-mix(in srgb, var(--task-color) 20%, transparent) 0%,
+            transparent 70%);
     bottom: -80px;
     left: -60px;
     pointer-events: none;
@@ -729,9 +731,13 @@
     transition: none !important;
 }
 
+.quest-carousel.carousel-rolling .carousel-card {
+    transition: none !important;
+}
+
 :root {
-    --carousel-roll-duration: 850ms;
-    --carousel-roll-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --carousel-roll-duration: 650ms;
+    --carousel-roll-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 /* Base card styles - Absolute positioning for carousel */
@@ -749,9 +755,12 @@
     transform-style: preserve-3d;
     backface-visibility: hidden;
     transition:
-        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-        opacity 0.4s ease,
-        box-shadow 0.4s ease;
+        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.35s ease,
+        box-shadow 0.35s ease,
+        background-color 0.35s ease,
+        border-color 0.35s ease,
+        filter 0.35s ease;
 }
 
 .carousel-card.step-complete-flash {
@@ -779,8 +788,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    transform: translate3d(var(--complete-x, 0px), var(--complete-y, 0px), 0)
-        translate(var(--complete-tx, -100%), var(--complete-ty, -100%));
+    transform: translate3d(var(--complete-x, 0px), var(--complete-y, 0px), 0) translate(var(--complete-tx, -100%), var(--complete-ty, -100%));
     z-index: 300;
     transition:
         transform 180ms ease,
@@ -791,8 +799,7 @@
 .carousel-complete-btn:active,
 .carousel-complete-btn:focus,
 .carousel-complete-btn:focus-visible {
-    transform: translate3d(var(--complete-x, 0px), var(--complete-y, 0px), 0)
-        translate(var(--complete-tx, -100%), var(--complete-ty, -100%));
+    transform: translate3d(var(--complete-x, 0px), var(--complete-y, 0px), 0) translate(var(--complete-tx, -100%), var(--complete-ty, -100%));
 }
 
 .carousel-complete-btn.hidden {
@@ -800,7 +807,7 @@
     pointer-events: none;
 }
 
-.quest-carousel.carousel-rolling + .carousel-complete-btn {
+.quest-carousel.carousel-rolling+.carousel-complete-btn {
     opacity: 0;
     pointer-events: none;
 }
@@ -809,8 +816,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    transform: translate3d(var(--nav-x, 0px), var(--nav-y, 0px), 0)
-        translate(var(--nav-tx, 0%), var(--nav-ty, 0%));
+    transform: translate3d(var(--nav-x, 0px), var(--nav-y, 0px), 0) translate(var(--nav-tx, 0%), var(--nav-ty, 0%));
     z-index: 301;
     display: flex;
     gap: 8px;
@@ -824,10 +830,6 @@
     pointer-events: none;
 }
 
-.quest-carousel.carousel-rolling ~ .carousel-nav {
-    opacity: 0;
-    pointer-events: none;
-}
 
 .carousel-nav-btn {
     width: 36px;
@@ -889,11 +891,9 @@
     transform: translateX(-50%) translateY(-50%) translateZ(80px) scale(1) rotateX(0deg);
     z-index: 50;
     opacity: 1;
-    background: linear-gradient(
-        165deg,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.06) 100%
-    );
+    background: linear-gradient(165deg,
+            rgba(255, 255, 255, 0.12) 0%,
+            rgba(255, 255, 255, 0.06) 100%);
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow:
         0 40px 100px rgba(0, 0, 0, 0.6),
@@ -909,14 +909,12 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-        125deg,
-        transparent 40%,
-        rgba(255, 255, 255, 0.05) 45%,
-        rgba(255, 255, 255, 0.1) 50%,
-        rgba(255, 255, 255, 0.05) 55%,
-        transparent 60%
-    );
+    background: linear-gradient(125deg,
+            transparent 40%,
+            rgba(255, 255, 255, 0.05) 45%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0.05) 55%,
+            transparent 60%);
     background-size: 200% 200%;
     animation: premiumShine 8s infinite linear;
     pointer-events: none;
@@ -951,11 +949,9 @@
 }
 
 .carousel-icon.active {
-    background: linear-gradient(
-        135deg,
-        var(--task-color),
-        color-mix(in srgb, var(--task-color) 70%, white)
-    );
+    background: linear-gradient(135deg,
+            var(--task-color),
+            color-mix(in srgb, var(--task-color) 70%, white));
     color: white;
     box-shadow: 0 4px 16px color-mix(in srgb, var(--task-color) 50%, transparent);
     animation: iconPulse 2s ease-in-out infinite;
@@ -976,11 +972,9 @@
     font-weight: 800;
     padding: 5px 12px;
     border-radius: 100px;
-    background: linear-gradient(
-        135deg,
-        var(--task-color),
-        color-mix(in srgb, var(--task-color) 80%, white)
-    );
+    background: linear-gradient(135deg,
+            var(--task-color),
+            color-mix(in srgb, var(--task-color) 80%, white));
     color: white;
     letter-spacing: 1.5px;
     box-shadow: 0 4px 16px color-mix(in srgb, var(--task-color) 40%, transparent);
@@ -1029,17 +1023,16 @@
     --card-scale: calc(0.88 - calc(var(--depth, 1) - 1) * 0.05);
     --card-opacity: calc(0.7 - calc(var(--depth, 1) - 1) * 0.25);
 
-    transform: translateX(-50%) translateY(calc(-50% + var(--card-offset)))
-        translateZ(var(--card-z)) scale(var(--card-scale)) rotateX(-15deg);
+    transform: translateX(-50%) translateY(calc(-50% + var(--card-offset))) translateZ(var(--card-z)) scale(var(--card-scale)) rotateX(-15deg);
     z-index: calc(30 - var(--depth, 1));
     opacity: var(--card-opacity);
 
-    background: linear-gradient(
-        175deg,
-        color-mix(in srgb, var(--task-color) 35%, rgba(30, 40, 60, 0.95)) 0%,
-        color-mix(in srgb, var(--task-color) 25%, rgba(25, 35, 55, 0.92)) 50%,
-        color-mix(in srgb, var(--task-color) 15%, rgba(20, 30, 50, 0.9)) 100%
-    );
+    background: linear-gradient(175deg,
+            color-mix(in srgb, var(--task-color) 35%, rgba(30, 40, 60, 0.95)) 0%,
+            color-mix(in srgb, var(--task-color) 25%, rgba(25, 35, 55, 0.92)) 50%,
+            color-mix(in srgb, var(--task-color) 15%, rgba(20, 30, 50, 0.9)) 100%);
+    background-color: #1e283c;
+    /* Base for transition fallback */
     border: 1.5px solid color-mix(in srgb, var(--task-color) 40%, rgba(255, 255, 255, 0.25));
     border-bottom: 3px solid color-mix(in srgb, var(--task-color) 60%, rgba(255, 255, 255, 0.6));
     backdrop-filter: blur(20px) saturate(130%);
@@ -1062,15 +1055,12 @@
 /* === BEHIND CARD - One more step BELOW upcoming (emerging from depth) === */
 .carousel-card.behind {
     top: 50%;
-    transform: translateX(-50%) translateY(calc(-50% + 170px)) translateZ(-100px) scale(0.82)
-        rotateX(-30deg);
+    transform: translateX(-50%) translateY(calc(-50% + 170px)) translateZ(-100px) scale(0.82) rotateX(-30deg);
     z-index: 6;
     opacity: 0;
-    background: linear-gradient(
-        175deg,
-        color-mix(in srgb, var(--task-color) 22%, rgba(20, 28, 44, 0.92)) 0%,
-        color-mix(in srgb, var(--task-color) 14%, rgba(18, 24, 38, 0.9)) 100%
-    );
+    background: linear-gradient(175deg,
+            color-mix(in srgb, var(--task-color) 22%, rgba(20, 28, 44, 0.92)) 0%,
+            color-mix(in srgb, var(--task-color) 14%, rgba(18, 24, 38, 0.9)) 100%);
     border: 1px solid color-mix(in srgb, var(--task-color) 28%, rgba(255, 255, 255, 0.18));
     backdrop-filter: blur(18px) saturate(120%);
     -webkit-backdrop-filter: blur(18px) saturate(120%);
@@ -1085,11 +1075,9 @@
     transform: translateX(-50%) translateY(calc(-50% + 220px)) scale(0.82) rotateX(-42deg);
     z-index: 4;
     opacity: 0;
-    background: linear-gradient(
-        175deg,
-        color-mix(in srgb, var(--task-color) 20%, transparent) 0%,
-        color-mix(in srgb, var(--task-color) 10%, transparent) 100%
-    );
+    background: linear-gradient(175deg,
+            color-mix(in srgb, var(--task-color) 20%, transparent) 0%,
+            color-mix(in srgb, var(--task-color) 10%, transparent) 100%);
     border: 1px solid color-mix(in srgb, var(--task-color) 40%, transparent);
     border-top: 2px solid color-mix(in srgb, var(--task-color) 50%, transparent);
     backdrop-filter: blur(16px);
@@ -1109,16 +1097,13 @@
     --card-scale: calc(0.88 - calc(var(--depth, 1) - 1) * 0.06);
     --card-opacity: calc(0.5 - calc(var(--depth, 1) - 1) * 0.2);
 
-    transform: translateX(-50%) translateY(calc(-50% + var(--card-offset)))
-        translateZ(var(--card-z)) scale(var(--card-scale)) rotateX(20deg);
+    transform: translateX(-50%) translateY(calc(-50% + var(--card-offset))) translateZ(var(--card-z)) scale(var(--card-scale)) rotateX(20deg);
     z-index: calc(20 - var(--depth, 1));
     opacity: var(--card-opacity);
 
-    background: linear-gradient(
-        175deg,
-        color-mix(in srgb, var(--task-color) 20%, transparent) 0%,
-        color-mix(in srgb, var(--task-color) 10%, transparent) 100%
-    );
+    background: linear-gradient(175deg,
+            color-mix(in srgb, var(--task-color) 20%, transparent) 0%,
+            color-mix(in srgb, var(--task-color) 10%, transparent) 100%);
     border: 1px solid color-mix(in srgb, var(--task-color) 40%, transparent);
     border-top: 2px solid color-mix(in srgb, var(--task-color) 50%, transparent);
     backdrop-filter: blur(16px);
@@ -1157,11 +1142,9 @@
 }
 
 .carousel-card.active.is-completed {
-    background: linear-gradient(
-        175deg,
-        color-mix(in srgb, var(--task-color) 15%, rgba(20, 30, 50, 0.95)) 0%,
-        color-mix(in srgb, var(--task-color) 10%, rgba(15, 25, 45, 0.92)) 100%
-    ) !important;
+    background: linear-gradient(175deg,
+            color-mix(in srgb, var(--task-color) 15%, rgba(20, 30, 50, 0.95)) 0%,
+            color-mix(in srgb, var(--task-color) 10%, rgba(15, 25, 45, 0.92)) 100%) !important;
     border: 1.5px solid color-mix(in srgb, var(--task-color) 30%, rgba(255, 255, 255, 0.2)) !important;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
 }
@@ -1196,20 +1179,17 @@
 
 @keyframes rollDoneOut {
     0% {
-        transform: translateX(-50%) translateY(calc(-50% - 100px)) translateZ(-40px) scale(0.88)
-            rotateX(20deg);
+        transform: translateX(-50%) translateY(calc(-50% - 100px)) translateZ(-40px) scale(0.88) rotateX(20deg);
         opacity: 0.5;
     }
 
     40% {
-        transform: translateX(-50%) translateY(calc(-50% - 150px)) translateZ(-80px) scale(0.86)
-            rotateX(32deg);
+        transform: translateX(-50%) translateY(calc(-50% - 150px)) translateZ(-80px) scale(0.86) rotateX(32deg);
         opacity: 0.35;
     }
 
     100% {
-        transform: translateX(-50%) translateY(calc(-50% - 220px)) translateZ(-120px) scale(0.82)
-            rotateX(42deg);
+        transform: translateX(-50%) translateY(calc(-50% - 220px)) translateZ(-120px) scale(0.82) rotateX(42deg);
         opacity: 0;
     }
 }
@@ -1229,14 +1209,12 @@
     }
 
     30% {
-        transform: translateX(-50%) translateY(calc(-50% - 20px)) translateZ(40px) scale(0.98)
-            rotateX(5deg);
+        transform: translateX(-50%) translateY(calc(-50% - 12px)) translateZ(45px) scale(0.99) rotateX(4deg);
         opacity: 0.95;
     }
 
     100% {
-        transform: translateX(-50%) translateY(calc(-50% - 100px)) translateZ(-40px) scale(0.88)
-            rotateX(20deg);
+        transform: translateX(-50%) translateY(calc(-50% - 100px)) translateZ(-40px) scale(0.88) rotateX(20deg);
         opacity: 0.5;
         z-index: 20;
     }
@@ -1251,16 +1229,14 @@
 
 @keyframes rollToActive {
     0% {
-        transform: translateX(-50%) translateY(calc(-50% + 100px)) translateZ(-40px) scale(0.88)
-            rotateX(-15deg);
+        transform: translateX(-50%) translateY(calc(-50% + 100px)) translateZ(-40px) scale(0.88) rotateX(-15deg);
         opacity: 0.7;
         z-index: 30;
     }
 
     50% {
-        transform: translateX(-50%) translateY(calc(-50% + 10px)) translateZ(110px) scale(1.04)
-            rotateX(-2deg);
-        opacity: 0.98;
+        transform: translateX(-50%) translateY(calc(-50% + 4px)) translateZ(90px) scale(1.01) rotateX(-1deg);
+        opacity: 0.99;
     }
 
     100% {
@@ -1272,22 +1248,19 @@
 
 /* Behind card rolls down to become the new upcoming card */
 .carousel-card.sliding-behind-to-upcoming {
-    animation: rollBehindToUpcoming var(--carousel-roll-duration) cubic-bezier(0.22, 1, 0.36, 1)
-        forwards;
+    animation: rollBehindToUpcoming var(--carousel-roll-duration) var(--carousel-roll-ease) forwards;
     transition: none !important;
     z-index: 26;
 }
 
 @keyframes rollBehindToUpcoming {
     0% {
-        transform: translateX(-50%) translateY(calc(-50% + 170px)) translateZ(-100px) scale(0.82)
-            rotateX(-30deg);
+        transform: translateX(-50%) translateY(calc(-50% + 170px)) translateZ(-100px) scale(0.82) rotateX(-30deg);
         opacity: 0;
     }
 
     100% {
-        transform: translateX(-50%) translateY(calc(-50% + 110px)) translateZ(-40px) scale(0.88)
-            rotateX(-15deg);
+        transform: translateX(-50%) translateY(calc(-50% + 110px)) translateZ(-40px) scale(0.88) rotateX(-15deg);
         opacity: 0.7;
     }
 }
@@ -1300,16 +1273,14 @@
 
 @keyframes rollDoneToActive {
     0% {
-        transform: translateX(-50%) translateY(calc(-50% - 100px)) translateZ(-40px) scale(0.88)
-            rotateX(20deg);
+        transform: translateX(-50%) translateY(calc(-50% - 100px)) translateZ(-40px) scale(0.88) rotateX(20deg);
         opacity: 0.5;
         z-index: 20;
     }
 
     50% {
-        transform: translateX(-50%) translateY(calc(-50% - 10px)) translateZ(110px) scale(1.04)
-            rotateX(2deg);
-        opacity: 0.98;
+        transform: translateX(-50%) translateY(calc(-50% - 4px)) translateZ(90px) scale(1.01) rotateX(1deg);
+        opacity: 0.99;
     }
 
     100% {
@@ -1333,14 +1304,12 @@
     }
 
     30% {
-        transform: translateX(-50%) translateY(calc(-50% + 20px)) translateZ(40px) scale(0.98)
-            rotateX(-5deg);
+        transform: translateX(-50%) translateY(calc(-50% + 12px)) translateZ(45px) scale(0.99) rotateX(-4deg);
         opacity: 0.95;
     }
 
     100% {
-        transform: translateX(-50%) translateY(calc(-50% + 100px)) translateZ(-40px) scale(0.88)
-            rotateX(-15deg);
+        transform: translateX(-50%) translateY(calc(-50% + 100px)) translateZ(-40px) scale(0.88) rotateX(-15deg);
         opacity: 0.7;
         z-index: 30;
     }
@@ -1354,14 +1323,12 @@
 
 @keyframes rollUpcomingToBehind {
     0% {
-        transform: translateX(-50%) translateY(calc(-50% - 120px)) translateZ(-40px) scale(0.88)
-            rotateX(15deg);
+        transform: translateX(-50%) translateY(calc(-50% - 120px)) translateZ(-40px) scale(0.88) rotateX(15deg);
         opacity: 0.7;
     }
 
     100% {
-        transform: translateX(-50%) translateY(calc(-50% - 185px)) translateZ(-120px) scale(0.82)
-            rotateX(25deg);
+        transform: translateX(-50%) translateY(calc(-50% - 185px)) translateZ(-120px) scale(0.82) rotateX(25deg);
         opacity: 0;
     }
 }
@@ -1374,14 +1341,12 @@
 
 @keyframes rollBelowToDone {
     0% {
-        transform: translateX(-50%) translateY(calc(-50% + 220px)) translateZ(-120px) scale(0.82)
-            rotateX(-42deg);
+        transform: translateX(-50%) translateY(calc(-50% + 220px)) translateZ(-120px) scale(0.82) rotateX(-42deg);
         opacity: 0;
     }
 
     100% {
-        transform: translateX(-50%) translateY(calc(-50% + 120px)) translateZ(-40px) scale(0.88)
-            rotateX(-20deg);
+        transform: translateX(-50%) translateY(calc(-50% + 120px)) translateZ(-40px) scale(0.88) rotateX(-20deg);
         opacity: 0.5;
     }
 }
@@ -1552,12 +1517,10 @@
 .decision-overlay {
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-        circle at top,
-        rgba(15, 23, 42, 0.92) 0%,
-        rgba(2, 6, 23, 0.85) 60%,
-        rgba(2, 6, 23, 0.7) 100%
-    );
+    background: radial-gradient(circle at top,
+            rgba(15, 23, 42, 0.92) 0%,
+            rgba(2, 6, 23, 0.85) 60%,
+            rgba(2, 6, 23, 0.7) 100%);
     backdrop-filter: blur(16px) saturate(140%);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     display: flex;
@@ -1581,11 +1544,9 @@
 
 .decision-card {
     width: min(360px, 90vw);
-    background: linear-gradient(
-        165deg,
-        rgba(255, 255, 255, 0.08) 0%,
-        rgba(255, 255, 255, 0.02) 100%
-    );
+    background: linear-gradient(165deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 22px;
     padding: 24px;
@@ -1684,11 +1645,9 @@
 
 /* Return Anchor Premium Cockpit Styling */
 .return-anchor-container {
-    background: linear-gradient(
-        145deg,
-        rgba(255, 255, 255, 0.04) 0%,
-        rgba(255, 255, 255, 0.01) 100%
-    );
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.01) 100%);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 24px;
@@ -1904,12 +1863,10 @@
 .stop-confirm-overlay {
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-        circle at top,
-        rgba(15, 23, 42, 0.92) 0%,
-        rgba(2, 6, 23, 0.85) 60%,
-        rgba(2, 6, 23, 0.7) 100%
-    );
+    background: radial-gradient(circle at top,
+            rgba(15, 23, 42, 0.92) 0%,
+            rgba(2, 6, 23, 0.85) 60%,
+            rgba(2, 6, 23, 0.7) 100%);
     backdrop-filter: blur(16px) saturate(140%);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     display: flex;
@@ -1932,11 +1889,9 @@
 
 .stop-confirm-modal {
     width: min(360px, 90vw);
-    background: linear-gradient(
-        165deg,
-        rgba(255, 255, 255, 0.08) 0%,
-        rgba(255, 255, 255, 0.02) 100%
-    );
+    background: linear-gradient(165deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
     border: 1px solid color-mix(in srgb, var(--task-color) 25%, rgba(255, 255, 255, 0.12));
     border-radius: 22px;
     padding: 28px 28px 24px;
@@ -1954,16 +1909,14 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-        circle at top,
-        color-mix(in srgb, var(--task-color) 18%, transparent) 0%,
-        transparent 60%
-    );
+    background: radial-gradient(circle at top,
+            color-mix(in srgb, var(--task-color) 18%, transparent) 0%,
+            transparent 60%);
     opacity: 0.9;
     pointer-events: none;
 }
 
-.stop-confirm-modal > * {
+.stop-confirm-modal>* {
     position: relative;
     z-index: 1;
 }
@@ -2115,6 +2068,7 @@
 }
 
 @keyframes timerPulse {
+
     0%,
     100% {
         opacity: 1;
@@ -2197,6 +2151,7 @@
 }
 
 @keyframes nearLongBreakPulse {
+
     0%,
     100% {
         transform: scale(1);
@@ -2230,11 +2185,9 @@
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    background: linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--accent-success) 25%, transparent) 0%,
-        color-mix(in srgb, var(--accent-success) 18%, transparent) 100%
-    );
+    background: linear-gradient(135deg,
+            color-mix(in srgb, var(--accent-success) 25%, transparent) 0%,
+            color-mix(in srgb, var(--accent-success) 18%, transparent) 100%);
     border: 1px solid color-mix(in srgb, var(--accent-success) 55%, transparent);
     border-radius: 100px;
     font-size: 12px;
@@ -2244,6 +2197,7 @@
 }
 
 @keyframes longBreakGlow {
+
     0%,
     100% {
         box-shadow: 0 0 10px color-mix(in srgb, var(--accent-success) 35%, transparent);
@@ -2280,6 +2234,7 @@
 }
 
 @keyframes trophyBounce {
+
     0%,
     100% {
         transform: translateY(0) scale(1);
@@ -2299,6 +2254,7 @@
 }
 
 @keyframes trophyGlow {
+
     0%,
     100% {
         filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.4));
@@ -2325,6 +2281,7 @@
 }
 
 @keyframes completionShine {
+
     0%,
     100% {
         background-position: 0% 50%;
@@ -2462,11 +2419,9 @@
 
 .results-bar {
     height: 100%;
-    background: linear-gradient(
-        90deg,
-        var(--task-color),
-        color-mix(in srgb, var(--task-color), white 20%)
-    );
+    background: linear-gradient(90deg,
+            var(--task-color),
+            color-mix(in srgb, var(--task-color), white 20%));
     border-radius: 4px;
     opacity: 0.8;
     transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);

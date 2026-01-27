@@ -65,6 +65,12 @@ export const ModalService = {
      */
     close() {
         if (!this.modal) return;
+
+        // Force blur if focus is inside modal to prevent shortcuts from being blocked
+        if (this.modal.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+
         this.modal.classList.remove('active');
         FocusTrap.deactivate();
 

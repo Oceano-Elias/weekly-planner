@@ -89,16 +89,16 @@ export const Analytics = {
         if (entries.length === 0) {
             const emptyState = DOMUtils.createElement('div', { className: 'analytics-empty' });
             const illustration = DOMUtils.createElement('div', { className: 'empty-state-illustration' });
-            
+
             const svg = DOMUtils.createSVG('svg', { viewBox: '0 0 200 140', fill: 'none', xmlns: 'http://www.w3.org/2000/svg' });
-            
+
             // Defs
             const defs = DOMUtils.createSVG('defs');
             const grad1 = DOMUtils.createSVG('linearGradient', { id: 'aGrad1', x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
             grad1.appendChild(DOMUtils.createSVG('stop', { offset: '0%', 'stop-color': '#3b82f6' }));
             grad1.appendChild(DOMUtils.createSVG('stop', { offset: '100%', 'stop-color': '#8b5cf6' }));
             defs.appendChild(grad1);
-            
+
             const grad2 = DOMUtils.createSVG('linearGradient', { id: 'aGrad2', x1: '0%', y1: '0%', x2: '100%', y2: '100%' });
             grad2.appendChild(DOMUtils.createSVG('stop', { offset: '0%', 'stop-color': 'var(--accent-success)' }));
             grad2.appendChild(DOMUtils.createSVG('stop', { offset: '100%', 'stop-color': 'var(--accent-secondary)' }));
@@ -125,7 +125,7 @@ export const Analytics = {
             emptyState.appendChild(illustration);
             emptyState.appendChild(DOMUtils.createElement('p', { className: 'empty-state-title', textContent: 'No scheduled tasks' }));
             emptyState.appendChild(DOMUtils.createElement('p', { className: 'empty-state-subtitle', textContent: 'Schedule tasks to see your analytics' }));
-            
+
             container.appendChild(emptyState);
             return;
         }
@@ -149,7 +149,7 @@ export const Analytics = {
         const taskRingContainer = DOMUtils.createElement('div', { className: 'progress-ring-container' });
         const taskSvg = DOMUtils.createSVG('svg', { className: 'progress-ring', viewBox: '0 0 80 80' });
         taskSvg.appendChild(DOMUtils.createSVG('circle', { className: 'progress-ring-bg', cx: '40', cy: '40', r: '32' }));
-        taskSvg.appendChild(DOMUtils.createSVG('circle', { 
+        taskSvg.appendChild(DOMUtils.createSVG('circle', {
             className: 'progress-ring-fill tasks', cx: '40', cy: '40', r: '32',
             'stroke-dasharray': '201',
             'stroke-dashoffset': `${201 - (201 * taskPercent) / 100}`
@@ -163,7 +163,7 @@ export const Analytics = {
         taskValue.appendChild(DOMUtils.createElement('span', { className: 'stat-total', textContent: `/${tasks.total}` }));
         taskContent.appendChild(taskValue);
         taskContent.appendChild(DOMUtils.createElement('div', { className: 'stat-label', textContent: 'Tasks Done' }));
-        
+
         const taskSparkContainer = DOMUtils.createElement('div', { className: 'sparkline-container' });
         const taskSparkSvg = DOMUtils.createSVG('svg', { className: 'sparkline', viewBox: '0 0 70 24', preserveAspectRatio: 'none' });
         const taskDefs = DOMUtils.createSVG('defs');
@@ -184,7 +184,7 @@ export const Analytics = {
         const miniRingContainer = DOMUtils.createElement('div', { className: 'progress-ring-container' });
         const miniSvg = DOMUtils.createSVG('svg', { className: 'progress-ring', viewBox: '0 0 80 80' });
         miniSvg.appendChild(DOMUtils.createSVG('circle', { className: 'progress-ring-bg', cx: '40', cy: '40', r: '32' }));
-        miniSvg.appendChild(DOMUtils.createSVG('circle', { 
+        miniSvg.appendChild(DOMUtils.createSVG('circle', {
             className: 'progress-ring-fill mini', cx: '40', cy: '40', r: '32',
             'stroke-dasharray': '201',
             'stroke-dashoffset': `${201 - (201 * miniPercent) / 100}`
@@ -214,17 +214,36 @@ export const Analytics = {
         miniCard.appendChild(miniContent);
         grid.appendChild(miniCard);
 
-        // Time Card
+        const focusMetrics = Store.getFocusMetricsForWeek();
+
+        // Time Card (Deep Focus)
         const timeCard = DOMUtils.createElement('div', { className: 'analytics-stat-card time-card' });
         const timeIcon = DOMUtils.createElement('div', { className: 'stat-icon stat-icon-time' });
         timeIcon.appendChild(this.icons.time());
         timeCard.appendChild(timeIcon);
-        
+
         const timeContent = DOMUtils.createElement('div', { className: 'stat-content' });
-        timeContent.appendChild(DOMUtils.createElement('div', { className: 'stat-value', textContent: PlannerService.formatDuration(duration.total) }));
-        timeContent.appendChild(DOMUtils.createElement('div', { className: 'stat-label', textContent: 'Total Time' }));
+        timeContent.appendChild(DOMUtils.createElement('div', { className: 'stat-value', textContent: PlannerService.formatDuration(focusMetrics.totalFocusTime) }));
+        timeContent.appendChild(DOMUtils.createElement('div', { className: 'stat-label', textContent: 'Deep Focus Time' }));
         timeCard.appendChild(timeContent);
         grid.appendChild(timeCard);
+
+        // Distraction Rate Card
+        const distCard = DOMUtils.createElement('div', { className: 'analytics-stat-card dist-card' });
+        const distIcon = DOMUtils.createElement('div', { className: 'stat-icon stat-icon-dist' });
+        // Pulse icon
+        distIcon.appendChild(
+            DOMUtils.createSVG('svg', { width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+                DOMUtils.createSVG('path', { d: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z' })
+            ])
+        );
+        distCard.appendChild(distIcon);
+
+        const distContent = DOMUtils.createElement('div', { className: 'stat-content' });
+        distContent.appendChild(DOMUtils.createElement('div', { className: 'stat-value', textContent: focusMetrics.avgInterruptions }));
+        distContent.appendChild(DOMUtils.createElement('div', { className: 'stat-label', textContent: 'Distractions / Hour' }));
+        distCard.appendChild(distContent);
+        grid.appendChild(distCard);
 
         container.appendChild(grid);
 
@@ -240,7 +259,7 @@ export const Analytics = {
             const completedPercent = Math.round((completed / deptTotal) * 100);
 
             const barContainer = DOMUtils.createElement('div', { className: 'analytics-bar-container' });
-            
+
             const label = DOMUtils.createElement('div', { className: 'analytics-bar-label' });
             label.appendChild(DOMUtils.createElement('span', { className: 'analytics-dept', style: { color: color }, textContent: dept }));
             label.appendChild(DOMUtils.createElement('span', { className: 'analytics-value', textContent: `${PlannerService.formatDuration(deptTotal)} (${percent}%)` }));

@@ -21,7 +21,8 @@ export const FocusModeUI = {
     /**
      * Get active step title
      */
-    getActiveStepTitle(task, currentStepIndex) {
+    getActiveStepTitle(task, currentStepIndex, isBreak = false) {
+        if (isBreak) return 'Mandatory Break';
         if (!task || !task.notes) return 'Execute Phase';
         const lines = task.notes.split('\n').filter((l) => l.trim() !== '');
         if (currentStepIndex >= 0 && currentStepIndex < lines.length) {
@@ -184,9 +185,17 @@ export const FocusModeUI = {
 
             innerRing.style.strokeDashoffset = innerCircumference * (1 - innerProgress);
             innerRing.style.opacity = state.running ? '1' : '0.5';
+            innerRing.style.stroke = 'url(#innerGradient)';
         } else if (state.mode === 'break') {
-            innerRing.style.strokeDashoffset = 0;
-            innerRing.style.opacity = '0.2';
+            const breakElapsed = state.breakStartTime
+                ? Math.floor((Date.now() - state.breakStartTime) / 1000)
+                : 0;
+            const breakDuration = 5 * 60; // 5 mins break
+            const innerProgress = Math.min(1, breakElapsed / breakDuration);
+
+            innerRing.style.strokeDashoffset = innerCircumference * (1 - innerProgress);
+            innerRing.style.opacity = '1';
+            innerRing.style.stroke = 'var(--accent-success)'; // Use green for break
         } else {
             innerRing.style.strokeDashoffset = innerCircumference;
             innerRing.style.opacity = '0.3';
@@ -280,6 +289,90 @@ export const FocusModeUI = {
                 <line x1="17" y1="9" x2="23" y2="15"/>
             </svg>
         `;
+    },
+
+    /**
+     * Get floating badge template
+     */
+    getBadgeTemplate() {
+        return `
+            <div id="focusBadge" class="focus-badge">
+                <div class="focus-badge-pulse"></div>
+                <div class="focus-badge-content">
+                    <svg class="focus-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"></circle>
+                    </svg>
+                    <span class="focus-badge-time" id="badgeTime">00:00</span>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Show missing steps modal
+     */
+    showMissingStepsModal(onClose, onEdit) {
+        // Remove any existing overlay
+        document.getElementById('missingStepsOverlay')?.remove();
+
+        const overlay = DOMUtils.createElement('div', {
+            id: 'missingStepsOverlay',
+            className: 'stop-confirm-overlay', // Re-use existing overlay style
+            style: { zIndex: '2000' }
+        });
+
+        const modal = DOMUtils.createElement('div', { className: 'stop-confirm-modal' }, [
+            DOMUtils.createElement('div', {
+                className: 'stop-confirm-icon',
+                textContent: '📝',
+                style: { width: '48px', height: '48px', fontSize: '24px' }
+            }),
+            DOMUtils.createElement('div', {
+                className: 'stop-confirm-title',
+                textContent: 'Steps Required',
+            }),
+            DOMUtils.createElement('div', {
+                className: 'stop-confirm-message',
+                textContent: 'Please add some steps to your task before starting a Focus Session. This helps you stay on track!',
+            }),
+            DOMUtils.createElement('div', { className: 'stop-confirm-buttons' }, [
+                DOMUtils.createElement('button', {
+                    className: 'stop-confirm-btn cancel',
+                    id: 'missingStepsCancel',
+                    textContent: 'Cancel',
+                }),
+                DOMUtils.createElement('button', {
+                    className: 'stop-confirm-btn confirm',
+                    id: 'missingStepsEdit',
+                    textContent: 'Edit Task',
+                }),
+            ]),
+        ]);
+
+        overlay.appendChild(modal);
+        document.querySelector('.focus-overlay')?.appendChild(overlay);
+
+        // Add listeners
+        overlay.querySelector('#missingStepsCancel')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            overlay.remove();
+            if (onClose) onClose();
+        });
+
+        overlay.querySelector('#missingStepsEdit')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            overlay.remove();
+            if (onEdit) onEdit();
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+                if (onClose) onClose();
+            }
+        });
     },
 
     /**
@@ -1292,7 +1385,7 @@ export const FocusModeUI = {
 
         if (state.phase !== 'completed') {
             const ringsContainer = DOMUtils.createElement('div', {
-                className: `execution-rings-container ${state.phase === 'decision' ? 'decision-flip' : ''}`,
+                className: `execution-rings-container`,
             });
             const flipSurface = DOMUtils.createElement('div', { className: 'ring-flip-surface' });
 
@@ -1429,13 +1522,13 @@ export const FocusModeUI = {
                 'aria-label': state.running
                     ? 'Pause'
                     : (state.accumulatedTime || 0) > 0
-                      ? 'Resume'
-                      : 'Start Focus',
+                        ? 'Resume'
+                        : 'Start Focus',
                 title: state.running
                     ? 'Pause'
                     : (state.accumulatedTime || 0) > 0
-                      ? 'Resume'
-                      : 'Start Focus',
+                        ? 'Resume'
+                        : 'Start Focus',
             });
             if (!state.running) {
                 toggleBtn.appendChild(
@@ -1747,7 +1840,6 @@ export const FocusModeUI = {
         if (isRolling) {
             carousel.classList.add('carousel-rolling');
             document.getElementById('carouselCompleteBtn')?.classList.add('hidden');
-            document.getElementById('carouselNav')?.classList.add('hidden');
         } else {
             carousel.classList.remove('carousel-rolling');
         }

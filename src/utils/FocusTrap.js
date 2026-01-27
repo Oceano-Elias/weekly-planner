@@ -45,8 +45,9 @@ const FocusTrap = {
 
         // Restore focus to the trigger element
         if (this.activeElement && typeof this.activeElement.focus === 'function') {
+            const target = this.activeElement.isConnected ? this.activeElement : document.body;
             setTimeout(() => {
-                this.activeElement.focus();
+                target.focus();
             }, 50);
         }
 

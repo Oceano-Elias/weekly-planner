@@ -86,7 +86,10 @@ export const KeyboardService = {
                     break;
                 case 'f': {
                     // Focus Mode shortcut (F)
-                    if (window.FocusMode && window.FocusMode.isOpen) return;
+                    if (window.FocusMode && window.FocusMode.isOpen) {
+                        // If already open, let the FocusMode internal handler take care of it (likely closing)
+                        return;
+                    }
 
                     e.preventDefault();
                     this.handleFocusModeShortcut();

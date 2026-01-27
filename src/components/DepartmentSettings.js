@@ -16,7 +16,9 @@ export const DepartmentSettings = {
     editingPath: null,
     editingField: null,
     draggedPath: null,
+    draggedPath: null,
     dragOverPath: null,
+    hasChanges: false, // Track unsaved changes
 
     // Curated Colors
     curatedColors: [
@@ -125,6 +127,8 @@ export const DepartmentSettings = {
         const currentName = path[path.length - 1];
         if (newName === currentName) return;
 
+        this.hasChanges = true;
+
         // Suggest abbreviation if renaming
         const newAbbr = this.generateAbbreviation(newName);
 
@@ -155,6 +159,7 @@ export const DepartmentSettings = {
             node = i === 0 ? node[path[i]] : node.children[path[i]];
         }
         node.abbr = newAbbr.substring(0, 3);
+        this.hasChanges = true;
     },
 
     /**
@@ -191,6 +196,7 @@ export const DepartmentSettings = {
 
         this.editingPath = null;
         this.editingField = null;
+        this.hasChanges = false;
 
         this.render();
         const modal = document.getElementById('departmentSettingsModal');
@@ -228,6 +234,11 @@ export const DepartmentSettings = {
      * Close the settings modal
      */
     close() {
+        if (this.hasChanges) {
+            if (!confirm("You have unsaved changes. Are you sure you want to close?")) {
+                return;
+            }
+        }
         this.isOpen = false;
         // Remove Escape key handler
         if (this._escapeHandler) {
@@ -251,6 +262,7 @@ export const DepartmentSettings = {
 
         Store.saveCustomDepartments(this.editingData);
         refreshDepartments();
+        this.hasChanges = false; // Reset flag before closing
         this.close();
         // Refresh the app to reflect changes
         if (window.Calendar) window.Calendar.renderGrid();
@@ -504,6 +516,7 @@ export const DepartmentSettings = {
         };
 
         this.updateTreeView();
+        this.hasChanges = true;
         // Trigger editing for the name immediately
         this.startEditing(JSON.stringify([tempName]), 'name');
     },
@@ -527,6 +540,7 @@ export const DepartmentSettings = {
         };
 
         this.updateTreeView();
+        this.hasChanges = true;
         // Expand the parent if it was collapsed
         this.collapsedPaths.delete(pathStr);
         this.updateTreeView();
@@ -609,6 +623,7 @@ export const DepartmentSettings = {
         }
 
         this.updateTreeView();
+        this.hasChanges = true;
     },
 
     /**
@@ -649,6 +664,7 @@ export const DepartmentSettings = {
         if (path.length === 1) {
             this.editingData[path[0]].color = color;
             this.updateTreeView();
+            this.hasChanges = true;
         }
     },
 
@@ -792,6 +808,7 @@ export const DepartmentSettings = {
                 } else {
                     sourceParent.children = Object.fromEntries(entries);
                 }
+                this.hasChanges = true;
             }
         } else {
             // REPARENT: Move into target's children

@@ -110,6 +110,18 @@ export const FocusAudio = {
     },
 
     /**
+     * Break complete - distinctive alert to return to focus
+     */
+    playBreakComplete() {
+        if (!this.enabled) return;
+
+        // Friendly descending alert: G5 -> E5 -> C5
+        this.playTone(783.99, 0.15, 'sine', 0.3); // G5
+        setTimeout(() => this.playTone(659.25, 0.15, 'sine', 0.3), 120); // E5
+        setTimeout(() => this.playTone(523.25, 0.4, 'sine', 0.35), 240); // C5
+    },
+
+    /**
      * Task achieved - triumphant melody for total completion
      */
     playTaskAchieved() {
