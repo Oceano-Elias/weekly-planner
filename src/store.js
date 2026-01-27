@@ -428,7 +428,8 @@ export const Store = {
 
         let existing = weekTasks.find((t) => t.sourceTaskId === taskId);
         if (!existing) {
-            existing = weekTasks.find((t) => t.title === task.title);
+            // Do NOT fallback to title matching. Quick Stamps (same title) should be distinct instances.
+            // existing = weekTasks.find((t) => t.title === task.title);
         }
 
         if (existing) {

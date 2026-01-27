@@ -18,7 +18,117 @@ export const DepartmentSettings = {
     draggedPath: null,
     draggedPath: null,
     dragOverPath: null,
-    hasChanges: false, // Track unsaved changes
+    pendingConfirmAction: null,
+
+    /**
+     * Show custom confirmation modal
+     */
+    showConfirm(message, onConfirm) {
+        // Remove existing if any
+        const existing = document.getElementById('deptConfirmModal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'deptConfirmModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-primary); padding: 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 400px; width: 90%;">
+                <h3 style="margin: 0 0 12px 0; font-size: 18px;">Confirm Action</h3>
+                <p style="margin: 0 0 20px 0; color: var(--text-secondary);">${message}</p>
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button class="btn btn-ghost" id="deptConfirmCancel">Cancel</button>
+                    <button class="btn btn-primary" id="deptConfirmYes" style="background: var(--danger-color, #ef4444); color: white; border: none;">Delete</button>
+                </div>
+            </div>
+        `;
+
+        // Trap clicks to prevent closing parent
+        modal.onclick = (e) => e.stopPropagation();
+
+        document.body.appendChild(modal);
+
+        // Bind events
+        document.getElementById('deptConfirmCancel').onclick = () => this.closeConfirm();
+        document.getElementById('deptConfirmYes').onclick = () => {
+            onConfirm();
+            this.closeConfirm();
+        };
+    },
+
+    closeConfirm() {
+        const modal = document.getElementById('deptConfirmModal');
+        if (modal) modal.remove();
+    },
+
+    /**
+     * Delete a department
+     */
+    deleteDept(event, pathOrStr) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+
+        const path = this.parsePath(pathOrStr);
+        const name = path[path.length - 1];
+
+        // Count children recursively
+        const countChildren = (data) => {
+            if (!data || !data.children) return 0;
+            let count = Object.keys(data.children).length;
+            for (const child of Object.values(data.children)) {
+                count += countChildren(child);
+            }
+            return count;
+        };
+
+        // Get the target node
+        let target;
+        if (path.length === 1) {
+            target = this.editingData[path[0]];
+        } else {
+            target = this.editingData;
+            for (let i = 0; i < path.length; i++) {
+                if (i === 0) {
+                    target = target[path[i]];
+                } else {
+                    target = target.children[path[i]];
+                }
+            }
+        }
+
+        const childCount = countChildren(target);
+        let message = `Delete "${name}"?`;
+        if (childCount > 0) {
+            message = `Delete "${name}" and ${childCount} sub-department${childCount > 1 ? 's' : ''}?`;
+        }
+
+        // Use custom confirm modal instead of window.confirm
+        this.showConfirm(message, () => {
+            if (path.length === 1) {
+                delete this.editingData[path[0]];
+                this.migrationsPending.push({ oldPath: path, newPath: null });
+            } else {
+                let parent = this.editingData;
+                for (let i = 0; i < path.length - 1; i++) {
+                    parent = i === 0 ? parent[path[i]] : parent.children[path[i]];
+                }
+                delete parent.children[path[path.length - 1]];
+                this.migrationsPending.push({ oldPath: path, newPath: null });
+            }
+            this.updateTreeView();
+            this.hasChanges = true;
+        });
+    },
 
     // Curated Colors
     curatedColors: [
@@ -235,10 +345,18 @@ export const DepartmentSettings = {
      */
     close() {
         if (this.hasChanges) {
-            if (!confirm("You have unsaved changes. Are you sure you want to close?")) {
-                return;
-            }
+            this.showConfirm("You have unsaved changes. Discard them?", () => {
+                this._performClose();
+            });
+            return;
         }
+        this._performClose();
+    },
+
+    /**
+     * Internal: Perform actual close logic
+     */
+    _performClose() {
         this.isOpen = false;
         // Remove Escape key handler
         if (this._escapeHandler) {
@@ -393,7 +511,7 @@ export const DepartmentSettings = {
                     <div class="dept-actions">
                         <button class="dept-action-btn" onclick="window.DepartmentSettings.renameDept('${escPath}')" title="Rename">✏</button>
                         <button class="dept-action-btn add" onclick="window.DepartmentSettings.addChild('${escPath}')" title="Add sub-department">＋</button>
-                        <button class="dept-action-btn delete" onclick="window.DepartmentSettings.deleteDept('${escPath}')" title="Delete">✕</button>
+                        <button class="dept-action-btn delete" onclick="window.DepartmentSettings.deleteDept(event, '${escPath}')" title="Delete">✕</button>
                     </div>
                 </div>
                 ${childrenHtml}
@@ -449,7 +567,7 @@ export const DepartmentSettings = {
                     <div class="dept-actions">
                         <button class="dept-action-btn" onclick="window.DepartmentSettings.renameDept('${escPath}')" title="Rename">✏</button>
                         <button class="dept-action-btn add" onclick="window.DepartmentSettings.addChild('${escPath}')" title="Add">＋</button>
-                        <button class="dept-action-btn delete" onclick="window.DepartmentSettings.deleteDept('${escPath}')" title="Delete">✕</button>
+                        <button class="dept-action-btn delete" onclick="window.DepartmentSettings.deleteDept(event, '${escPath}')" title="Delete">✕</button>
                     </div>
                 </div>
                 ${subChildrenHtml}
@@ -490,7 +608,7 @@ export const DepartmentSettings = {
                 </span>
                 <div class="dept-actions">
                     <button class="dept-action-btn" onclick="window.DepartmentSettings.renameDept('${escPath}')" title="Rename">✏</button>
-                    <button class="dept-action-btn delete" onclick="window.DepartmentSettings.deleteDept('${escPath}')" title="Delete">✕</button>
+                    <button class="dept-action-btn delete" onclick="window.DepartmentSettings.deleteDept(event, '${escPath}')" title="Delete">✕</button>
                 </div>
             </div>
         `;
@@ -522,10 +640,20 @@ export const DepartmentSettings = {
     },
 
     /**
+     * Helper: Parse path string (handling HTML entities)
+     */
+    parsePath(pathStr) {
+        if (typeof pathStr !== 'string') return pathStr;
+        // Unescape HTML entities that might be passed from onclick
+        const unescaped = pathStr.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+        return JSON.parse(unescaped);
+    },
+
+    /**
      * Add a child department (Inline)
      */
     addChild(pathStr) {
-        const path = JSON.parse(pathStr);
+        const path = this.parsePath(pathStr);
         const tempName = "New Sub-dept";
 
         let target = this.editingData;
@@ -542,7 +670,9 @@ export const DepartmentSettings = {
         this.updateTreeView();
         this.hasChanges = true;
         // Expand the parent if it was collapsed
-        this.collapsedPaths.delete(pathStr);
+        // Note: we need the original pathStr for the set lookup (if it matches)
+        // or just re-stringify the parsed path
+        this.collapsedPaths.delete(JSON.stringify(path));
         this.updateTreeView();
 
         // Trigger editing for the name
@@ -553,78 +683,11 @@ export const DepartmentSettings = {
      * Rename a department (Trigger Inline)
      */
     renameDept(pathOrStr) {
-        const path = typeof pathOrStr === 'string' ? JSON.parse(pathOrStr) : pathOrStr;
+        const path = this.parsePath(pathOrStr);
         this.startEditing(JSON.stringify(path), 'name');
     },
 
-    /**
-     * Delete a department
-     */
-    deleteDept(pathOrStr) {
-        const path = typeof pathOrStr === 'string' ? JSON.parse(pathOrStr) : pathOrStr;
-        const name = path[path.length - 1];
 
-        // Count children recursively
-        const countChildren = (data) => {
-            if (!data || !data.children) return 0;
-            let count = Object.keys(data.children).length;
-            for (const child of Object.values(data.children)) {
-                count += countChildren(child);
-            }
-            return count;
-        };
-
-        // Get the target node
-        let target;
-        if (path.length === 1) {
-            target = this.editingData[path[0]];
-        } else {
-            target = this.editingData;
-            for (let i = 0; i < path.length; i++) {
-                if (i === 0) {
-                    target = target[path[i]];
-                } else {
-                    target = target.children[path[i]];
-                }
-            }
-        }
-
-        const childCount = countChildren(target);
-        let message = `Delete "${name}"?`;
-        if (childCount > 0) {
-            message = `Delete "${name}" and ${childCount} sub-department${childCount > 1 ? 's' : ''}?`;
-        }
-
-        if (!confirm(message)) return;
-
-        if (path.length === 1) {
-            delete this.editingData[path[0]];
-            // Record deletion migration
-            this.migrationsPending.push({
-                oldPath: path,
-                newPath: null,
-            });
-        } else {
-            let parent = this.editingData;
-            for (let i = 0; i < path.length - 1; i++) {
-                if (i === 0) {
-                    parent = parent[path[i]];
-                } else {
-                    parent = parent.children[path[i]];
-                }
-            }
-            delete parent.children[path[path.length - 1]];
-
-            // Record deletion migration
-            this.migrationsPending.push({
-                oldPath: path,
-                newPath: null,
-            });
-        }
-
-        this.updateTreeView();
-        this.hasChanges = true;
-    },
 
     /**
      * Render a curated color palette
