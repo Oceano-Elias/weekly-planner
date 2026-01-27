@@ -57,11 +57,17 @@ export const DepartmentSettings = {
         document.body.appendChild(modal);
 
         // Bind events
-        document.getElementById('deptConfirmCancel').onclick = () => this.closeConfirm();
-        document.getElementById('deptConfirmYes').onclick = () => {
+        const cancelBtn = document.getElementById('deptConfirmCancel');
+        const confirmBtn = document.getElementById('deptConfirmYes');
+
+        cancelBtn.onclick = () => this.closeConfirm();
+        confirmBtn.onclick = () => {
             onConfirm();
             this.closeConfirm();
         };
+
+        // Safety: Auto-focus Cancel button
+        cancelBtn.focus();
     },
 
     closeConfirm() {

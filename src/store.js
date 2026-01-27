@@ -206,7 +206,7 @@ export const Store = {
         if (immediate) {
             performSave();
         } else {
-            saveTimeout = setTimeout(performSave, 1000); // 1s throttle
+            saveTimeout = setTimeout(performSave, 500); // 1s throttle
         }
     },
 
