@@ -6,11 +6,12 @@
 .task-block {
     display: flex;
     flex-direction: column;
-    padding: 10px 12px;
+    padding: 12px 14px;
+    /* More padding */
 
     /* DYNAMIC BORDER & RIM LIGHT (handled by glass-surface, specialized here) */
     box-shadow:
-        inset 0 1px 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 1px rgba(255, 255, 255, 0.08),
         var(--shadow-task);
     cursor: grab;
     transition: all var(--transition-spring);
@@ -18,42 +19,46 @@
     z-index: 1;
 
     /* NEW: High-contrast card background - Switched to transparent mix for consistent glassiness */
-    background: color-mix(in srgb, var(--task-color) 8%, transparent);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--task-color) 12%, rgba(22, 27, 34, 0.4));
+
+    /* Ghost Border */
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    /* Left accent is now rounder */
     border-left: 4px solid var(--task-color, var(--accent-primary)) !important;
+    border-radius: var(--radius-sm);
 }
 
 .task-block:hover {
     border-color: var(--task-color);
     transform: translateY(-4px) scale(1.02);
     /* Brighter hover state */
-    background: color-mix(in srgb, var(--task-color) 18%, var(--bg-elevated));
+    background: color-mix(in srgb, var(--task-color) 20%, var(--bg-elevated));
     box-shadow:
         var(--shadow-lg),
-        0 0 25px color-mix(in srgb, var(--task-color) 35%, transparent);
+        0 0 35px color-mix(in srgb, var(--task-color) 20%, transparent);
     z-index: 20;
 }
 
 /* Day View - Parity with Week View */
 .task-block.day-view {
-    padding: 16px 12px;
-    margin: 4px 16px;
+    padding: 18px 14px;
+    margin: 6px 18px;
 
     /* Maintain unified card aesthetic - inheriting background from .task-block */
     border-radius: var(--radius-lg);
 
     /* Ultra-subtle shadow with color glow */
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--task-color) 15%, rgba(0, 0, 0, 0.1));
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--task-color) 12%, rgba(0, 0, 0, 0.15));
     min-height: 100%;
-    padding: 16px 12px !important;
-    /* Force Day View padding */
+
+    /* Removed redundant padding, handled above */
 }
 
 /* Fix overlapping in Day View */
 .view-day .calendar-task {
     position: relative !important;
     height: auto !important;
-    min-height: 60px;
+    min-height: 70px;
     margin-bottom: var(--space-md);
     top: 0 !important;
     left: 0 !important;

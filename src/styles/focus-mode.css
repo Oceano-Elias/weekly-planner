@@ -2526,3 +2526,118 @@
         transform: translateY(0);
     }
 }
+/* =========================================
+   FLOATING PIP / BADGE STYLES
+   ========================================= */
+
+.floating-badge {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px 10px 18px;
+    
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 100px; /* Pill shape */
+    
+    box-shadow: 
+        0 10px 30px -10px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: badgeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-badge:hover {
+    transform: translateY(-4px) scale(1.02);
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 
+        0 20px 40px -10px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.floating-badge:active {
+    transform: scale(0.98);
+}
+
+@keyframes badgeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.badge-mode {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.6);
+    padding-right: 8px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    margin-right: -4px;
+}
+
+.badge-time {
+    font-family: var(--font-primary);
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
+}
+
+.badge-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.badge-btn {
+    border: none;
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.badge-btn-primary {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.badge-btn-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.badge-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid transparent;
+}
+
+.badge-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.1);
+}

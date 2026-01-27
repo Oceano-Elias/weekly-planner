@@ -1397,7 +1397,8 @@ export const FocusMode = {
             this.pomodoroMode,
             this.pomodoroRunning,
             () => this.startPauseTimer(),
-            () => this.resetTimer()
+            () => this.resetTimer(),
+            () => this.open(this.currentTaskId) // Open Focus Mode on click
         );
     },
 

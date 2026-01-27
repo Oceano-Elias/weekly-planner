@@ -1682,10 +1682,12 @@ export const FocusModeUI = {
      */
     getBadgeTemplate() {
         return `
-            <span id="badgeMode" style="font-size:12px;opacity:0.8"></span>
-            <span id="badgeTime" style="font-size:18px;font-weight:700;letter-spacing:-0.5px"></span>
-            <button id="badgeStartPause" style="padding:6px 10px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:12px">Start</button>
-            <button id="badgeReset" style="padding:6px 10px;border:1px solid #333;border-radius:8px;background:#222;color:#ddd;font-size:12px">Reset</button>
+            <span id="badgeMode" class="badge-mode"></span>
+            <span id="badgeTime" class="badge-time"></span>
+            <div class="badge-controls">
+                <button id="badgeStartPause" class="badge-btn badge-btn-primary">Start</button>
+                <button id="badgeReset" class="badge-btn badge-btn-secondary">Reset</button>
+            </div>
         `;
     },
 
@@ -1938,10 +1940,10 @@ export const FocusModeUI = {
     /**
      * Show/Create the floating badge
      */
-    showBadge(pomodoroSeconds, pomodoroMode, pomodoroRunning, onStartPause, onReset) {
+    showBadge(pomodoroSeconds, pomodoroMode, pomodoroRunning, onStartPause, onReset, onOpen) {
         if (this.badgeEl) return this.badgeEl;
 
-        this.badgeEl = this.createBadge(onStartPause, onReset);
+        this.badgeEl = this.createBadge(onStartPause, onReset, onOpen);
         this.updateBadge(pomodoroSeconds, pomodoroMode, pomodoroRunning);
         return this.badgeEl;
     },
@@ -1975,24 +1977,40 @@ export const FocusModeUI = {
     /**
      * Create and initialize the floating badge element
      */
-    createBadge(onStartPause, onReset) {
+    createBadge(onStartPause, onReset, onOpen) {
         const el = document.createElement('div');
         el.id = 'floatingPomodoroBadge';
         el.className = 'floating-badge glass-surface-deep';
-        el.style.position = 'fixed';
-        el.style.zIndex = '9999';
-        el.style.background = '#111';
-        el.style.color = '#fff';
-        el.style.border = '1px solid #333';
-        el.style.borderRadius = '12px';
-        el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
-        el.style.padding = '10px 12px';
-        el.style.display = 'flex';
-        el.style.alignItems = 'center';
-        el.style.gap = '10px';
+
+        // Use template
         el.innerHTML = this.getBadgeTemplate();
 
         document.body.appendChild(el);
+
+        // Click interaction - Open Focus Mode
+        if (onOpen) {
+            el.style.cursor = 'pointer';
+            el.addEventListener('click', (e) => {
+                onOpen();
+            });
+        }
+
+        // Bind controls (prevent bubble up to open)
+        const startBtn = el.querySelector('#badgeStartPause');
+        const resetBtn = el.querySelector('#badgeReset');
+
+        if (startBtn) {
+            startBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onStartPause();
+            });
+        }
+        if (resetBtn) {
+            resetBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onReset();
+            });
+        }
 
         // Position it
         const savedPos = (() => {

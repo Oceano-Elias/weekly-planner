@@ -12,17 +12,18 @@
     width: 100vw;
     height: 100vh;
     z-index: -1;
-    background-color: #020617;
+    background-color: #0f1117;
+    /* Deep Gunmetal Base */
     /* Even darker slate */
     background-image:
-        radial-gradient(at 0% 0%, hsla(250, 100%, 15%, 0.15) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(220, 100%, 20%, 0.15) 0, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(340, 100%, 20%, 0.15) 0, transparent 50%),
-        radial-gradient(at 0% 50%, hsla(220, 100%, 20%, 0.15) 0, transparent 50%),
-        radial-gradient(at 100% 50%, hsla(250, 100%, 15%, 0.15) 0, transparent 50%),
-        radial-gradient(at 0% 100%, hsla(340, 100%, 20%, 0.15) 0, transparent 50%),
-        radial-gradient(at 50% 100%, hsla(220, 100%, 20%, 0.15) 0, transparent 50%),
-        radial-gradient(at 100% 100%, hsla(250, 100%, 15%, 0.15) 0, transparent 50%);
+        radial-gradient(at 0% 0%, hsla(250, 60%, 15%, 0.12) 0, transparent 50%),
+        radial-gradient(at 50% 0%, hsla(220, 60%, 20%, 0.12) 0, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(340, 60%, 20%, 0.12) 0, transparent 50%),
+        radial-gradient(at 0% 50%, hsla(220, 60%, 20%, 0.12) 0, transparent 50%),
+        radial-gradient(at 100% 50%, hsla(250, 60%, 15%, 0.12) 0, transparent 50%),
+        radial-gradient(at 0% 100%, hsla(340, 60%, 20%, 0.12) 0, transparent 50%),
+        radial-gradient(at 50% 100%, hsla(220, 60%, 20%, 0.12) 0, transparent 50%),
+        radial-gradient(at 100% 100%, hsla(250, 60%, 15%, 0.12) 0, transparent 50%);
     filter: blur(120px);
     opacity: 0.8;
     animation: mesh-rotate 120s linear infinite;
@@ -94,7 +95,7 @@ header {
     font-family: var(--font-display);
     font-size: 22px;
     font-weight: 700;
-    color: #f1f5f9;
+    color: var(--text-primary);
     /* Softened from f8fafc */
     display: flex;
     align-items: center;
@@ -455,7 +456,7 @@ header {
 .calendar-header {
     display: grid;
     grid-template-columns: var(--calendar-time-col, 60px) repeat(7, 1fr);
-    background-color: rgba(30, 41, 59, 0.7);
+    background-color: rgba(22, 27, 34, 0.8);
     /* Softer, semi-transparent */
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-primary);

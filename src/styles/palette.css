@@ -29,21 +29,23 @@
 }
 
 .palette-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .palette-stamp {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    /* Horizontal layout */
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 16px;
-    background: rgba(15, 23, 42, 0.4);
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(22, 27, 34, 0.4);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-full);
+    /* Rounded Pill */
     cursor: grab;
     transition: all var(--transition-normal);
     position: relative;
@@ -54,53 +56,66 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--dept-color) 0%, transparent 70%);
-    opacity: 0.15;
+    background: linear-gradient(90deg, var(--dept-color) 0%, transparent 90%);
+    opacity: 0.1;
     transition: opacity var(--transition-fast);
 }
 
 .palette-stamp:hover {
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(22, 27, 34, 0.8);
     border-color: var(--dept-color);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--dept-color) 20%, transparent);
+    transform: translateX(4px);
+    /* Slide right instead of lift */
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--dept-color) 15%, transparent);
 }
 
 .palette-stamp:hover::before {
-    opacity: 0.25;
+    opacity: 0.2;
 }
 
 .palette-stamp:active {
     cursor: grabbing;
-    transform: scale(0.96);
+    transform: scale(0.98);
 }
 
 .palette-stamp.dragging {
-    opacity: 0.5;
-    transform: scale(0.9);
+    opacity: 0.8;
+    transform: scale(1.02);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    /* Return to card shape while dragging if preferred, or keep pill */
 }
 
 .stamp-badge {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-md);
+    border-radius: 50%;
+    /* Circle badge */
     color: white;
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: var(--dept-color);
+    /* Fallback */
+    border: none;
 }
 
 .stamp-label {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    text-transform: none;
+    /* Friendly case */
+    letter-spacing: 0;
+}
+
+.palette-stamp:hover .stamp-label {
+    color: var(--text-primary);
 }
 
 /* Response/Animations */
