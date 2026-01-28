@@ -1309,17 +1309,80 @@ export const FocusMode = {
     },
 
     async openFloatingTimer() {
-        const api = document.documentPictureInPicture;
+        const api = window.documentPictureInPicture;
+
+        // [NEW] Tauri Native PiP Support
+        if (window.__TAURI__) {
+            try {
+                // Try to create/open a separate window
+                const { Window } = window.__TAURI__.window; // Tauri v2
+                // Or WebviewWindow: const { WebviewWindow } = window.__TAURI__.window; // Tauri v1/v2 compatibility
+
+                // We'll trust that withGlobalTauri exposes what we need, usually window.__TAURI__.window contains the constructors
+                const winLabel = 'focus-pip';
+
+                // Check if already open
+                // In v2 we can't easily check existence without async, so we just try to create. 
+                // If it exists, Tauri usually focuses it unless we handle it.
+                // Let's rely on creating a NEW one or overwriting.
+
+                const WebviewWindow = window.__TAURI__.window.WebviewWindow || window.__TAURI__.window.Window;
+
+                const pipWin = new WebviewWindow(winLabel, {
+                    url: 'index.html?mode=pip',
+                    title: 'Timer',
+                    width: 160,
+                    height: 190,
+                    resizable: false,
+                    decorations: false, // Frameless
+                    transparent: true,
+                    alwaysOnTop: true,
+                    visible: false, // Show after load
+                    skipTaskbar: true
+                });
+
+                pipWin.once('tauri://created', function () {
+                    // window created
+                });
+
+                pipWin.once('tauri://error', function (e) {
+                    // likely duplicate label, so just focus existing
+                    // we can't access existing instance easily here without `getAll`
+                });
+
+                // Show it
+                // We might need to wait for load, but visible:true usually works.
+                // Since updateFloatingTimer logic relies on localStorage, the new window will poll it.
+
+                return;
+            } catch (e) {
+                console.error('Tauri PiP failed, falling back to badge', e);
+            }
+        }
+
         if (this.pipWindow) return;
         try {
             if (!api) throw new Error('pip');
-            const pip = await api.requestWindow({ initialWidth: 220, initialHeight: 160 });
+            const pip = await api.requestWindow({ initialWidth: 160, initialHeight: 190 });
             this.pipWindow = pip;
+
+            // Try to force resize (Chrome often caches user's last size, this might help)
+            try {
+                if (pip.resizeTo) pip.resizeTo(160, 190);
+            } catch (e) {
+                // Ignore resize errors
+            }
 
             pip.startPause = () => this.startPauseTimer();
             pip.resetTimer = () => this.resetTimer();
 
             FocusModeUI.setupPipWindow(pip, pip.startPause, pip.resetTimer, () => {
+                try {
+                    pip.close(); // Force close
+                } catch (e) {
+                    // Ignore
+                }
+                window.focus(); // Try to bring main window to front
                 if (this.activeTaskId) {
                     this.open(this.activeTaskId);
                 }
@@ -1331,7 +1394,8 @@ export const FocusMode = {
 
             this.updateFloatingTimer();
             this.hideBadge();
-        } catch {
+        } catch (error) {
+            console.error('[FocusMode] PiP failed to open:', error);
             // Fallback to badge if PiP fails
             this.showBadge();
         }

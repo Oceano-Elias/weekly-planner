@@ -48,6 +48,12 @@ const App = {
      * Initialize the application with Error Boundary
      */
     init() {
+        // [NEW] Check for PiP mode immediately
+        if (new URLSearchParams(window.location.search).get('mode') === 'pip') {
+            this.initPipMode();
+            return;
+        }
+
         try {
             // Expose for debugging
             window.App = this;
@@ -381,6 +387,123 @@ const App = {
             taskEl.classList.remove('completing');
         }, 600);
     },
+    /**
+     * Initialize simplified PiP mode for Tauri
+     */
+    initPipMode() {
+        console.log('[App] Initializing PiP Mode');
+        document.body.innerHTML = '';
+        document.body.style.background = 'transparent';
+
+        // Import basic styles separately or ensure they are loaded
+        // (Vite already injected styles)
+
+        const { FocusModeUI } = require('./components/FocusModeUI.js'); // Or use global if exposed, but modules likely work
+        // Note: Mix of ES modules and styles. Let's rely on modules existing.
+
+        // Since we are in an ES module environment (implied by imports), we can use imports.
+        // But main.js handles imports at top level. We can use FocusModeUI (which is not imported top level yet?)
+        // Wait, FocusModeUI is used by FocusMode.js, not main.js presumably.
+        // Let's rely on FocusMode logic or just create a simple element.
+
+        // Create container
+        const container = document.createElement('div');
+        container.id = 'pip-container';
+        container.style.height = '100vh';
+        container.style.width = '100vw';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        document.body.appendChild(container);
+
+        // [NEW] Restore button logic
+        // We use event delegation or attach after render. Since render is polled, we should checking if listener attached.
+        // Actually, innerHTML overwrites every second. This kills listeners attached to elements inside container.
+        // Better approach: Attach listener to CONTAINER (delegation) for the specific ID.
+        container.addEventListener('click', async (e) => {
+            if (e.target.closest('#pip-restore-btn')) {
+                if (window.__TAURI__) {
+                    try {
+                        const { getAll, getCurrent } = window.__TAURI__.window; // Tauri v2
+                        const current = (getCurrent || window.__TAURI__.window.appWindow)();
+                        const all = await (getAll || window.__TAURI__.window.getAll)();
+
+                        const mainWin = all.find(w => w.label !== 'focus-pip');
+                        if (mainWin) {
+                            await mainWin.unminimize();
+                            await mainWin.setFocus();
+                        }
+
+                        await current.close();
+                    } catch (e) {
+                        console.error('Failed to restore main window:', e);
+                    }
+                }
+            }
+        });
+
+        // Polling loop to read state from localStorage (shared with main window in Tauri)
+        const updateUI = () => {
+            // Basic implementation: replicate FocusModeUI.getPipContent structure
+            // ideally we reuse the code.
+            // We can access FocusMode (imported above) -> FocusModeUI (not exported directly?)
+            // Let's modify imports to get FocusModeUI or just render generic HTML.
+
+            try {
+                const state = JSON.parse(localStorage.getItem('focusModeTimerState') || 'null');
+                if (!state) {
+                    container.innerHTML = '<div style="color:white; font-family:system-ui; font-size:12px;">No Active Session</div>';
+                    return;
+                }
+
+                // Helper to format time
+                const format = (s) => {
+                    const m = Math.floor(s / 60);
+                    const sec = s % 60;
+                    return `${m}:${sec.toString().padStart(2, '0')}`;
+                };
+
+                const isWork = state.mode === 'work';
+                container.innerHTML = `
+                   <div style="
+                        width: 100%; height: 100%;
+                        background: linear-gradient(160deg, #0f1117 0%, #05080f 100%);
+                        display: flex; flex-direction: column; align-items: center; justify-content: center;
+                        color: white; font-family: system-ui, sans-serif;
+                        user-select: none; -webkit-app-region: drag; position: relative;
+                   ">
+                        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.5); margin-bottom: 4px;">
+                            ${isWork ? 'Focus' : 'Break'}
+                        </div>
+                        <div style="font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums;">
+                            ${format(state.remaining)}
+                        </div>
+                        <button id="pip-restore-btn" style="
+                            position: absolute; top: 10px; right: 10px;
+                            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+                            color: #94a3b8; border-radius: 6px; cursor: pointer;
+                            padding: 4px; display: flex; align-items: center; justify-content: center;
+                            -webkit-app-region: no-drag; transition: all 0.2s;
+                        ">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <polyline points="9 21 3 21 3 15"></polyline>
+                                <line x1="21" y1="3" x2="14" y2="10"></line>
+                                <line x1="3" y1="21" x2="10" y2="14"></line>
+                            </svg>
+                        </button>
+                   </div>
+
+                `;
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        setInterval(updateUI, 1000);
+        updateUI();
+    },
+
 };
 
 // Initialize when DOM is ready

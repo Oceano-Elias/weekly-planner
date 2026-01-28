@@ -47,7 +47,21 @@ export const FormHandler = {
 
         const saveBtn = document.getElementById('saveTask');
         if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveTask());
+            saveBtn.addEventListener('click', () => {
+                const taskId = this.saveTask();
+                if (taskId) window.lastClickedTaskId = taskId;
+            });
+        }
+
+        const startFocusBtn = document.getElementById('startFocusBtn');
+        if (startFocusBtn) {
+            startFocusBtn.addEventListener('click', () => {
+                const taskId = this.saveTask();
+                if (taskId && window.FocusMode) {
+                    // Small delay to allow modal close animation to start/finish cleanly
+                    setTimeout(() => window.FocusMode.open(taskId), 100);
+                }
+            });
         }
 
         this.setupStepsInput();
@@ -328,6 +342,9 @@ export const FormHandler = {
         document.querySelector('.modal-title').textContent = 'Create New Task';
         document.getElementById('saveTask').textContent = 'Create Task';
 
+        const startFocusBtn = document.getElementById('startFocusBtn');
+        if (startFocusBtn) startFocusBtn.style.display = 'flex';
+
         this.pendingSteps = [];
         const stepsList = document.getElementById('stepsList');
         if (stepsList) stepsList.innerHTML = '';
@@ -371,14 +388,9 @@ export const FormHandler = {
                 .join('\n');
         }
 
-        if (this.editingTaskId) {
-            this.handleUpdateTask(title, hierarchy, duration, notes);
-        } else {
-            this.handleCreateTask(title, hierarchy, duration, notes);
-        }
-
         ModalService.close();
         this.refreshUI();
+        return this.editingTaskId || (hierarchy.length > 0 ? this.handleCreateTask(title, hierarchy, duration, notes) : null);
     },
 
     handleUpdateTask(title, hierarchy, duration, notes) {
@@ -425,6 +437,7 @@ export const FormHandler = {
             }
             this.scheduledData = null;
         }
+        return task.id;
     },
 
     editTask(taskId) {
@@ -470,6 +483,9 @@ export const FormHandler = {
 
         document.querySelector('.modal-title').textContent = 'Edit Task';
         document.getElementById('saveTask').textContent = 'Update Task';
+
+        const startFocusBtn = document.getElementById('startFocusBtn');
+        if (startFocusBtn) startFocusBtn.style.display = 'flex';
 
         this.pendingSteps = [];
         if (task.notes) {

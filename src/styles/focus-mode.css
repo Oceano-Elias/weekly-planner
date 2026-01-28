@@ -2556,6 +2556,11 @@
     cursor: pointer;
 }
 
+.floating-badge.dragging {
+    transition: none !important;
+    cursor: grabbing;
+}
+
 .floating-badge:hover {
     transform: translateY(-4px) scale(1.02);
     background: var(--bg-elevated);

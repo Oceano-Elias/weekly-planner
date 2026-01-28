@@ -1646,8 +1646,12 @@ export const FocusModeUI = {
                 <div style="display:flex;gap:8px;">
                     <button id="pipStartPause" style="padding:7px 14px;border:none;border-radius:100px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:600;font-size:12px;box-shadow:0 4px 12px rgba(99,102,241,0.3);cursor:pointer;">Start</button>
                     <button id="pipReset" style="padding:7px 14px;border:1px solid rgba(240,246,252,0.1);border-radius:100px;background:rgba(255,255,255,0.05);color:#8b949e;font-weight:600;font-size:12px;cursor:pointer;">Reset</button>
+                    <button id="pipExpand" style="padding:7px;border:1px solid rgba(240,246,252,0.1);border-radius:100px;background:rgba(255,255,255,0.05);color:#8b949e;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Return to App">
+                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    </button>
                 </div>
             </div>`;
+
     },
 
     /**
@@ -1661,22 +1665,33 @@ export const FocusModeUI = {
         const modeDot = doc.getElementById('pipModeDot');
         const startPauseEl = doc.getElementById('pipStartPause');
         const ringEl = doc.getElementById('pipRing');
-        if (timeEl && modeEl && startPauseEl) {
+        if (timeEl && startPauseEl) {
             timeEl.textContent = this.formatTime(seconds);
-            modeEl.textContent = mode === 'work' ? 'Focus' : 'Break';
-            startPauseEl.textContent = running ? 'Pause' : 'Start';
+            if (modeEl) modeEl.textContent = mode === 'work' ? 'Focus' : 'Break';
+
+            // Toggle Icon for Start/Pause
+            if (running) {
+                // Pause Icon
+                startPauseEl.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
+            } else {
+                // Play Icon
+                startPauseEl.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+            }
+
             if (modeDot) {
                 const dotColor = mode === 'work' ? '#3b82f6' : 'var(--accent-success)';
                 modeDot.style.background = dotColor;
                 modeDot.style.boxShadow = `0 0 12px ${dotColor}66`;
             }
-            if (ringEl && totalSeconds) {
-                const circumference = 2 * Math.PI * 40;
-                const progress = Math.max(0, Math.min(1, seconds / totalSeconds));
-                ringEl.style.stroke = mode === 'work' ? '#3b82f6' : 'var(--accent-success)';
-                ringEl.style.strokeDasharray = `${circumference}`;
-                ringEl.style.strokeDashoffset = `${circumference * (1 - progress)}`;
-            }
+            // Radius is now 54
+            const circumference = 2 * Math.PI * 54;
+            // Invert progress so it acts as a countdown (stroke shrinks) or fill (stroke grows)
+            // Let's make it shrink as time goes down (standard timer)
+            // seconds starts at totalSeconds and goes to 0
+            const progress = seconds / totalSeconds;
+
+            ringEl.style.strokeDasharray = `${circumference}`;
+            ringEl.style.strokeDashoffset = `${circumference * (1 - progress)}`;
         }
     },
 
@@ -1930,14 +1945,147 @@ export const FocusModeUI = {
      * Set up PiP window document styles and initial content
      */
     setupPipWindow(pip, onStartPause, onReset, onRestore) {
+        console.log('[FocusModeUI] Setting up PiP Window (DOM API Version)', { pip });
         const doc = pip.document;
-        doc.body.style.margin = '0';
-        doc.body.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
-        doc.body.innerHTML = this.getPipContent();
 
-        doc.getElementById('pipStartPause')?.addEventListener('click', onStartPause);
-        doc.getElementById('pipReset')?.addEventListener('click', onReset);
-        doc.getElementById('pipRoot')?.addEventListener('dblclick', onRestore);
+        // Clear existing
+        doc.body.innerHTML = '';
+
+        doc.body.style.margin = '0';
+        doc.body.style.height = '100vh';
+        doc.body.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
+        doc.body.style.userSelect = 'none';
+        doc.body.style.background = '#0f1117'; // Fallback
+
+        // Build DOM structure manually if not using innerHTML (which we are partially doing above)
+        // But since getPipContent() is used elsewhere for `innerHTML`, let's verify if this method is used for Web or Tauri logic
+        // The `setupPipWindow` viewed previously (lines 1932+) builds DOM manually.
+        // We need to add the button to the DOM construction block.
+
+        // Re-reading file content... wait, the previous `get_file` showed `setupPipWindow` line 1932 using `createElement`.
+        // My previous edit (above) was to `getPipContent` which returns a string.
+        // `setupPipWindow` seems to be doing manual DOM creation primarily for the test/fallback flow?
+        // Let's look at `setupPipWindow` again. It has manual DOM creation.
+        // The `getPipContent` string is likely used by `main.js` or fallback.
+        // `FocusMode.js` calls `FocusModeUI.setupPipWindow(pip...)`.
+        // So we must update the Manual DOM creation part too.
+
+        // Root Container - Minimize padding for tighter fit
+        const root = doc.createElement('div');
+        root.id = 'pipRoot';
+        root.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;box-sizing:border-box;background:#0f1117;color:#f0f6fc;font-family:Outfit,system-ui,sans-serif;overflow:hidden;position:relative;';
+
+        // Container for the Circle
+        const timerContainer = doc.createElement('div');
+        timerContainer.style.cssText = 'position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:8px;';
+
+        // SVG Ring
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = doc.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '140'); // Larger ring
+        svg.setAttribute('height', '140');
+        svg.setAttribute('viewBox', '0 0 120 120');
+        svg.style.cssText = 'transform: rotate(-90deg);';
+
+        const circleBg = doc.createElementNS(ns, 'circle');
+        circleBg.setAttribute('cx', '60');
+        circleBg.setAttribute('cy', '60');
+        circleBg.setAttribute('r', '54'); // Maximize size
+        circleBg.setAttribute('stroke', 'rgba(255,255,255,0.08)');
+        circleBg.setAttribute('stroke-width', '6');
+        circleBg.setAttribute('fill', 'none');
+
+        const circleRing = doc.createElementNS(ns, 'circle');
+        circleRing.id = 'pipRing';
+        circleRing.setAttribute('cx', '60');
+        circleRing.setAttribute('cy', '60');
+        circleRing.setAttribute('r', '54');
+        circleRing.setAttribute('stroke', '#6366f1');
+        circleRing.setAttribute('stroke-width', '6');
+        circleRing.setAttribute('fill', 'none');
+        circleRing.setAttribute('stroke-linecap', 'round');
+
+        svg.appendChild(circleBg);
+        svg.appendChild(circleRing);
+        timerContainer.appendChild(svg);
+
+        // Time Text - Centered Absolute
+        const timeText = doc.createElement('div');
+        timeText.id = 'pipTime';
+        timeText.textContent = '--:--';
+        timeText.style.cssText = 'position:absolute;font-size:28px;font-weight:700;letter-spacing:-1px;color:#fff;text-shadow:0 0 20px rgba(99,102,241,0.4);';
+        timerContainer.appendChild(timeText);
+
+        root.appendChild(timerContainer);
+
+        // Controls - Floating at bottom or compact
+        const controls = doc.createElement('div');
+        controls.style.cssText = 'display:flex;gap:12px;z-index:10;';
+
+        // Helper style for icon buttons
+        const btnStyle = 'width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.2s;';
+
+        const startBtn = doc.createElement('button');
+        startBtn.id = 'pipStartPause';
+        // Initial Icon (valid SVG)
+        startBtn.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+        startBtn.style.cssText = btnStyle + 'background:#6366f1;box-shadow:0 4px 12px rgba(99,102,241,0.3);';
+
+        const resetBtn = doc.createElement('button');
+        resetBtn.id = 'pipReset';
+        resetBtn.title = 'Reset';
+        resetBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
+        resetBtn.style.cssText = btnStyle;
+
+        const expandBtn = doc.createElement('button');
+        expandBtn.id = 'pipExpand';
+        expandBtn.title = 'Return to App';
+        expandBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+        expandBtn.style.cssText = btnStyle;
+
+        controls.appendChild(resetBtn);
+        controls.appendChild(startBtn);
+        controls.appendChild(expandBtn);
+        root.appendChild(controls);
+
+        // Append root to body
+        doc.body.appendChild(root);
+
+        // Attach listeners directly to elements we just created
+        console.log('[FocusModeUI] Attaching listeners to created elements');
+
+        // Use both onclick and addEventListener for redundancy
+        startBtn.onclick = (e) => {
+            console.log('[FocusModeUI] PiP Start Clicked (onclick)');
+            e.preventDefault();
+            e.stopPropagation();
+            onStartPause(e);
+        };
+
+        resetBtn.onclick = (e) => {
+            console.log('[FocusModeUI] PiP Reset Clicked (onclick)');
+            e.preventDefault();
+            e.stopPropagation();
+            onReset(e);
+        };
+
+        expandBtn.onclick = (e) => {
+            console.log('[FocusModeUI] PiP Expand Clicked (onclick)');
+            e.preventDefault();
+            e.stopPropagation();
+            onRestore(e);
+        };
+
+        // Double click on body
+        const handleRestore = (e) => {
+            console.log('[FocusModeUI] PiP Body Double Clicked');
+            // Ignore if clicking on buttons
+            if (e.target.closest('button')) return;
+            onRestore(e);
+        };
+
+        doc.body.addEventListener('dblclick', handleRestore);
+        root.addEventListener('dblclick', handleRestore);
     },
 
     /**
@@ -2010,13 +2158,7 @@ export const FocusModeUI = {
             });
         }
 
-        // Click interaction - Open Focus Mode (on container)
-        if (onOpen) {
-            el.style.cursor = 'pointer';
-            el.addEventListener('click', (e) => {
-                onOpen();
-            });
-        }
+
 
 
 
@@ -2032,16 +2174,24 @@ export const FocusModeUI = {
         if (savedPos && typeof savedPos.left === 'number' && typeof savedPos.top === 'number') {
             el.style.left = `${savedPos.left}px`;
             el.style.top = `${savedPos.top}px`;
-        } else {
-            const defaultLeft = Math.max(0, window.innerWidth - el.offsetWidth - 16);
-            const defaultTop = Math.max(0, window.innerHeight - el.offsetHeight - 16);
-            el.style.left = `${defaultLeft}px`;
-            el.style.top = `${defaultTop}px`;
+            el.style.bottom = 'auto';
+            el.style.right = 'auto';
         }
+        // Else: Leave as is, letting CSS (bottom: 24px, right: 24px) handle the default position.
+        // This avoids issues where offsetWidth is 0 during initialization.
 
         // Setup listeners
         el.querySelector('#badgeStartPause')?.addEventListener('click', onStartPause);
         el.querySelector('#badgeReset')?.addEventListener('click', onReset);
+
+        // Double click to open
+        if (onOpen) {
+            el.addEventListener('dblclick', (e) => {
+                // Prevent interfering with buttons
+                if (e.target.closest('button')) return;
+                onOpen();
+            });
+        }
 
         // Setup dragging
         let dragging = false;
@@ -2069,6 +2219,7 @@ export const FocusModeUI = {
         const endDrag = () => {
             if (!dragging) return;
             dragging = false;
+            el.classList.remove('dragging');
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', endDrag);
             try {
@@ -2084,12 +2235,22 @@ export const FocusModeUI = {
 
         el.addEventListener('mousedown', (e) => {
             if (e.target && e.target.closest('button')) return;
+
             dragging = true;
+            el.classList.add('dragging');
             startX = e.clientX;
             startY = e.clientY;
+
+            // Switch to absolute positioning using current rect
             const rect = el.getBoundingClientRect();
             startLeft = rect.left;
             startTop = rect.top;
+
+            el.style.left = `${startLeft}px`;
+            el.style.top = `${startTop}px`;
+            el.style.bottom = 'auto';
+            el.style.right = 'auto';
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', endDrag);
         });
