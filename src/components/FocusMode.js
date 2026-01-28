@@ -131,13 +131,20 @@ export const FocusMode = {
         this.isOpen = false;
 
         const state = Store.getActiveExecution();
-        if (!state.running && state.phase !== 'completed') {
+        // Check if session is "active" (accumulation > 0 or in break, even if paused)
+        const isActive = state.running || state.mode === 'break' || (state.mode === 'work' && state.accumulatedTime > 0);
+
+        // Default to PiP enabled (disablePip = false) since settings are not implemented yet
+        const disablePip = false;
+
+        if (!isActive && state.phase !== 'completed') {
             this.stopSession(true);
             this.activeTaskId = null;
-        } else if (state.running) {
+        } else if (isActive && !disablePip) {
             // Keep running in background/floating mode
             this.openFloatingTimer();
         }
+
 
         // Remove the keyboard listener
         if (this.activeKeyHandler) {
@@ -355,13 +362,53 @@ export const FocusMode = {
      * Setup event listeners
      */
     setupListeners() {
+        // Listen for Tauri PiP Actions
+        if (window.__TAURI__) {
+            try {
+                console.log('[FocusMode] Setting up Tauri event listeners...');
+                window.__TAURI__.event.listen('pip-action', (event) => {
+                    console.log('[FocusMode] Received pip-action:', event);
+                    const action = event.payload?.action;
+                    if (action === 'toggle') this.toggleSession();
+                    if (action === 'reset') this.resetTimer();
+                    if (action === 'request-state') this.updateFloatingTimer();
+                });
+            } catch (e) {
+                console.error('Failed to setup Tauri event listeners', e);
+            }
+        }
+
+        // Legacy/Browser Storage Listener
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'focusModeCommand' && e.newValue) {
+                try {
+                    const cmd = JSON.parse(e.newValue);
+                    if (Date.now() - cmd.ts < 2000) { // Only process recent commands
+                        console.log('[FocusMode] Received command:', cmd.action);
+                        if (cmd.action === 'start') this.startSession();
+                        if (cmd.action === 'pause') this.pauseSession();
+                        if (cmd.action === 'reset') this.resetTimer();
+                        this.updateUI();
+                    }
+                } catch (err) {
+                    console.error('Invalid command', err);
+                }
+            }
+        });
+
         const els = FocusModeUI.getListenerElements();
 
         els.overlay?.addEventListener('click', (e) => {
-            if (e.target === els.overlay) this.close();
+            if (e.target === els.overlay) {
+                this.close();
+            }
         });
 
-        els.closeBtn?.addEventListener('click', () => this.close());
+        if (els.closeBtn) {
+            els.closeBtn.addEventListener('click', () => {
+                this.close();
+            });
+        }
 
         els.sessionToggleBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1326,37 +1373,86 @@ export const FocusMode = {
                 // If it exists, Tauri usually focuses it unless we handle it.
                 // Let's rely on creating a NEW one or overwriting.
 
-                const WebviewWindow = window.__TAURI__.window.WebviewWindow || window.__TAURI__.window.Window;
+                // Improved Tauri detection
+                const tauri = window.__TAURI__;
 
-                const pipWin = new WebviewWindow(winLabel, {
-                    url: 'index.html?mode=pip',
-                    title: 'Timer',
-                    width: 160,
-                    height: 190,
-                    resizable: false,
-                    decorations: false, // Frameless
-                    transparent: true,
-                    alwaysOnTop: true,
-                    visible: false, // Show after load
-                    skipTaskbar: true
-                });
+                // Tauri v2 often puts WebviewWindow in `webviewWindow` namespace
+                const WebviewWindow =
+                    (tauri.webviewWindow && tauri.webviewWindow.WebviewWindow) ||
+                    (tauri.window && tauri.window.WebviewWindow) ||
+                    (tauri.window && tauri.window.Window) ||
+                    tauri.WebviewWindow;
 
-                pipWin.once('tauri://created', function () {
-                    // window created
-                });
+                if (!WebviewWindow) {
+                    alert('Error: Tauri WebviewWindow constructor NOT found');
+                    throw new Error('Tauri WebviewWindow constructor not found');
+                }
 
-                pipWin.once('tauri://error', function (e) {
-                    // likely duplicate label, so just focus existing
-                    // we can't access existing instance easily here without `getAll`
-                });
+                // STATIC STRATEGY: Get existing window by label
+                // In Setup, we defined "focus-pip" in tauri.conf.json
+                let pipWin = null;
+                try {
+                    // Try standard getByLabel (v2) or getAll (v1)
+                    if (WebviewWindow.getByLabel) {
+                        pipWin = await WebviewWindow.getByLabel('focus-pip');
+                    } else {
+                        // Fallback for some v1/v2 bridges
+                        // We might need to handle this if getByLabel isn't async or exists
+                        // Usually it returns null if not found
+                    }
+                } catch (err) {
+                    alert('Error getting pip window by label: ' + err.message);
+                    console.error('Error getting pip window by label', err);
+                }
 
-                // Show it
-                // We might need to wait for load, but visible:true usually works.
-                // Since updateFloatingTimer logic relies on localStorage, the new window will poll it.
+                if (pipWin) {
+                    await pipWin.show();
+                    await pipWin.setFocus();
+                    this.pipWindow = pipWin;
+                } else {
+                    console.log('[FocusMode] Static PiP window not found, creating new one...');
+                    // Create new window if static one is missing
+                    pipWin = new WebviewWindow('focus-pip', {
+                        url: 'index.html?mode=pip',
+                        title: 'Focus Timer',
+                        width: 170,
+                        height: 200,
+                        resizable: false,
+                        decorations: false,
+                        fullscreen: false,
+                        center: false,
+                        alwaysOnTop: true,
+                        transparent: true,
+                        skipTaskbar: true,
+                        x: 20,
+                        y: 20
+                    });
+
+                    // Wait for it to be created
+                    pipWin.once('tauri://created', async () => {
+                        console.log('[FocusMode] Dynamic PiP window created');
+                        await pipWin.show();
+                        await pipWin.setFocus();
+                        this.pipWindow = pipWin;
+                    });
+
+                    pipWin.once('tauri://error', (e) => {
+                        console.error('[FocusMode] Error creating dynamic PiP window', e);
+                        throw new Error('Failed to create dynamic PiP window');
+                    });
+                }
+
+                // Add close listener if possible (depends on Tauri version)
+                if (this.pipWindow && this.pipWindow.onCloseRequested) {
+                    this.pipWindow.onCloseRequested(async (event) => {
+                        // Optional: Handle close event
+                    });
+                }
 
                 return;
             } catch (e) {
                 console.error('Tauri PiP failed, falling back to badge', e);
+                // Note: The below showBadge() fallback will run if this catch block is hit
             }
         }
 
@@ -1422,13 +1518,28 @@ export const FocusMode = {
                     : 0;
                 secondsRemaining = Math.max(0, totalSeconds - breakElapsed);
             }
-            FocusModeUI.updatePipUI(
-                this.pipWindow,
-                secondsRemaining,
-                state.mode,
-                state.running,
-                totalSeconds
-            );
+            // Tauri Event-Based Update
+            if (window.__TAURI__) {
+                try {
+                    window.__TAURI__.event.emit('pip-update', {
+                        seconds: secondsRemaining,
+                        total: totalSeconds,
+                        mode: state.mode,
+                        running: state.running
+                    });
+                } catch (e) {
+                    console.error('Failed to emit pip-update', e);
+                }
+            } else {
+                // Browser Fallback
+                FocusModeUI.updatePipUI(
+                    this.pipWindow,
+                    secondsRemaining,
+                    state.mode,
+                    state.running,
+                    totalSeconds
+                );
+            }
             FocusModeUI.updateBadge(secondsRemaining, state.mode, state.running);
             return;
         }

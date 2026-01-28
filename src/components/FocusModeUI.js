@@ -3,7 +3,7 @@
  */
 
 import { Departments } from '../departments.js';
-import { PlannerService } from '../services/PlannerService.js';
+// import { PlannerService } from '../services/PlannerService.js';
 import { FocusAudio } from '../utils/FocusAudio.js';
 import { Store } from '../store.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
@@ -1717,7 +1717,6 @@ export const FocusModeUI = {
         const timeEl = badgeEl.querySelector('#badgeTime');
         const modeEl = badgeEl.querySelector('#badgeMode');
         const spEl = badgeEl.querySelector('#badgeStartPause');
-        const counterEl = badgeEl.querySelector('#badgeCounter');
         if (!timeEl || !modeEl || !spEl) return;
         timeEl.textContent = this.formatTime(seconds);
         modeEl.textContent = mode === 'work' ? 'Focus' : 'Break';
@@ -2136,6 +2135,35 @@ export const FocusModeUI = {
         // Use template
         el.innerHTML = this.getBadgeTemplate();
 
+        // Position it
+        const savedPos = (() => {
+            try {
+                return JSON.parse(localStorage.getItem('floatingPomodoroBadgePos') || 'null');
+            } catch {
+                return null;
+            }
+        })();
+
+        // Initial Styles
+        el.style.position = 'fixed';
+        el.style.zIndex = '9999';
+        el.style.width = 'auto'; // Auto width to fit content
+        el.style.height = 'auto';
+        el.style.minWidth = '320px';
+        el.style.maxWidth = '450px';
+        el.style.boxSizing = 'border-box';
+        el.style.cursor = 'grab';
+
+        if (savedPos && typeof savedPos.left === 'number' && typeof savedPos.top === 'number') {
+            el.style.left = `${savedPos.left}px`;
+            el.style.top = `${savedPos.top}px`;
+            el.style.bottom = 'auto';
+            el.style.right = 'auto';
+        } else {
+            el.style.left = '20px';
+            el.style.bottom = '20px';
+        }
+
         document.body.appendChild(el);
 
         // Wire up buttons with stopPropagation to prevent opening the full mode
@@ -2158,32 +2186,6 @@ export const FocusModeUI = {
             });
         }
 
-
-
-
-
-
-        // Position it
-        const savedPos = (() => {
-            try {
-                return JSON.parse(localStorage.getItem('floatingPomodoroBadgePos') || 'null');
-            } catch {
-                return null;
-            }
-        })();
-        if (savedPos && typeof savedPos.left === 'number' && typeof savedPos.top === 'number') {
-            el.style.left = `${savedPos.left}px`;
-            el.style.top = `${savedPos.top}px`;
-            el.style.bottom = 'auto';
-            el.style.right = 'auto';
-        }
-        // Else: Leave as is, letting CSS (bottom: 24px, right: 24px) handle the default position.
-        // This avoids issues where offsetWidth is 0 during initialization.
-
-        // Setup listeners
-        el.querySelector('#badgeStartPause')?.addEventListener('click', onStartPause);
-        el.querySelector('#badgeReset')?.addEventListener('click', onReset);
-
         // Double click to open
         if (onOpen) {
             el.addEventListener('dblclick', (e) => {
@@ -2193,66 +2195,55 @@ export const FocusModeUI = {
             });
         }
 
-        // Setup dragging
-        let dragging = false;
-        let startX = 0,
-            startY = 0,
-            startLeft = 0,
-            startTop = 0;
-
-        const onMouseMove = (e) => {
-            if (!dragging) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            const newLeft = Math.min(
-                Math.max(0, startLeft + dx),
-                window.innerWidth - el.offsetWidth
-            );
-            const newTop = Math.min(
-                Math.max(0, startTop + dy),
-                window.innerHeight - el.offsetHeight
-            );
-            el.style.left = `${newLeft}px`;
-            el.style.top = `${newTop}px`;
-        };
-
-        const endDrag = () => {
-            if (!dragging) return;
-            dragging = false;
-            el.classList.remove('dragging');
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', endDrag);
-            try {
-                const rect = el.getBoundingClientRect();
-                localStorage.setItem(
-                    'floatingPomodoroBadgePos',
-                    JSON.stringify({ left: rect.left, top: rect.top })
-                );
-            } catch {
-                // Ignore storage errors
-            }
-        };
+        // Drag Logic
+        let isDragging = false;
+        let dragStartX, dragStartY, initialLeft, initialTop;
 
         el.addEventListener('mousedown', (e) => {
-            if (e.target && e.target.closest('button')) return;
+            // Allow clicking buttons (and their children icons) inside without dragging
+            if (e.target.closest('button') || e.target.closest('.badge-btn')) return;
 
-            dragging = true;
-            el.classList.add('dragging');
-            startX = e.clientX;
-            startY = e.clientY;
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
 
-            // Switch to absolute positioning using current rect
             const rect = el.getBoundingClientRect();
-            startLeft = rect.left;
-            startTop = rect.top;
+            initialLeft = rect.left;
+            initialTop = rect.top;
 
-            el.style.left = `${startLeft}px`;
-            el.style.top = `${startTop}px`;
-            el.style.bottom = 'auto';
-            el.style.right = 'auto';
+            el.style.cursor = 'grabbing';
+            el.style.transition = 'none'; // Disable transition for smooth drag
+        });
 
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', endDrag);
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault(); // Prevent text selection
+
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+
+            // Remove bottom positioning if we start dragging to rely on top/left
+            if (el.style.bottom) {
+                el.style.bottom = 'auto'; // Clear bottom constraint
+                el.style.top = `${initialTop}px`; // Lock to current visual top
+            }
+
+            el.style.left = `${initialLeft + dx}px`;
+            el.style.top = `${initialTop + dy}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                el.style.cursor = 'grab';
+
+                // Save position
+                const rect = el.getBoundingClientRect();
+                localStorage.setItem('floatingPomodoroBadgePos', JSON.stringify({
+                    left: rect.left,
+                    top: rect.top
+                }));
+            }
         });
 
         return el;

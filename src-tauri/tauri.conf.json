@@ -5,6 +5,7 @@
     "identifier": "com.weeklyplanner.app",
     "build": {
         "frontendDist": "../dist",
+        "devUrl": "http://localhost:5174",
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build"
     },
@@ -20,8 +21,24 @@
                 "fullscreen": false,
                 "center": true,
                 "dragDropEnabled": false
+            },
+            {
+                "label": "focus-pip",
+                "url": "index.html?mode=pip",
+                "title": "Focus Timer",
+                "width": 160,
+                "height": 190,
+                "resizable": false,
+                "decorations": false,
+                "fullscreen": false,
+                "center": false,
+                "alwaysOnTop": true,
+                "visible": false,
+                "skipTaskbar": true,
+                "transparent": true
             }
         ],
+        "macOSPrivateApi": true,
         "security": {
             "csp": null
         },

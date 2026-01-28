@@ -48,6 +48,10 @@ const App = {
      * Initialize the application with Error Boundary
      */
     init() {
+        // VISUAL DEBUG: Confirm code is loading
+        document.body.style.border = '10px solid red';
+        setTimeout(() => document.body.style.border = 'none', 5000);
+
         // [NEW] Check for PiP mode immediately
         if (new URLSearchParams(window.location.search).get('mode') === 'pip') {
             this.initPipMode();
@@ -391,117 +395,213 @@ const App = {
      * Initialize simplified PiP mode for Tauri
      */
     initPipMode() {
-        console.log('[App] Initializing PiP Mode');
-        document.body.innerHTML = '';
-        document.body.style.background = 'transparent';
+        console.log('[App] Initializing PiP Mode (Event-Driven)');
 
-        // Import basic styles separately or ensure they are loaded
-        // (Vite already injected styles)
+        // CRITICAL: Force transparency on EVERYTHING to prevent white corners
+        document.documentElement.style.setProperty('background', 'transparent', 'important');
+        document.body.style.setProperty('background', 'transparent', 'important');
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        document.body.innerHTML = ''; // Wipe everything
 
-        const { FocusModeUI } = require('./components/FocusModeUI.js'); // Or use global if exposed, but modules likely work
-        // Note: Mix of ES modules and styles. Let's rely on modules existing.
 
-        // Since we are in an ES module environment (implied by imports), we can use imports.
-        // But main.js handles imports at top level. We can use FocusModeUI (which is not imported top level yet?)
-        // Wait, FocusModeUI is used by FocusMode.js, not main.js presumably.
-        // Let's rely on FocusMode logic or just create a simple element.
-
-        // Create container
+        // 1. Initial Render (Static Structure)
         const container = document.createElement('div');
         container.id = 'pip-container';
-        container.style.height = '100vh';
         container.style.width = '100vw';
+        container.style.height = '100vh';
         container.style.display = 'flex';
         container.style.alignItems = 'center';
         container.style.justifyContent = 'center';
+        container.style.background = 'transparent'; // Let ring handle background
+
+        // Circular Design
+        const radius = 54;
+        const circumference = 2 * Math.PI * radius;
+
+        container.innerHTML = `
+           <div style="
+                width: calc(100% - 12px); height: calc(100% - 12px);
+                margin: 6px;
+                background: rgba(18, 20, 28, 0.82);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                color: white; font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+                user-select: none;
+                position: relative;
+                overflow: hidden;
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                box-shadow: 
+                    0 12px 30px rgba(0, 0, 0, 0.5), 
+                    0 4px 10px rgba(0,0,0,0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+           " data-tauri-drag-region>
+                
+                <!-- Progress Ring Container -->
+                <div style="position: relative; display: flex; align-items: center; justify-content: center; pointer-events: none; margin-top: -6px;">
+                    <!-- Track Circle -->
+                    <svg width="124" height="124" viewBox="0 0 120 120" style="transform: rotate(-90deg); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+                        <circle cx="60" cy="60" r="54" stroke="rgba(255,255,255,0.08)" stroke-width="4" fill="none"></circle>
+                        <!-- Progress Circle -->
+                        <circle id="pip-ring" cx="60" cy="60" r="54" stroke="#6366f1" stroke-width="4" fill="none" stroke-linecap="round"
+                            style="stroke-dasharray: ${circumference}; stroke-dashoffset: 0; transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;">
+                        </circle>
+                    </svg>
+                    
+                    <!-- Time Display -->
+                    <div id="pip-time" style="
+                        position: absolute; 
+                        font-size: 28px; 
+                        font-weight: 600; 
+                        letter-spacing: -0.5px; 
+                        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                        font-variant-numeric: tabular-nums;
+                    ">
+                        00:00
+                    </div>
+                </div>
+
+                <!-- Restore Button (Micro Interaction) -->
+                <div id="pip-controls" style="
+                    position: absolute; 
+                    bottom: 8px; 
+                    right: 8px; 
+                    opacity: 0.4; 
+                    transition: opacity 0.3s ease;
+                    -webkit-app-region: no-drag;
+                ">
+                    <button id="pip-restore-btn" style="
+                        width: 24px; height: 24px; 
+                        border: none; 
+                        border-radius: 50%; 
+                        background: rgba(255,255,255,0.08); 
+                        color: white; 
+                        display: flex; align-items: center; justify-content: center; 
+                        cursor: pointer; 
+                        backdrop-filter: blur(4px);
+                        transition: all 0.2s ease;
+                    ">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                    </button>
+                    <style>
+                        #pip-controls:hover { opacity: 1; }
+                        #pip-restore-btn:hover { background: rgba(99, 102, 241, 0.8) !important; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+                    </style>
+                </div>
+           </div>
+        `;
         document.body.appendChild(container);
 
-        // [NEW] Restore button logic
-        // We use event delegation or attach after render. Since render is polled, we should checking if listener attached.
-        // Actually, innerHTML overwrites every second. This kills listeners attached to elements inside container.
-        // Better approach: Attach listener to CONTAINER (delegation) for the specific ID.
-        container.addEventListener('click', async (e) => {
-            if (e.target.closest('#pip-restore-btn')) {
-                if (window.__TAURI__) {
-                    try {
-                        const { getAll, getCurrent } = window.__TAURI__.window; // Tauri v2
-                        const current = (getCurrent || window.__TAURI__.window.appWindow)();
-                        const all = await (getAll || window.__TAURI__.window.getAll)();
+        // 2. Element References
+        const timeEl = document.getElementById('pip-time');
+        const ringEl = document.getElementById('pip-ring');
+        const controlsEl = document.getElementById('pip-controls');
 
-                        const mainWin = all.find(w => w.label !== 'focus-pip');
-                        if (mainWin) {
-                            await mainWin.unminimize();
-                            await mainWin.setFocus();
-                        }
+        // 3. Setup Listeners
+        if (window.__TAURI__) {
+            const { event, window: tauriWindow } = window.__TAURI__;
 
-                        await current.close();
-                    } catch (e) {
-                        console.error('Failed to restore main window:', e);
-                    }
+            // Explicit Drag Handler (Fix for undecorated windows)
+            container.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                // Ignore if clicking a button
+                if (e.target.closest('button') || e.target.closest('#pip-controls')) return;
+
+                // Start dragging
+                // Tauri v2 uses getCurrentWindow(), v1 uses getCurrent() or appWindow
+                const tauriWin = window.__TAURI__.window;
+                const getWin = tauriWin.getCurrentWindow || tauriWin.getCurrent || (() => tauriWin.appWindow);
+                const current = getWin();
+
+                if (current && current.startDragging) {
+                    current.startDragging().catch(e => console.error('Drag failed:', e));
+                } else {
+                    console.warn('Could not find startDragging function', current);
                 }
-            }
-        });
+            });
 
-        // Polling loop to read state from localStorage (shared with main window in Tauri)
-        const updateUI = () => {
-            // Basic implementation: replicate FocusModeUI.getPipContent structure
-            // ideally we reuse the code.
-            // We can access FocusMode (imported above) -> FocusModeUI (not exported directly?)
-            // Let's modify imports to get FocusModeUI or just render generic HTML.
+            // Listen for State Updates from Main Window
+            event.listen('pip-update', (e) => {
+                const state = e.payload;
+                if (!state) return;
 
-            try {
-                const state = JSON.parse(localStorage.getItem('focusModeTimerState') || 'null');
-                if (!state) {
-                    container.innerHTML = '<div style="color:white; font-family:system-ui; font-size:12px;">No Active Session</div>';
-                    return;
-                }
+                // Update Time
+                const m = Math.floor(state.seconds / 60);
+                const s = state.seconds % 60;
+                timeEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
 
-                // Helper to format time
-                const format = (s) => {
-                    const m = Math.floor(s / 60);
-                    const sec = s % 60;
-                    return `${m}:${sec.toString().padStart(2, '0')}`;
-                };
+                // Update Ring
+                const progress = state.seconds / state.total;
+                const offset = circumference * (1 - progress);
+                ringEl.style.strokeDashoffset = offset;
 
+                // Update Color & Icon
                 const isWork = state.mode === 'work';
-                container.innerHTML = `
-                   <div style="
-                        width: 100%; height: 100%;
-                        background: linear-gradient(160deg, #0f1117 0%, #05080f 100%);
-                        display: flex; flex-direction: column; align-items: center; justify-content: center;
-                        color: white; font-family: system-ui, sans-serif;
-                        user-select: none; -webkit-app-region: drag; position: relative;
-                   ">
-                        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.5); margin-bottom: 4px;">
-                            ${isWork ? 'Focus' : 'Break'}
-                        </div>
-                        <div style="font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums;">
-                            ${format(state.remaining)}
-                        </div>
-                        <button id="pip-restore-btn" style="
-                            position: absolute; top: 10px; right: 10px;
-                            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
-                            color: #94a3b8; border-radius: 6px; cursor: pointer;
-                            padding: 4px; display: flex; align-items: center; justify-content: center;
-                            -webkit-app-region: no-drag; transition: all 0.2s;
-                        ">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="15 3 21 3 21 9"></polyline>
-                                <polyline points="9 21 3 21 3 15"></polyline>
-                                <line x1="21" y1="3" x2="14" y2="10"></line>
-                                <line x1="3" y1="21" x2="10" y2="14"></line>
-                            </svg>
-                        </button>
-                   </div>
+                const color = isWork ? '#6366f1' : '#22c55e'; // Indigo vs Green
+                ringEl.style.stroke = color;
+            });
 
-                `;
-            } catch (e) {
-                console.error(e);
-            }
-        };
+            // Helper to send to main window specifically
+            const sendToMain = async (action) => {
+                try {
+                    const tauriWin = window.__TAURI__.window;
+                    const getAllWins = tauriWin.getAllWindows || tauriWin.getAll;
+                    const all = await getAllWins();
+                    const mainWin = all.find((w) => w.label !== 'focus-pip');
+                    const targetLabel = mainWin?.label || 'main';
 
-        setInterval(updateUI, 1000);
-        updateUI();
+                    console.log(`[PiP] Emitting '${action}' to Main Window (${targetLabel})`);
+                    await window.__TAURI__.event.emitTo(targetLabel, 'pip-action', { action });
+                } catch (e) {
+                    console.error('[PiP] Failed to send to main:', e);
+                }
+            };
+
+            // Emit Commands to Main Window
+            const restoreToMain = async () => {
+                console.log('[PiP] Restore clicked');
+                try {
+                    const tauriWin = window.__TAURI__.window;
+                    const getAllWins = tauriWin.getAllWindows || tauriWin.getAll;
+                    const getWin =
+                        tauriWin.getCurrentWindow || tauriWin.getCurrent || (() => tauriWin.appWindow);
+
+                    const current = getWin();
+                    const all = await getAllWins();
+
+                    const mainWin = all.find((w) => w.label !== 'focus-pip');
+                    if (mainWin) {
+                        await mainWin.unminimize();
+                        await mainWin.setFocus();
+                    }
+                    await current.close();
+                } catch (e) {
+                    console.error('Failed to restore main window:', e);
+                }
+            };
+
+            document.getElementById('pip-restore-btn').addEventListener('pointerdown', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await restoreToMain();
+            });
+
+            container.addEventListener('dblclick', async (e) => {
+                if (e.target.closest('button') || e.target.closest('#pip-controls')) return;
+                await restoreToMain();
+            });
+
+            // Request initial state
+            sendToMain('request-state');
+        }
     },
 
 };
