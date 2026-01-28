@@ -366,10 +366,16 @@ export const FocusMode = {
         if (window.__TAURI__) {
             try {
                 window.__TAURI__.event.listen('pip-action', (event) => {
-                    const action = event.payload?.action;
-                    if (action === 'toggle') this.toggleSession();
-                    if (action === 'reset') this.resetTimer();
-                    if (action === 'request-state') this.updateFloatingTimer();
+                    try {
+                        const action = event?.payload?.action;
+                        if (!action) return;
+
+                        if (action === 'toggle') this.toggleSession();
+                        if (action === 'reset') this.resetTimer();
+                        if (action === 'request-state') this.updateFloatingTimer();
+                    } catch (err) {
+                        console.error('[FocusMode] Error handling pip-action:', err);
+                    }
                 });
             } catch (e) {
                 console.error('Failed to setup Tauri event listeners', e);
@@ -1148,7 +1154,8 @@ export const FocusMode = {
     startPauseTimer() {
         if (this.pomodoroRunning) {
             // Pause
-            clearInterval(this.pomodoroTimer);
+            if (this.pomodoroTimer) clearInterval(this.pomodoroTimer);
+            this.pomodoroTimer = null;
             this.pomodoroRunning = false;
             FocusModeUI.updatePomodoroStartPauseButton(false);
             this.pomodoroTargetEpoch = null;
@@ -1159,18 +1166,7 @@ export const FocusMode = {
             this.pomodoroRunning = true;
             FocusModeUI.updatePomodoroStartPauseButton(true);
             this.pomodoroTargetEpoch = Date.now() + this.pomodoroSeconds * 1000;
-            this.pomodoroTimer = setInterval(() => {
-                const remaining = Math.max(
-                    0,
-                    Math.round((this.pomodoroTargetEpoch - Date.now()) / 1000)
-                );
-                this.pomodoroSeconds = remaining;
-                this.updateTimerDisplay();
-                this.updateFloatingTimer();
-                if (remaining <= 0) {
-                    this.switchMode();
-                }
-            }, 1000);
+            this.startPomodoroInterval();
             this.persistTimerState();
             this.updateFloatingTimer();
         }
@@ -1180,7 +1176,8 @@ export const FocusMode = {
      * Reset timer
      */
     resetTimer() {
-        clearInterval(this.pomodoroTimer);
+        if (this.pomodoroTimer) clearInterval(this.pomodoroTimer);
+        this.pomodoroTimer = null;
         this.pomodoroRunning = false;
         this.pomodoroMode = 'work';
         this.pomodoroSeconds = this.workDuration;
@@ -1292,65 +1289,91 @@ export const FocusMode = {
     },
 
     restoreTimerState() {
-        let state = null;
         try {
-            state = JSON.parse(localStorage.getItem('focusModeTimerState') || 'null');
-        } catch {
-            // Ignore parse errors
-        }
-        if (!state) {
-            this.pomodoroMode = 'work';
-            this.pomodoroSeconds = this.workDuration;
-            this.pomodoroRunning = false;
-            this.pomodoroTargetEpoch = null;
-            this.completedPomodoros = 0;
-            this.totalPomodorosToday = 0;
-            this.pomodoroSessionDate = new Date().toDateString();
-            return;
-        }
-        this.workDuration = state.work || this.workDuration;
-        this.breakDuration = state.break || this.breakDuration;
-        this.pomodoroMode = state.mode || 'work';
-
-        // Restore Pomodoro counters
-        const today = new Date().toDateString();
-        if (state.pomodoroSessionDate === today) {
-            // Same day - restore all counts
-            this.completedPomodoros = state.completedPomodoros || 0;
-            this.totalPomodorosToday = state.totalPomodorosToday || 0;
-        } else {
-            // New day - reset daily total, keep cycle position
-            this.completedPomodoros = state.completedPomodoros || 0;
-            this.totalPomodorosToday = 0;
-        }
-        this.pomodoroSessionDate = today;
-
-        if (state.targetEpoch && state.running) {
-            const remaining = Math.max(0, Math.round((state.targetEpoch - Date.now()) / 1000));
-            this.pomodoroSeconds = remaining;
-            this.pomodoroRunning = remaining > 0;
-            this.pomodoroTargetEpoch = state.targetEpoch;
-            if (this.pomodoroRunning && !this.pomodoroTimer) {
-                this.pomodoroTimer = setInterval(() => {
-                    const r = Math.max(
-                        0,
-                        Math.round((this.pomodoroTargetEpoch - Date.now()) / 1000)
-                    );
-                    this.pomodoroSeconds = r;
-                    this.updateTimerDisplay();
-                    this.updateFloatingTimer();
-                    if (r <= 0) {
-                        this.switchMode();
-                    }
-                }, 1000);
+            let state = null;
+            try {
+                state = JSON.parse(localStorage.getItem('focusModeTimerState') || 'null');
+            } catch {
+                console.error('[FocusMode] Failed to parse focusModeTimerState');
             }
-        } else {
-            this.pomodoroSeconds =
-                state.remaining ||
-                (this.pomodoroMode === 'work' ? this.workDuration : this.breakDuration);
-            this.pomodoroRunning = false;
-            this.pomodoroTargetEpoch = null;
+
+            if (!state) {
+                this._resetLocalTimerState();
+                return;
+            }
+
+            this.workDuration = Number(state.work) || 25 * 60;
+            this.breakDuration = Number(state.break) || 5 * 60;
+            this.pomodoroMode = state.mode === 'break' ? 'break' : 'work';
+
+            // Restore Pomodoro counters with date validation
+            const today = new Date().toDateString();
+            if (state.pomodoroSessionDate === today) {
+                this.completedPomodoros = Number(state.completedPomodoros) || 0;
+                this.totalPomodorosToday = Number(state.totalPomodorosToday) || 0;
+            } else {
+                this.completedPomodoros = 0;
+                this.totalPomodorosToday = 0;
+            }
+            this.pomodoroSessionDate = today;
+
+            if (state.targetEpoch && state.running) {
+                const now = Date.now();
+                const remaining = Math.max(0, Math.round((Number(state.targetEpoch) - now) / 1000));
+
+                this.pomodoroSeconds = remaining;
+                this.pomodoroRunning = remaining > 0;
+                this.pomodoroTargetEpoch = Number(state.targetEpoch);
+
+                if (this.pomodoroRunning && !this.pomodoroTimer) {
+                    this.startPomodoroInterval();
+                }
+            } else {
+                this.pomodoroSeconds = Number(state.remaining) ||
+                    (this.pomodoroMode === 'work' ? this.workDuration : this.breakDuration);
+                this.pomodoroRunning = false;
+                this.pomodoroTargetEpoch = null;
+            }
+        } catch (err) {
+            console.error('[FocusMode] Critical fail in restoreTimerState:', err);
+            this._resetLocalTimerState();
         }
+    },
+
+    /**
+     * Helper to reset local timer state to defaults
+     * @private
+     */
+    _resetLocalTimerState() {
+        this.pomodoroMode = 'work';
+        this.pomodoroSeconds = this.workDuration || 25 * 60;
+        this.pomodoroRunning = false;
+        this.pomodoroTargetEpoch = null;
+        this.completedPomodoros = 0;
+        this.totalPomodorosToday = 0;
+        this.pomodoroSessionDate = new Date().toDateString();
+    },
+
+    /**
+     * Start the internal pomodoro tick interval
+     * @private
+     */
+    startPomodoroInterval() {
+        if (this.pomodoroTimer) clearInterval(this.pomodoroTimer);
+        this.pomodoroTimer = setInterval(() => {
+            try {
+                if (!this.pomodoroTargetEpoch) return;
+                const r = Math.max(0, Math.round((this.pomodoroTargetEpoch - Date.now()) / 1000));
+                this.pomodoroSeconds = r;
+                this.updateTimerDisplay();
+                this.updateFloatingTimer();
+                if (r <= 0) {
+                    this.switchMode();
+                }
+            } catch (err) {
+                console.error('[FocusMode] Error in pomodoro interval:', err);
+            }
+        }, 1000);
     },
 
     async openFloatingTimer() {

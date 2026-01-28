@@ -593,6 +593,12 @@ const App = {
                 }
             };
 
+            // 4. Request Initial State
+            // Emit this on a slight delay to ensure Main window has finished its listeners
+            setTimeout(() => {
+                sendToMain('request-state');
+            }, 300);
+
             // Emit Commands to Main Window
             const restoreToMain = async () => {
                 try {
