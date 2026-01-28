@@ -365,9 +365,7 @@ export const FocusMode = {
         // Listen for Tauri PiP Actions
         if (window.__TAURI__) {
             try {
-                console.log('[FocusMode] Setting up Tauri event listeners...');
                 window.__TAURI__.event.listen('pip-action', (event) => {
-                    console.log('[FocusMode] Received pip-action:', event);
                     const action = event.payload?.action;
                     if (action === 'toggle') this.toggleSession();
                     if (action === 'reset') this.resetTimer();

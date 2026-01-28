@@ -48,9 +48,7 @@ const App = {
      * Initialize the application with Error Boundary
      */
     init() {
-        // VISUAL DEBUG: Confirm code is loading
-        document.body.style.border = '10px solid red';
-        setTimeout(() => document.body.style.border = 'none', 5000);
+
 
         // [NEW] Check for PiP mode immediately
         if (new URLSearchParams(window.location.search).get('mode') === 'pip') {
@@ -421,29 +419,26 @@ const App = {
 
         container.innerHTML = `
            <div style="
-                width: calc(100% - 12px); height: calc(100% - 12px);
-                margin: 6px;
-                background: rgba(18, 20, 28, 0.82);
-                backdrop-filter: blur(24px);
-                -webkit-backdrop-filter: blur(24px);
+                width: calc(100% - 16px); height: calc(100% - 16px);
+                margin: 8px; /* Increased margin to prevent clipping artifacts */
+                background: rgba(18, 20, 28, 0.96); /* Solid semi-transparent (No Blur = No Blink) */
                 display: flex; flex-direction: column; align-items: center; justify-content: center;
                 color: white; font-family: 'Outfit', system-ui, -apple-system, sans-serif;
                 user-select: none;
                 position: relative;
                 overflow: hidden;
-                border-radius: 20px;
-                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 24px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
                 box-shadow: 
-                    0 12px 30px rgba(0, 0, 0, 0.5), 
-                    0 4px 10px rgba(0,0,0,0.2),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    0 10px 25px rgba(0, 0, 0, 0.6), 
+                    0 0 0 1px rgba(0,0,0,0.1);
+                transition: transform 0.2s ease;
            " data-tauri-drag-region>
                 
                 <!-- Progress Ring Container -->
                 <div style="position: relative; display: flex; align-items: center; justify-content: center; pointer-events: none; margin-top: -6px;">
                     <!-- Track Circle -->
-                    <svg width="124" height="124" viewBox="0 0 120 120" style="transform: rotate(-90deg); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+                    <svg width="124" height="124" viewBox="0 0 120 120" style="transform: rotate(-90deg); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
                         <circle cx="60" cy="60" r="54" stroke="rgba(255,255,255,0.08)" stroke-width="4" fill="none"></circle>
                         <!-- Progress Circle -->
                         <circle id="pip-ring" cx="60" cy="60" r="54" stroke="#6366f1" stroke-width="4" fill="none" stroke-linecap="round"
@@ -464,12 +459,45 @@ const App = {
                     </div>
                 </div>
 
+                <!-- Close Button (Top Right) -->
+                <div id="pip-close-wrapper" style="
+                    position: absolute; 
+                    top: 8px; 
+                    right: 8px; 
+                    opacity: 0.2; /* Faintly visible by default */
+                    transition: opacity 0.2s ease;
+                    -webkit-app-region: no-drag;
+                    z-index: 20;
+                ">
+                    <button id="pip-close-btn" style="
+                        width: 20px; height: 20px; 
+                        border: none; 
+                        border-radius: 50%; 
+                        background: rgba(255,255,255,0.1); 
+                        color: rgba(255,255,255,0.8); 
+                        display: flex; align-items: center; justify-content: center; 
+                        cursor: pointer; 
+                        backdrop-filter: blur(4px);
+                        transition: all 0.2s ease;
+                    ">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <style>
+                        /* Show close button when hovering the container */
+                        [data-tauri-drag-region]:hover #pip-close-wrapper { opacity: 1; }
+                        #pip-close-btn:hover { background: rgba(239, 68, 68, 0.8) !important; color: white !important; }
+                    </style>
+                </div>
+
                 <!-- Restore Button (Micro Interaction) -->
                 <div id="pip-controls" style="
                     position: absolute; 
                     bottom: 8px; 
                     right: 8px; 
-                    opacity: 0.4; 
+                    opacity: 0.2; /* Faintly visible by default */
                     transition: opacity 0.3s ease;
                     -webkit-app-region: no-drag;
                 ">
@@ -492,7 +520,8 @@ const App = {
                         </svg>
                     </button>
                     <style>
-                        #pip-controls:hover { opacity: 1; }
+                        [data-tauri-drag-region]:hover #pip-controls { opacity: 0.8; }
+                        #pip-controls:hover { opacity: 1 !important; }
                         #pip-restore-btn:hover { background: rgba(99, 102, 241, 0.8) !important; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
                     </style>
                 </div>
@@ -558,7 +587,6 @@ const App = {
                     const mainWin = all.find((w) => w.label !== 'focus-pip');
                     const targetLabel = mainWin?.label || 'main';
 
-                    console.log(`[PiP] Emitting '${action}' to Main Window (${targetLabel})`);
                     await window.__TAURI__.event.emitTo(targetLabel, 'pip-action', { action });
                 } catch (e) {
                     console.error('[PiP] Failed to send to main:', e);
@@ -567,7 +595,6 @@ const App = {
 
             // Emit Commands to Main Window
             const restoreToMain = async () => {
-                console.log('[PiP] Restore clicked');
                 try {
                     const tauriWin = window.__TAURI__.window;
                     const getAllWins = tauriWin.getAllWindows || tauriWin.getAll;
@@ -594,8 +621,17 @@ const App = {
                 await restoreToMain();
             });
 
+            const closeBtn = document.getElementById('pip-close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('pointerdown', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await restoreToMain();
+                });
+            }
+
             container.addEventListener('dblclick', async (e) => {
-                if (e.target.closest('button') || e.target.closest('#pip-controls')) return;
+                if (e.target.closest('button') || e.target.closest('#pip-controls') || e.target.closest('#pip-close-wrapper')) return;
                 await restoreToMain();
             });
 
