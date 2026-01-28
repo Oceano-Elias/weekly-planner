@@ -18,8 +18,8 @@
     color: var(--text-primary);
     z-index: 1;
 
-    /* NEW: High-contrast card background - Switched to transparent mix for consistent glassiness */
-    background: color-mix(in srgb, var(--task-color) 12%, rgba(22, 27, 34, 0.4));
+    /* Increased vibrancy: boosted task-color mix and lightened the base glass */
+    background: color-mix(in srgb, var(--task-color) 18%, rgba(30, 36, 45, 0.45));
 
     /* Ghost Border */
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -94,8 +94,8 @@
     position: absolute;
     inset: 0;
     background: linear-gradient(135deg, var(--task-color) 0%, transparent 80%);
-    opacity: 0.25;
-    /* Increased from 0.08 */
+    opacity: 0.35;
+    /* Increased from 0.25 for better distinction */
     pointer-events: none;
     z-index: 0;
     transition: opacity var(--transition-normal);
