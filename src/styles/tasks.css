@@ -18,8 +18,8 @@
     color: var(--text-primary);
     z-index: 1;
 
-    /* Increased vibrancy: boosted task-color mix and lightened the base glass */
-    background: color-mix(in srgb, var(--task-color) 18%, rgba(30, 36, 45, 0.45));
+    /* Dramatically increased color presence: 30% task color, and even lighter neutral base */
+    background: color-mix(in srgb, var(--task-color) 30%, rgba(45, 55, 75, 0.35));
 
     /* Ghost Border */
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -31,11 +31,11 @@
 .task-block:hover {
     border-color: var(--task-color);
     transform: translateY(-4px) scale(1.02);
-    /* Brighter hover state */
-    background: color-mix(in srgb, var(--task-color) 20%, var(--bg-elevated));
+    /* Even more vibrant hover state */
+    background: color-mix(in srgb, var(--task-color) 45%, var(--bg-elevated));
     box-shadow:
         var(--shadow-lg),
-        0 0 35px color-mix(in srgb, var(--task-color) 20%, transparent);
+        0 0 35px color-mix(in srgb, var(--task-color) 35%, transparent);
     z-index: 20;
 }
 
@@ -93,9 +93,9 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--task-color) 0%, transparent 80%);
-    opacity: 0.35;
-    /* Increased from 0.25 for better distinction */
+    background: linear-gradient(135deg, var(--task-color) 0%, transparent 100%);
+    opacity: 0.45;
+    /* Increased from 0.35: the color now takes "more place" as requested */
     pointer-events: none;
     z-index: 0;
     transition: opacity var(--transition-normal);
