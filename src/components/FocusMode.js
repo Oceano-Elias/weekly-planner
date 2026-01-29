@@ -7,6 +7,7 @@ import { FocusAudio } from '../utils/FocusAudio.js';
 import { FocusModeUI } from './FocusModeUI.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 import { Toast } from './Toast.js';
+import { Rewards } from '../services/Rewards.js';
 
 export const FocusMode = {
     isOpen: false,
@@ -287,7 +288,8 @@ export const FocusMode = {
                 ? () => {
                     this.toggleMiniTask(fromIndex, true);
                     this.recordStepCompletion(fromIndex, 'completed');
-                    FocusAudio.playStepComplete();
+                    // [NEW] Show Reward (Centered)
+                    Rewards.show(window.innerWidth / 2, window.innerHeight * 0.35);
                     this.showSuccessVisuals();
                 }
                 : () => {
@@ -377,18 +379,42 @@ export const FocusMode = {
     /**
      * Setup event listeners
      */
-    setupListeners() {
-        // Listen for Tauri PiP Actions
+    async setupListeners() {
+        // 1. Clean up existing listeners to prevent duplicates
+        if (this.pipUnlisten) {
+            try {
+                this.pipUnlisten();
+                this.pipUnlisten = null;
+            } catch (e) {
+                console.warn('Failed to unlisten pip-action', e);
+            }
+        }
+
+        // 2. Listen for Tauri PiP Actions
         if (window.__TAURI__) {
             try {
-                window.__TAURI__.event.listen('pip-action', (event) => {
+                // event.listen returns a Promise that resolves to the unlisten function
+                this.pipUnlisten = await window.__TAURI__.event.listen('pip-action', (event) => {
                     try {
                         const action = event?.payload?.action;
                         if (!action) return;
 
-                        if (action === 'toggle') this.toggleSession();
-                        if (action === 'reset') this.resetTimer();
-                        if (action === 'request-state') this.updateFloatingTimer();
+                        console.log('[FocusMode] Received PiP Action:', action);
+
+                        // Use specific methods for each action to ensure clean state
+                        if (action === 'toggle') {
+                            const state = Store.getActiveExecution();
+                            if (state.running) this.pauseSession();
+                            else this.startSession();
+                            this.updateUI();
+                        }
+                        if (action === 'reset') {
+                            this.resetTimer();
+                            this.updateUI();
+                        }
+                        if (action === 'request-state') {
+                            this.updateFloatingTimer();
+                        }
                     } catch (err) {
                         console.error('[FocusMode] Error handling pip-action:', err);
                     }
@@ -829,7 +855,8 @@ export const FocusMode = {
         if (choice === 'complete') {
             this.recordStepCompletion(state.currentStepIndex);
             this.toggleMiniTask(state.currentStepIndex);
-            FocusAudio.playStepComplete();
+            // [NEW] Show Reward (Centered)
+            Rewards.show(window.innerWidth / 2, window.innerHeight * 0.35);
             triggerCelebration = true;
 
             // Move to next step if available
@@ -1488,10 +1515,25 @@ export const FocusMode = {
                 }
 
                 // Add close listener if possible (depends on Tauri version)
-                if (this.pipWindow && this.pipWindow.onCloseRequested) {
-                    this.pipWindow.onCloseRequested(async (event) => {
-                        // Optional: Handle close event
-                    });
+                if (this.pipWindow) {
+                    // Monitor window closing to clean up reference
+                    // For v2, we might not have a direct 'close' event on the instance in all contexts
+                    // but we can try to listen to the event globally if we wanted.
+                    // For now, simpler is better: rely on user action or 'request-state' failing.
+
+                    // However, we can listen for the specific window closing
+                    const label = this.pipWindow.label;
+                    if (label) {
+                        // We don't want to add multiple listeners here either
+
+                        // Note: We're not rigorously tracking close here because 
+                        // re-opening will just find the existing one or create new.
+                        // But cleaning up is good practice.
+                        this.pipWindow.onCloseRequested(async (event) => {
+                            console.log('[FocusMode] PiP Window close requested');
+                            this.pipWindow = null;
+                        });
+                    }
                 }
 
                 return;

@@ -815,7 +815,7 @@ header {
     right: 0;
     height: 2px;
     background: var(--accent-primary);
-    z-index: 10;
+    z-index: 60;
     pointer-events: none;
     box-shadow: 0 0 10px var(--accent-primary);
 }

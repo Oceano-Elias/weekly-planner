@@ -7,6 +7,7 @@ import { PlannerService } from '../services/PlannerService.js';
 import { TaskCard } from './TaskCard.js';
 import { ConfirmModal } from './ConfirmModal.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
+import { Rewards } from '../services/Rewards.js';
 
 export const Calendar = {
     currentWeekStart: null,
@@ -474,6 +475,9 @@ export const Calendar = {
                 const rect = block.getBoundingClientRect();
                 const x = rect.left + rect.width / 2;
                 const y = rect.top + rect.height / 2;
+
+                // [NEW] Show Reward Text
+                Rewards.show(e.clientX, e.clientY, 'huge');
                 window.Confetti.burst(x, y, 40);
 
                 // Play animation if we didn't play it before (because it had steps)
@@ -482,6 +486,13 @@ export const Calendar = {
                     else if (window.App && window.App.playCompletionAnimation)
                         window.App.playCompletionAnimation(taskEl);
                 }
+            } else if (updatedTask && !updatedTask.completed && hasSteps) {
+                // [NEW] If not fully complete but steps advanced (and not un-toggled)
+                // We need a heuristic here: did progress increase?
+                // Simple approach: Always reward positive step interaction via context menu
+                // But context menu currently just advances progress. 
+                // If we advanced a step, reward it!
+                Rewards.show(e.clientX, e.clientY);
             }
 
             // Check if all tasks for the day are now complete (Daily Celebration)
@@ -585,9 +596,13 @@ export const Calendar = {
             else timeProgress = (now - start) / (duration * 60 * 1000);
         }
 
-        // 2. Calculate mini-task progress if present
+        // 2. Calculate mini-task progress if present (ONLY if not active/running)
+        // If the task is active, strictly follow time to align with the time line
         let miniTaskProgress = 0;
-        if (task.notes) {
+        const activeExec = Store.getState().activeExecution;
+        const isActive = activeExec && activeExec.taskId === task.id && activeExec.running;
+
+        if (!isActive && task.notes) {
             const lines = task.notes.split('\n').filter((line) => line.trim());
             const miniTasks = lines.filter((line) => line.includes('[ ]') || line.includes('[x]'));
             if (miniTasks.length > 0) {
@@ -596,7 +611,10 @@ export const Calendar = {
             }
         }
 
-        // 3. Return the higher of the two (ensures visual urgency even if no tasks checked)
+        // 3. Return the higher of the two (unless active, then prioritized time)
+        if (isActive) {
+            return timeProgress;
+        }
         return Math.max(timeProgress, miniTaskProgress);
     },
 

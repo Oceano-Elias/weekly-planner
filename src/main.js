@@ -43,6 +43,7 @@ import './styles/settings.css';
 import './styles/palette.css';
 import './styles/command-palette.css';
 import './styles/toast.css';
+import './styles/rewards.css';
 
 // Export modules for use in other components without window pollution
 export { App };

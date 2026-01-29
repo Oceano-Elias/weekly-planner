@@ -708,17 +708,17 @@
 
 /* "EMPTY BOTTLE" - Quiet Color Shell Look */
 .calendar-task.time-passed .task-block {
-    /* Pristine but desaturated */
-    filter: saturate(0.35) brightness(0.8) !important;
-    background: color-mix(in srgb, var(--task-color) 10%, rgba(15, 23, 42, 0.4)) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    border-left: 4px solid color-mix(in srgb, var(--task-color) 35%, transparent) !important;
+    /* Pristine but desaturated - Lightened as requested */
+    filter: saturate(0.5) brightness(0.95) !important;
+    background: color-mix(in srgb, var(--task-color) 12%, rgba(30, 41, 59, 0.35)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-left: 4px solid color-mix(in srgb, var(--task-color) 45%, transparent) !important;
     backdrop-filter: blur(10px);
 
     /* Stronger inner glass highlight */
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.2),
-        inset 0 2px 8px rgba(0, 0, 0, 0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 2px 8px rgba(0, 0, 0, 0.15);
     position: relative;
 }
 
@@ -740,11 +740,11 @@
 }
 
 .calendar-task.time-passed .task-block::before {
-    /* Heavy dark overlay with gradient */
+    /* Heavy dark overlay with gradient - Reduced opacity */
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.55) 100%);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%, rgba(15, 23, 42, 0.25) 100%);
     pointer-events: none;
     z-index: 1;
     border-radius: inherit;

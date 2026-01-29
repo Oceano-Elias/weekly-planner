@@ -114,8 +114,9 @@ export const FocusAudio = {
      */
     playStepComplete() {
         if (!this.enabled) return;
-        this.playTone(783.99, 0.15, 'sine', 0.25, 0); // G5
-        setTimeout(() => this.playTone(1046.5, 0.3, 'sine', 0.3, 0), 100); // C6
+        // Crisper "check" sound (Triangle wave for texture, short envelope)
+        this.playTone(783.99, 0.08, 'triangle', 0.25, 0); // G5
+        setTimeout(() => this.playTone(1046.5, 0.12, 'sine', 0.2, 0), 80); // C6
     },
 
     /**
