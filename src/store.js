@@ -392,11 +392,18 @@ export const Store = {
         return state.tasks.filter((t) => t.scheduledDay && t.scheduledTime);
     },
 
-    /**
-     * Get all tasks (both queue and scheduled)
-     */
     getAllTasks() {
-        return state.tasks;
+        const currentWeekId = this.getWeekIdentifier(state.currentWeekStart || new Date());
+        const weekTasks = this.getTasksForWeek(currentWeekId);
+
+        // Combine queue tasks and week tasks, avoiding duplicates by sourceTaskId
+        const all = [...state.tasks];
+        weekTasks.forEach(wt => {
+            if (!all.find(t => t.id === wt.sourceTaskId || t.id === wt.id)) {
+                all.push(wt);
+            }
+        });
+        return all;
     },
 
     /**
@@ -651,6 +658,7 @@ export const Store = {
         });
 
         this.save();
+        this.notify();
     },
 
     /**
@@ -1113,28 +1121,31 @@ export const Store = {
             return ts >= weekStart && ts < weekEnd;
         });
 
-        const totalFocusTimeMs = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+        const totalFocusTimeMins = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
         const totalInterruptions = sessions.reduce((sum, s) => sum + (s.interruptions || 0), 0);
         const totalSessions = sessions.length;
+        const totalVelocity = sessions.reduce((sum, s) => sum + (s.velocity || 0), 0);
+        const avgVelocity = totalSessions > 0 ? (totalVelocity / totalSessions) : 0;
 
         // Distraction Rate = Interruptions / Hour of Focus
         // Avoid division by zero
-        const hoursOfFocus = totalFocusTimeMs / (1000 * 60 * 60);
+        const hoursOfFocus = totalFocusTimeMins / 60;
         const distractionRate =
             hoursOfFocus > 0 ? Math.round((totalInterruptions / hoursOfFocus) * 10) / 10 : 0;
 
         return {
-            totalFocusTime: totalFocusTimeMs,
+            totalFocusTime: totalFocusTimeMins, // Still in minutes
             avgInterruptions: distractionRate, // Interruptions per hour
+            avgVelocity,
             totalSessions,
         };
     },
 
     /**
      * Record a focus session
-     * @param {Object} sessionData - { taskId, duration, stepsCompleted, interruptions }
+     * @param {Object} sessionData - { taskId, duration, scheduledDuration, stepsCompleted, interruptions }
      */
-    recordFocusSession({ taskId, duration, stepsCompleted = 0, interruptions = 0 }) {
+    recordFocusSession({ taskId, duration, scheduledDuration, stepsCompleted = 0, interruptions = 0 }) {
         if (!state.focusStats) {
             state.focusStats = {
                 sessions: [],
@@ -1145,10 +1156,14 @@ export const Store = {
         }
 
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const velocity = scheduledDuration > 0 ? (duration / scheduledDuration) : 1;
+
         const session = {
             date: today,
             timestamp: Date.now(),
-            duration,
+            duration, // Standardized to MINUTES
+            scheduledDuration, // MINUTES
+            velocity,
             taskId,
             stepsCompleted,
             interruptions,
@@ -1304,6 +1319,7 @@ export const Store = {
         });
 
         this.save();
+        this.notify();
     },
 
     // ========================================

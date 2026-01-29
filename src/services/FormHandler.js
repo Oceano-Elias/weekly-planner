@@ -3,6 +3,7 @@ import { Departments } from '../departments.js';
 import { PlannerService } from './PlannerService.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 import { ModalService } from './ModalService.js';
+import { Toast } from '../components/Toast.js';
 
 /**
  * FormHandler - Manages task creation and editing logic
@@ -352,6 +353,9 @@ export const FormHandler = {
     },
 
     saveTask() {
+        // Capture editing ID before ModalService.close() resets it
+        const currentEditingId = this.editingTaskId;
+
         // Capture unfinished step input
         const stepInput = document.getElementById('stepInput');
         if (stepInput && stepInput.value.trim()) {
@@ -363,7 +367,6 @@ export const FormHandler = {
         const duration = this.getSelectedDuration();
 
         if (hierarchy.length === 0) {
-            // Shake animation or error toast would be better here
             const dept1 = document.getElementById('dept1');
             dept1.style.borderColor = 'var(--accent-error)';
             dept1.classList.add('shake-animation');
@@ -388,13 +391,21 @@ export const FormHandler = {
                 .join('\n');
         }
 
+        let resultId;
+        if (currentEditingId) {
+            this.handleUpdateTask(currentEditingId, title, hierarchy, duration, notes);
+            resultId = currentEditingId;
+        } else {
+            resultId = this.handleCreateTask(title, hierarchy, duration, notes);
+        }
+
         ModalService.close();
         this.refreshUI();
-        return this.editingTaskId || (hierarchy.length > 0 ? this.handleCreateTask(title, hierarchy, duration, notes) : null);
+        return resultId;
     },
 
-    handleUpdateTask(title, hierarchy, duration, notes) {
-        const existingTask = Store.getTask(this.editingTaskId);
+    handleUpdateTask(taskId, title, hierarchy, duration, notes) {
+        const existingTask = Store.getTask(taskId);
         // Check overlap logic if scheduled
         if (
             existingTask &&
@@ -405,7 +416,7 @@ export const FormHandler = {
             const weekId = Store.getWeekIdentifier(new Date());
             const allWeekTasks = Store.getTasksForWeek(weekId);
             const dayTasks = allWeekTasks.filter(
-                (t) => t.scheduledDay === existingTask.scheduledDay && t.id !== this.editingTaskId
+                (t) => t.scheduledDay === existingTask.scheduledDay && t.id !== taskId
             );
 
             if (
@@ -413,16 +424,16 @@ export const FormHandler = {
                     existingTask.scheduledTime,
                     duration,
                     dayTasks,
-                    this.editingTaskId
+                    taskId
                 )
             ) {
-                alert(
+                Toast.error(
                     `Cannot set duration to ${PlannerService.formatDuration(duration)} - overlaps another task.`
                 );
                 return;
             }
         }
-        Store.updateTask(this.editingTaskId, { title, hierarchy, duration, notes });
+        Store.updateTask(taskId, { title, hierarchy, duration, notes });
     },
 
     handleCreateTask(title, hierarchy, duration, notes) {
@@ -433,7 +444,7 @@ export const FormHandler = {
             if (PlannerService.isSlotAvailable(this.scheduledData.time, duration, dayTasks)) {
                 Store.scheduleTask(task.id, this.scheduledData.day, this.scheduledData.time);
             } else {
-                alert(`Cannot schedule at ${this.scheduledData.time} - overlaps another task.`);
+                Toast.error(`Cannot schedule at ${this.scheduledData.time} - overlaps another task.`);
             }
             this.scheduledData = null;
         }

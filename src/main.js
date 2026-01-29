@@ -16,6 +16,8 @@ import { DepartmentSettings } from './components/DepartmentSettings.js';
 import { Confetti } from './components/Confetti.js';
 import { WeeklySummary } from './components/WeeklySummary.js';
 import { QuickPalette } from './components/QuickPalette.js';
+import { CommandPalette } from './components/CommandPalette.js';
+import { Toast } from './components/Toast.js';
 import { APP_VERSION } from './version.js';
 
 // Services
@@ -39,6 +41,8 @@ import './styles/modal.css';
 import './styles/confirm-modal.css';
 import './styles/settings.css';
 import './styles/palette.css';
+import './styles/command-palette.css';
+import './styles/toast.css';
 
 // Export modules for use in other components without window pollution
 export { App };
@@ -83,7 +87,9 @@ const App = {
             ModalService.init();
             FormHandler.init();
             QuickPalette.init();
+            CommandPalette.init();
             KeyboardService.init();
+            Toast.init();
 
             this.setupUI();
 
@@ -217,7 +223,7 @@ const App = {
                     () => {
                         Store.setTemplateFromCurrentWeek();
                         const count = Store.getTemplateCount();
-                        alert(`Template updated! ${count} tasks will appear in all future weeks.`);
+                        Toast.success(`Template updated! ${count} tasks will appear in all future weeks.`);
                     }
                 );
             });
@@ -231,7 +237,7 @@ const App = {
                         Store.resetWeekToTemplate();
                         Calendar.refresh();
                         TaskQueue.refresh();
-                        alert('Week reset to template.');
+                        Toast.info('Week reset to template.');
                     }
                 );
             });
@@ -277,12 +283,12 @@ const App = {
                 if (confirmed) {
                     const success = await Store.importFromFile(file, false);
                     if (success) {
-                        alert('Data imported successfully!');
+                        Toast.success('Data imported successfully!');
                         Calendar.refresh();
                         TaskQueue.refresh();
                         Filters.refresh();
                     } else {
-                        alert('Failed to import data. Please check the file format.');
+                        Toast.error('Failed to import data. Please check the file format.');
                     }
                 }
                 importInput.value = '';
@@ -421,18 +427,18 @@ const App = {
            <div style="
                 width: calc(100% - 16px); height: calc(100% - 16px);
                 margin: 8px; /* Increased margin to prevent clipping artifacts */
-                background: rgba(18, 20, 28, 0.96); /* Solid semi-transparent (No Blur = No Blink) */
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 
+                    0 10px 25px rgba(0, 0, 0, 0.6), 
+                    0 0 0 1px rgba(0,0,0,0.1);
+                transition: transform 0.2s ease;
+                background: linear-gradient(180deg, rgba(18, 20, 28, 0.98) 0%, rgba(10, 11, 16, 0.98) 100%);
                 display: flex; flex-direction: column; align-items: center; justify-content: center;
                 color: white; font-family: 'Outfit', system-ui, -apple-system, sans-serif;
                 user-select: none;
                 position: relative;
                 overflow: hidden;
                 border-radius: 24px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                box-shadow: 
-                    0 10px 25px rgba(0, 0, 0, 0.6), 
-                    0 0 0 1px rgba(0,0,0,0.1);
-                transition: transform 0.2s ease;
            " data-tauri-drag-region>
                 
                 <!-- Progress Ring Container -->
@@ -456,6 +462,35 @@ const App = {
                         font-variant-numeric: tabular-nums;
                     ">
                         00:00
+                    </div>
+
+                    <!-- Overlay Controls (Appear on hover) -->
+                    <div id="pip-overlay" style="
+                        position: absolute;
+                        inset: 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 12px;
+                        opacity: 0;
+                        transition: opacity 0.2s ease;
+                        pointer-events: none;
+                        -webkit-app-region: no-drag;
+                        z-index: 10;
+                    ">
+                        <button id="pip-toggle-btn" style="
+                            width: 44px; height: 44px;
+                            border: none; border-radius: 50%;
+                            background: var(--accent-primary, #6366f1);
+                            color: white;
+                            display: flex; align-items: center; justify-content: center;
+                            cursor: pointer; pointer-events: auto;
+                            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+                        ">
+                            <svg id="pip-toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -521,6 +556,9 @@ const App = {
                     </button>
                     <style>
                         [data-tauri-drag-region]:hover #pip-controls { opacity: 0.8; }
+                        [data-tauri-drag-region]:hover #pip-overlay { opacity: 1; pointer-events: auto; }
+                        [data-tauri-drag-region]:hover #pip-time { opacity: 0.1; transition: opacity 0.2s ease; }
+                        #pip-time { transition: opacity 0.2s ease; }
                         #pip-controls:hover { opacity: 1 !important; }
                         #pip-restore-btn:hover { background: rgba(99, 102, 241, 0.8) !important; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
                     </style>
@@ -535,117 +573,157 @@ const App = {
         const controlsEl = document.getElementById('pip-controls');
 
         // 3. Setup Listeners
-        if (window.__TAURI__) {
-            const { event, window: tauriWindow } = window.__TAURI__;
+        const tauri = window.__TAURI__ || {};
+        const tauriWin = tauri.window || {};
+        const webviewWin = tauri.webviewWindow || {};
+        const tauriEvent = tauri.event || {};
 
-            // Explicit Drag Handler (Fix for undecorated windows)
-            container.addEventListener('mousedown', (e) => {
-                if (e.button !== 0) return;
-                // Ignore if clicking a button
-                if (e.target.closest('button') || e.target.closest('#pip-controls')) return;
+        // Discovery of window functions
+        const getWin = webviewWin.getCurrentWebviewWindow ||
+            webviewWin.getCurrent ||
+            tauriWin.getCurrentWindow ||
+            (() => webviewWin.appWindow || tauriWin.appWindow);
 
-                // Start dragging
-                // Tauri v2 uses getCurrentWindow(), v1 uses getCurrent() or appWindow
-                const tauriWin = window.__TAURI__.window;
-                const getWin = tauriWin.getCurrentWindow || tauriWin.getCurrent || (() => tauriWin.appWindow);
-                const current = getWin();
+        const getAllWins = webviewWin.getAllWebviewWindows ||
+            webviewWin.getAll ||
+            tauriWin.getAllWindows ||
+            (() => []);
 
-                if (current && current.startDragging) {
-                    current.startDragging().catch(e => console.error('Drag failed:', e));
-                } else {
-                    console.warn('Could not find startDragging function', current);
-                }
-            });
+        // 1. Explicit Drag Handler (Fix for undecorated windows)
+        container.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            // Ignore if clicking a button
+            if (e.target.closest('button') || e.target.closest('#pip-controls')) return;
 
-            // Listen for State Updates from Main Window
-            event.listen('pip-update', (e) => {
-                const state = e.payload;
-                if (!state) return;
+            // Start dragging
+            const current = typeof getWin === 'function' ? getWin() : getWin;
+            if (current && current.startDragging) {
+                current.startDragging().catch(e => console.error('Drag failed:', e));
+            }
+        });
 
-                // Update Time
-                const m = Math.floor(state.seconds / 60);
-                const s = state.seconds % 60;
-                timeEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        // Listen for State Updates from Main Window
+        tauriEvent.listen('pip-update', (e) => {
+            const state = e.payload;
+            if (!state) return;
 
-                // Update Ring
-                const progress = state.seconds / state.total;
-                const offset = circumference * (1 - progress);
-                ringEl.style.strokeDashoffset = offset;
+            // Update Time
+            const m = Math.floor(state.seconds / 60);
+            const s = state.seconds % 60;
+            timeEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
 
-                // Update Color & Icon
-                const isWork = state.mode === 'work';
-                const color = isWork ? '#6366f1' : '#22c55e'; // Indigo vs Green
-                ringEl.style.stroke = color;
-            });
+            // Update Ring
+            const progress = state.seconds / state.total;
+            const offset = circumference * (1 - progress);
+            ringEl.style.strokeDashoffset = offset;
 
-            // Helper to send to main window specifically
-            const sendToMain = async (action) => {
-                try {
-                    const tauriWin = window.__TAURI__.window;
-                    const getAllWins = tauriWin.getAllWindows || tauriWin.getAll;
-                    const all = await getAllWins();
-                    const mainWin = all.find((w) => w.label !== 'focus-pip');
-                    const targetLabel = mainWin?.label || 'main';
-
-                    await window.__TAURI__.event.emitTo(targetLabel, 'pip-action', { action });
-                } catch (e) {
-                    console.error('[PiP] Failed to send to main:', e);
-                }
-            };
-
-            // 4. Request Initial State
-            // Emit this on a slight delay to ensure Main window has finished its listeners
-            setTimeout(() => {
-                sendToMain('request-state');
-            }, 300);
-
-            // Emit Commands to Main Window
-            const restoreToMain = async () => {
-                try {
-                    const tauriWin = window.__TAURI__.window;
-                    const getAllWins = tauriWin.getAllWindows || tauriWin.getAll;
-                    const getWin =
-                        tauriWin.getCurrentWindow || tauriWin.getCurrent || (() => tauriWin.appWindow);
-
-                    const current = getWin();
-                    const all = await getAllWins();
-
-                    const mainWin = all.find((w) => w.label !== 'focus-pip');
-                    if (mainWin) {
-                        await mainWin.unminimize();
-                        await mainWin.setFocus();
-                    }
-                    await current.close();
-                } catch (e) {
-                    console.error('Failed to restore main window:', e);
-                }
-            };
-
-            document.getElementById('pip-restore-btn').addEventListener('pointerdown', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                await restoreToMain();
-            });
-
-            const closeBtn = document.getElementById('pip-close-btn');
-            if (closeBtn) {
-                closeBtn.addEventListener('pointerdown', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    await restoreToMain();
-                });
+            // Update Toggle Icon
+            const toggleIcon = document.getElementById('pip-toggle-icon');
+            if (toggleIcon) {
+                toggleIcon.innerHTML = state.running
+                    ? '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>'
+                    : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
             }
 
-            container.addEventListener('dblclick', async (e) => {
-                if (e.target.closest('button') || e.target.closest('#pip-controls') || e.target.closest('#pip-close-wrapper')) return;
-                await restoreToMain();
-            });
+            // Update Color & Icon
+            const isWork = state.mode === 'work';
+            const color = isWork ? '#6366f1' : '#22c55e'; // Indigo vs Green
+            ringEl.style.stroke = color;
 
-            // Request initial state
+            const toggleBtn = document.getElementById('pip-toggle-btn');
+            if (toggleBtn) {
+                toggleBtn.style.background = color;
+                toggleBtn.style.boxShadow = `0 4px 12px ${color}66`;
+            }
+        });
+
+        // Helper to send to main window specifically
+        const sendToMain = async (action) => {
+            try {
+                const all = typeof getAllWins === 'function' ? await getAllWins() : [];
+                const mainWin = all.find((w) => w.label !== 'focus-pip');
+                const targetLabel = mainWin?.label || 'main';
+
+                await tauriEvent.emitTo(targetLabel, 'pip-action', { action });
+            } catch (e) {
+                console.error('[PiP] Failed to send to main:', e);
+            }
+        };
+
+        // 4. Request Initial State
+        // Emit this on a slight delay to ensure Main window has finished its listeners
+        setTimeout(() => {
             sendToMain('request-state');
-        }
-    },
+        }, 300);
 
+        // Emit Commands to Main Window
+        const restoreToMain = async () => {
+            console.log('[PiP] restoreToMain triggered');
+            try {
+                const current = typeof getWin === 'function' ? getWin() : getWin;
+
+                // Attempt to focus main window if possible
+                try {
+                    const all = typeof getAllWins === 'function' ? await getAllWins() : [];
+                    const mainWin = all.find((w) => w.label !== 'focus-pip');
+                    if (mainWin) {
+                        if (mainWin.unminimize) await mainWin.unminimize();
+                        if (mainWin.setFocus) await mainWin.setFocus();
+                    }
+                } catch (err) {
+                    console.warn('[PiP] Error focusing main win:', err);
+                }
+
+                // Close PiP window
+                console.log('[PiP] Closing current window');
+                if (current && current.close) {
+                    await current.close();
+                } else {
+                    window.close(); // Browser fallback
+                }
+            } catch (e) {
+                console.error('Failed to restore main window:', e);
+                // Last resort fallback
+                try { window.close(); } catch (err) { }
+            }
+        };
+
+        // Optimized event listeners for better responsiveness
+        const addControlListener = (id, callback) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            // Listen for both to ensure capture in various states/environments
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                callback(e);
+            });
+            el.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Pointerdown is faster but we only fire if click hasn't happened yet?
+                // Actually, just let the first one win or let them both run safely.
+                // Most Tauri actions are idempotent or safe to repeat.
+                callback(e);
+            });
+        };
+
+        addControlListener('pip-toggle-btn', () => sendToMain('toggle'));
+        addControlListener('pip-restore-btn', () => restoreToMain());
+        addControlListener('pip-close-btn', () => restoreToMain());
+
+        container.addEventListener('dblclick', (e) => {
+            if (e.target.closest('button') || e.target.closest('#pip-controls') || e.target.closest('#pip-close-wrapper')) return;
+            restoreToMain();
+        });
+
+        // Request initial state (immediate)
+        sendToMain('request-state');
+
+        // Request initial state (delayed) to ensure main window receiver is ready
+        setTimeout(() => sendToMain('request-state'), 500);
+    }
 };
 
 // Initialize when DOM is ready

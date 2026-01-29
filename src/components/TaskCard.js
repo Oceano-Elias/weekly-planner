@@ -23,7 +23,7 @@ export class TaskCard {
         return { completed, total: steps.length };
     }
 
-    render({ isDayView = false, isCompact = false } = {}) {
+    render({ isDayView = false, isCompact = false, isActive = false } = {}) {
         const task = this.task;
         const color = Departments.getColor(task.hierarchy);
         const abbr = Departments.getRootAbbreviation(task.hierarchy);
@@ -39,7 +39,7 @@ export class TaskCard {
         const actualStandard = isDayView ? (task.duration >= 45 && task.duration < 60) : isStandard;
         const actualFull = isDayView ? (task.duration >= 60) : isFull;
 
-        const className = `glass-surface glass-surface-hover task-block ${task.completed ? 'completed' : ''} ${isDayView ? 'day-view' : ''} ${isCompact ? 'layout-compact' : actualStandard ? 'layout-standard' : actualFull ? 'layout-full' : ''}`;
+        const className = `glass-surface glass-surface-hover task-block ${task.completed ? 'completed' : ''} ${isDayView ? 'day-view' : ''} ${isCompact ? 'layout-compact' : actualStandard ? 'layout-standard' : actualFull ? 'layout-full' : ''} ${isActive ? 'is-active' : ''}`;
 
         const el = DOMUtils.createElement('div', {
             className,
@@ -94,6 +94,12 @@ export class TaskCard {
         const header = DOMUtils.createElement('div', { className: 'task-header task-header-row' });
 
         const headerLeft = DOMUtils.createElement('div', { className: 'task-header-left' });
+
+        // Add running icon if active
+        if (isActive) {
+            headerLeft.appendChild(DOMUtils.createElement('div', { className: 'task-running-icon' }));
+        }
+
         headerLeft.appendChild(
             DOMUtils.createElement('span', {
                 className: 'task-dept-badge',

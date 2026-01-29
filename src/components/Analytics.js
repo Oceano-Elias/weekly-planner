@@ -40,6 +40,9 @@ export const Analytics = {
         time: () => DOMUtils.createSVG('svg', { width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
             DOMUtils.createSVG('circle', { cx: '12', cy: '12', r: '10' }),
             DOMUtils.createSVG('polyline', { points: '12 6 12 12 16 14' })
+        ]),
+        velocity: () => DOMUtils.createSVG('svg', { width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+            DOMUtils.createSVG('path', { d: 'M22 12h-4l-3 9L9 3l-3 9H2' })
         ])
     },
 
@@ -257,6 +260,27 @@ export const Analytics = {
         distContent.appendChild(DOMUtils.createElement('div', { className: 'stat-label', textContent: 'Distractions / Hour' }));
         distCard.appendChild(distContent);
         grid.appendChild(distCard);
+
+        // Focus Velocity Card
+        const velocityCard = DOMUtils.createElement('div', { className: 'analytics-stat-card velocity-card' });
+        const velocityIcon = DOMUtils.createElement('div', { className: 'stat-icon stat-icon-velocity' });
+        velocityIcon.appendChild(this.icons.velocity());
+        velocityCard.appendChild(velocityIcon);
+
+        const velocityVal = Math.round(focusMetrics.avgVelocity * 100);
+        let velocityStatus = 'neutral';
+        if (velocityVal >= 90) velocityStatus = 'high';
+        else if (velocityVal < 70) velocityStatus = 'low';
+
+        const velocityContent = DOMUtils.createElement('div', { className: 'stat-content' });
+        const velocityValueEl = DOMUtils.createElement('div', {
+            className: `stat-value status-${velocityStatus}`,
+            textContent: `${velocityVal}%`
+        });
+        velocityContent.appendChild(velocityValueEl);
+        velocityContent.appendChild(DOMUtils.createElement('div', { className: 'stat-label', textContent: 'Focus Velocity' }));
+        velocityCard.appendChild(velocityContent);
+        grid.appendChild(velocityCard);
 
         container.appendChild(grid);
 

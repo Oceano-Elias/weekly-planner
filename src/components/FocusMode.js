@@ -6,6 +6,7 @@ import { Store } from '../store.js';
 import { FocusAudio } from '../utils/FocusAudio.js';
 import { FocusModeUI } from './FocusModeUI.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
+import { Toast } from './Toast.js';
 
 export const FocusMode = {
     isOpen: false,
@@ -16,6 +17,7 @@ export const FocusMode = {
     positionRaf: null,
     carouselAnimating: false,
     lastDoneStepIndex: null,
+    storeUnsubscribe: null,
 
     // Core session settings
     sessionDuration: 25 * 60, // 25 minutes default
@@ -58,6 +60,16 @@ export const FocusMode = {
 
         this.render(task);
         FocusModeUI.setPageOverflow(true);
+
+        // [Reactive Store] Subscribe to updates
+        this.storeUnsubscribe = Store.subscribe(() => {
+            if (this.isOpen && this.activeTaskId) {
+                const updatedTask = Store.getTask(this.activeTaskId);
+                if (updatedTask) {
+                    this.updateUI();
+                }
+            }
+        });
     },
 
     /**
@@ -150,6 +162,10 @@ export const FocusMode = {
         if (this.activeKeyHandler) {
             document.removeEventListener('keydown', this.activeKeyHandler);
             this.activeKeyHandler = null;
+        }
+        if (this.storeUnsubscribe) {
+            this.storeUnsubscribe();
+            this.storeUnsubscribe = null;
         }
         if (this.resizeHandler) {
             window.removeEventListener('resize', this.resizeHandler);
@@ -718,9 +734,13 @@ export const FocusMode = {
                 const stepsCompleted = lines.filter((l) => l.includes('[x]')).length;
 
                 // Record the session
+                const durationMins = Math.floor(this.sessionDuration / 60);
+                const scheduledDurationMins = task?.duration || 60;
+
                 Store.recordFocusSession({
                     taskId: this.activeTaskId,
-                    duration: this.sessionDuration,
+                    duration: durationMins,
+                    scheduledDuration: scheduledDurationMins,
                     stepsCompleted,
                     interruptions: state.pauseCount || 0,
                 });
@@ -958,7 +978,11 @@ export const FocusMode = {
     },
 
     spawnConfetti() {
-        FocusModeUI.spawnConfetti();
+        if (window.celebrate) {
+            window.celebrate();
+        } else {
+            FocusModeUI.spawnConfetti();
+        }
     },
 
     notifyPhaseChange(phase) {
@@ -1394,19 +1418,19 @@ export const FocusMode = {
                 // If it exists, Tauri usually focuses it unless we handle it.
                 // Let's rely on creating a NEW one or overwriting.
 
-                // Improved Tauri detection
+                // Improved Tauri detection for v1 and v2
                 const tauri = window.__TAURI__;
 
-                // Tauri v2 often puts WebviewWindow in `webviewWindow` namespace
+                // Discovery of the WebviewWindow constructor
                 const WebviewWindow =
-                    (tauri.webviewWindow && tauri.webviewWindow.WebviewWindow) ||
-                    (tauri.window && tauri.window.WebviewWindow) ||
-                    (tauri.window && tauri.window.Window) ||
-                    tauri.WebviewWindow;
+                    (tauri.webviewWindow && tauri.webviewWindow.WebviewWindow) || // v2 modern
+                    (tauri.window && tauri.window.WebviewWindow) ||              // v1/v2 compatibility
+                    (tauri.window && tauri.window.Window) ||                     // v2 Window fallback
+                    tauri.WebviewWindow;                                         // v1 top-level fallback
 
-                if (!WebviewWindow) {
-                    alert('Error: Tauri WebviewWindow constructor NOT found');
-                    throw new Error('Tauri WebviewWindow constructor not found');
+                if (typeof WebviewWindow !== 'function') {
+                    Toast.error('Error: Tauri WebviewWindow constructor NOT found');
+                    return;
                 }
 
                 // STATIC STRATEGY: Get existing window by label
@@ -1416,13 +1440,13 @@ export const FocusMode = {
                     // Try standard getByLabel (v2) or getAll (v1)
                     if (WebviewWindow.getByLabel) {
                         pipWin = await WebviewWindow.getByLabel('focus-pip');
-                    } else {
-                        // Fallback for some v1/v2 bridges
-                        // We might need to handle this if getByLabel isn't async or exists
-                        // Usually it returns null if not found
+                    } else if (tauri.window && tauri.window.getCurrent) {
+                        // v1 fallback to list all windows
+                        const windows = await tauri.window.getAll();
+                        pipWin = windows.find(w => w.label === 'focus-pip');
                     }
                 } catch (err) {
-                    alert('Error getting pip window by label: ' + err.message);
+                    Toast.error('Error getting pip window by label: ' + err.message);
                     console.error('Error getting pip window by label', err);
                 }
 

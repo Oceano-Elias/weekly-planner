@@ -230,9 +230,8 @@ export const TaskQueue = {
                     window.Confetti.burst(x, y, 40);
                 }
 
-                // Instant refresh for task queue
+                // Instant refresh for task queue is now handled by store subscriber
                 this.refresh();
-                if (window.Calendar) window.Calendar.renderScheduledTasks();
             });
 
             if (deleteBtn) {

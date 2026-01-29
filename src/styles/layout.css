@@ -743,19 +743,54 @@ header {
 
 .drop-indicator {
     position: absolute;
-    left: 1px;
-    right: 1px;
-    border-radius: var(--radius-sm);
-    background: color-mix(in srgb, var(--accent-success) 18%, transparent);
-    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-success) 40%, transparent);
+    left: 4px;
+    right: 4px;
+    border-radius: var(--radius-md);
+    background: rgba(45, 212, 191, 0.15);
+    box-shadow:
+        inset 0 0 0 1px rgba(45, 212, 191, 0.4),
+        0 8px 16px -4px rgba(0, 0, 0, 0.3);
     pointer-events: none;
     z-index: 50;
-    will-change: top, height;
+    will-change: top, height, opacity, transform;
+    transition:
+        top var(--transition-fast),
+        height var(--transition-fast),
+        background-color var(--transition-normal),
+        box-shadow var(--transition-normal);
+    animation: drop-indicator-pulse 2s ease-in-out infinite;
 }
 
 .drop-indicator.invalid {
-    background: rgba(239, 68, 68, 0.12);
-    box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.35);
+    background: rgba(244, 63, 94, 0.15);
+    box-shadow:
+        inset 0 0 0 1px rgba(244, 63, 94, 0.5),
+        0 8px 16px -4px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes drop-indicator-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+
+    50% {
+        transform: scale(1.005);
+        opacity: 1;
+    }
+}
+
+/* Collision States */
+.task-block.drag-blocked {
+    box-shadow: 0 0 0 2px var(--accent-error), var(--shadow-md) !important;
+    filter: saturate(0.8) brightness(0.9);
+    z-index: 60;
+}
+
+.day-column.drag-over {
+    background-color: rgba(99, 102, 241, 0.05) !important;
 }
 
 /* Time Slot Labels */

@@ -21,11 +21,9 @@
     text-align: center;
     gap: 4px;
     padding: 10px 8px;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(255, 255, 255, 0.02) 100%
-    );
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -69,6 +67,11 @@
     background: rgba(59, 130, 246, 0.12);
 }
 
+.stat-icon-velocity {
+    color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
+}
+
 .stat-content {
     flex: 1;
     min-width: 0;
@@ -79,6 +82,14 @@
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.2;
+}
+
+.stat-value.status-high {
+    color: var(--accent-success);
+}
+
+.stat-value.status-low {
+    color: var(--accent-error);
 }
 
 .stat-value .stat-total {
@@ -523,11 +534,9 @@
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background: linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--accent-success) 16%, transparent),
-        color-mix(in srgb, var(--accent-success) 10%, transparent)
-    );
+    background: linear-gradient(135deg,
+            color-mix(in srgb, var(--accent-success) 16%, transparent),
+            color-mix(in srgb, var(--accent-success) 10%, transparent));
     border: 1px solid color-mix(in srgb, var(--accent-success) 25%, transparent);
     border-radius: 12px;
     margin-bottom: 20px;

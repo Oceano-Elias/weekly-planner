@@ -16,6 +16,7 @@ export const DragDropService = {
     hitTestCache: null,
     dropIndicatorEl: null,
     lastIndicatorKey: '',
+    collisionTasks: [], // Track elements with drag-blocked class
 
     getCellFromPointerEvent(e) {
         if (!e) return null;
@@ -61,10 +62,20 @@ export const DragDropService = {
     },
 
     hideDropIndicator() {
-        if (!this.dropIndicatorEl) return;
-        this.dropIndicatorEl.style.display = 'none';
-        this.dropIndicatorEl.classList.remove('invalid');
+        if (this.dropIndicatorEl) {
+            this.dropIndicatorEl.style.display = 'none';
+            this.dropIndicatorEl.classList.remove('invalid');
+        }
         this.lastIndicatorKey = '';
+        this.clearCollisionHighlights();
+
+        // Clear all column highlights
+        document.querySelectorAll('.day-column.drag-over').forEach(c => c.classList.remove('drag-over'));
+    },
+
+    clearCollisionHighlights() {
+        this.collisionTasks.forEach(el => el.classList.remove('drag-blocked'));
+        this.collisionTasks = [];
     },
 
     showDropIndicator(column, startIndex, slotsToShow, isAvailable) {
@@ -607,6 +618,12 @@ export const DragDropService = {
         const time = startCell.dataset.time;
         const column = startCell.closest('.day-column');
 
+        // Apply column highlight
+        document.querySelectorAll('.day-column.drag-over').forEach(c => {
+            if (c !== column) c.classList.remove('drag-over');
+        });
+        if (column) column.classList.add('drag-over');
+
         const slotIndex = this.getSlotIndexFromTime(time);
         if (slotIndex === null) {
             this.hideDropIndicator();
@@ -623,6 +640,37 @@ export const DragDropService = {
 
         const isAvailable =
             fits && this.isSlotAvailable(day, time, this.draggedTask.duration, this.draggedTask.id);
+
         this.showDropIndicator(column, slotIndex, slotsToShow, isAvailable);
+        this.updateCollisionHighlights(day, time, this.draggedTask.duration, this.draggedTask.id, column);
+    },
+
+    updateCollisionHighlights(day, startTime, duration, excludeTaskId, column) {
+        this.clearCollisionHighlights();
+        if (!day || !startTime) return;
+
+        const dayTasks = this.dayTasksCache[day] || Store.getTasksForDay(day);
+
+        const [startHour, startMin] = startTime.split(':').map(Number);
+        const startTotal = startHour * 60 + startMin;
+        const endTotal = startTotal + duration;
+
+        const collidingIds = dayTasks
+            .filter(task => {
+                if (task.id === excludeTaskId || !task.scheduledTime) return false;
+                const [taskHour, taskMin] = task.scheduledTime.split(':').map(Number);
+                const taskStart = taskHour * 60 + taskMin;
+                const taskEnd = taskStart + task.duration;
+                return startTotal < taskEnd && endTotal > taskStart;
+            })
+            .map(t => t.id);
+
+        collidingIds.forEach(id => {
+            const el = column.querySelector(`.calendar-task[data-task-id="${id}"] .task-block`);
+            if (el) {
+                el.classList.add('drag-blocked');
+                this.collisionTasks.push(el);
+            }
+        });
     },
 };

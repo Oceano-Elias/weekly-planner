@@ -41,6 +41,13 @@ export const KeyboardService = {
             // Don't trigger shortcuts when typing in inputs or shortcuts modal is open
             if (isInputFocused || isShortcutsOpen) return;
 
+            // Command Palette (Cmd/Ctrl + K)
+            if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                if (window.CommandPalette) window.CommandPalette.toggle();
+                return;
+            }
+
             switch (e.key.toLowerCase()) {
                 case 'n':
                     e.preventDefault();

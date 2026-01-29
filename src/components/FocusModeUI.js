@@ -448,15 +448,61 @@ export const FocusModeUI = {
     celebrateVisuals() {
         const ring = document.getElementById('outerRing');
         const resultsCard = document.querySelector('.results-card-container');
+        const focusCard = document.querySelector('.focus-card');
 
-        if (ring) {
-            ring.classList.add('triumph-glow');
-            setTimeout(() => ring.classList.remove('triumph-glow'), 2000);
-        }
+        const applyGlow = (duration = 3000, cls = 'triumph-glow') => {
+            if (ring) {
+                ring.classList.add(cls);
+                setTimeout(() => ring.classList.remove(cls), duration);
+            }
+            if (resultsCard) {
+                resultsCard.classList.add(cls);
+                setTimeout(() => resultsCard.classList.remove(cls), duration);
+            }
+            if (focusCard) {
+                focusCard.classList.add(cls);
+                setTimeout(() => focusCard.classList.remove(cls), duration);
+            }
+        };
 
-        if (resultsCard) {
-            resultsCard.classList.add('triumph-glow-results');
-            setTimeout(() => resultsCard.classList.remove('triumph-glow-results'), 2000);
+        // Phase 1: Initial Impact
+        applyGlow(3000);
+        this.shakeScreen();
+
+        // Phase 2: Midway Hype (3.5s)
+        setTimeout(() => {
+            this.shakeScreen();
+            applyGlow(2000);
+        }, 3500);
+
+        // Phase 3: Grand Finale Prep (6s)
+        setTimeout(() => {
+            this.shakeScreen();
+            applyGlow(2000);
+        }, 6000);
+
+        // Phase 4: Grand Finale (8s)
+        setTimeout(() => {
+            this.shakeScreen();
+            // Intense final glow
+            applyGlow(4000, 'intense-triumph-glow');
+
+            // Final heavy shake
+            if (focusCard) {
+                focusCard.classList.add('gratified-shake-heavy');
+                setTimeout(() => focusCard.classList.remove('gratified-shake-heavy'), 1000);
+            }
+        }, 8000);
+    },
+
+    /**
+     * Physical gratification - subtle screen shake
+     */
+    shakeScreen() {
+        const focusCard = document.querySelector('.focus-card');
+        if (focusCard) {
+            focusCard.classList.add('gratified-shake');
+            setTimeout(() => focusCard.classList.remove('gratified-shake'), 600);
         }
     },
 

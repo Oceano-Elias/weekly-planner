@@ -426,6 +426,113 @@
     color: rgba(255, 255, 255, 0.72);
 }
 
+/* =========================================
+   VISUAL HYPE - Physical Gratification
+   ========================================= */
+
+.gratified-shake {
+    animation: gratifiedShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes gratifiedShake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}
+
+.triumph-glow {
+    animation: triumphGlow 3s ease-out forwards;
+}
+
+@keyframes triumphGlow {
+    0% {
+        box-shadow:
+            0 80px 150px -40px rgba(0, 0, 0, 0.9),
+            inset 0 0 80px rgba(255, 255, 255, 0.02),
+            0 0 0px 0px color-mix(in srgb, var(--task-color) 0%, transparent);
+    }
+
+    15% {
+        box-shadow:
+            0 80px 150px -40px rgba(0, 0, 0, 0.9),
+            inset 0 0 120px color-mix(in srgb, var(--task-color) 30%, transparent),
+            0 0 100px 20px color-mix(in srgb, var(--task-color) 40%, transparent);
+    }
+
+    100% {
+        box-shadow:
+            0 80px 150px -40px rgba(0, 0, 0, 0.9),
+            inset 0 0 80px rgba(255, 255, 255, 0.02),
+            0 0 0px 0px color-mix(in srgb, var(--task-color) 0%, transparent);
+    }
+}
+
+.intense-triumph-glow {
+    animation: intenseTriumphGlow 4s ease-out forwards;
+}
+
+@keyframes intenseTriumphGlow {
+    0% {
+        box-shadow:
+            0 80px 150px -40px rgba(0, 0, 0, 0.9),
+            inset 0 0 200px color-mix(in srgb, var(--task-color) 50%, transparent),
+            0 0 150px 40px color-mix(in srgb, var(--task-color) 60%, transparent);
+    }
+
+    100% {
+        box-shadow:
+            0 80px 150px -40px rgba(0, 0, 0, 0.9),
+            inset 0 0 80px rgba(255, 255, 255, 0.02),
+            0 0 0px 0px color-mix(in srgb, var(--task-color) 0%, transparent);
+    }
+}
+
+.gratified-shake-heavy {
+    animation: gratifiedShakeHeavy 1s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes gratifiedShakeHeavy {
+
+    10%,
+    90% {
+        transform: translate3d(-3px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(5px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-8px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(8px, 0, 0);
+    }
+}
+
 /* Step Action Buttons (Skip / Complete) */
 .step-action-controls {
     display: flex;

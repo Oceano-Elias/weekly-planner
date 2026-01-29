@@ -98,6 +98,8 @@ export const WeeklySummary = {
             }
         }
 
+        const focusMetrics = Store.getFocusMetricsForWeek();
+
         return {
             weekId,
             totalTasks,
@@ -113,6 +115,7 @@ export const WeeklySummary = {
                 totalMiniTasks > 0 ? Math.round((completedMiniTasks / totalMiniTasks) * 100) : 0,
             currentStreak,
             dailyStats,
+            focusVelocity: focusMetrics.avgVelocity,
         };
     },
 
@@ -317,6 +320,7 @@ export const WeeklySummary = {
         grid.appendChild(
             createCard(`${stats.completedMiniTasks}/${stats.totalMiniTasks}`, 'Mini-Tasks')
         );
+        grid.appendChild(createCard(`${Math.round(stats.focusVelocity * 100)}%`, 'Focus Velocity'));
         grid.appendChild(createCard(`${stats.currentStreak}`, 'Day Streak 🔥', true));
         body.appendChild(grid);
 

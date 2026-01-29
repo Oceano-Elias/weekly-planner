@@ -61,6 +61,12 @@ export const Calendar = {
         this.setupViewToggle();
         this.setupProgressTimer();
         this.setupResizeInteraction();
+
+        // Subscribe to store changes
+        Store.subscribe(() => {
+            console.log('Calendar: Store updated, refreshing tasks...');
+            this.renderScheduledTasks();
+        });
     },
 
     /**
@@ -399,8 +405,13 @@ export const Calendar = {
         const height = slotsCount * cellHeight;
 
         const isCompact = task.duration <= PlannerService.SLOT_DURATION;
+        const activeExec = Store.getState().activeExecution;
+        const isActive = activeExec &&
+            activeExec.taskId === task.id &&
+            activeExec.running;
+
         const taskEl = DOMUtils.createElement('div', {
-            className: `calendar-task ${task.completed ? 'completed' : ''} ${isCompact ? 'compact' : ''}`,
+            className: `calendar-task ${task.completed ? 'completed' : ''} ${isCompact ? 'compact' : ''} ${isActive ? 'active-focus' : ''}`,
             style: {
                 top: `${top}px`,
                 height: `${height}px`,
@@ -408,7 +419,7 @@ export const Calendar = {
         });
 
         const card = new TaskCard(task);
-        const taskBlockEl = card.render({ isDayView: this.viewMode === 'day', isCompact });
+        const taskBlockEl = card.render({ isDayView: this.viewMode === 'day', isCompact, isActive });
         taskBlockEl.draggable = false;
         taskEl.appendChild(taskBlockEl);
 
@@ -473,22 +484,9 @@ export const Calendar = {
                 }
             }
 
-            // Check if all tasks for the day are now complete
+            // Check if all tasks for the day are now complete (Daily Celebration)
             if (!wasCompleted && updatedTask && updatedTask.completed) {
                 this.checkDailyCelebration(task.scheduledDay);
-            }
-
-            // Refresh UI
-            if (updatedTask && updatedTask.completed && !wasCompleted) {
-                // Delay refresh to allow completion animation to play
-                setTimeout(() => {
-                    this.renderScheduledTasks();
-                    if (window.TaskQueue) window.TaskQueue.refresh();
-                }, 500);
-            } else {
-                // Instant refresh for step advancement or un-completing
-                this.renderScheduledTasks();
-                if (window.TaskQueue) window.TaskQueue.refresh();
             }
         });
 

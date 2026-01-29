@@ -62,36 +62,45 @@ export const Confetti = {
     /**
      * Create a confetti particle
      */
-    createParticle(x, y) {
+    createParticle(x, y, options = {}) {
         const color = this.colors[Math.floor(Math.random() * this.colors.length)];
-        const size = Math.random() * 12 + 6;
+        const size = Math.random() * 10 + 6;
         const shape = Math.random() > 0.5 ? 'rect' : 'circle';
+
+        // Random drift/wind factor
+        const wind = (Math.random() - 0.5) * 0.2;
 
         return {
             x,
             y,
-            vx: (Math.random() - 0.5) * 20,
-            vy: Math.random() * -20 - 10,
+            vx: options.vx || (Math.random() - 0.5) * 20,
+            vy: options.vy || Math.random() * -20 - 10,
             color,
             size,
             shape,
             rotation: Math.random() * 360,
-            rotationSpeed: (Math.random() - 0.5) * 15,
-            gravity: 0.4,
-            friction: 0.98,
+            rotationSpeed: (Math.random() - 0.5) * 10,
+            gravity: 0.25 + Math.random() * 0.15, // Lighter gravity for more hang time
+            friction: 0.985,
             opacity: 1,
-            decay: 0.01 + Math.random() * 0.01, // Fade slightly faster but with more particles
+            decay: 0.005 + Math.random() * 0.008, // Slower decay for longer life
+            wind,
+            wobble: Math.random() * 10,
+            wobbleSpeed: 0.05 + Math.random() * 0.1
         };
     },
 
     /**
      * Burst confetti from a point
      */
-    burst(x, y, count = 100) {
+    burst(x, y, count = 100, options = {}) {
         this.init();
 
         for (let i = 0; i < count; i++) {
-            this.particles.push(this.createParticle(x, y));
+            const vy = options.power ? (Math.random() * -options.power - options.power / 2) : undefined;
+            const vx = options.spread ? (Math.random() - 0.5) * options.spread : undefined;
+
+            this.particles.push(this.createParticle(x, y, { vx, vy }));
         }
 
         if (!this.isActive) {
@@ -101,31 +110,86 @@ export const Confetti = {
     },
 
     /**
-     * Full celebration - confetti from multiple points
+     * Fire "Side Cannons" - classic celebratory effect
+     */
+    fireCannons() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        // Left Cannon
+        for (let i = 0; i < 60; i++) {
+            this.particles.push(this.createParticle(0, height, {
+                vx: Math.random() * 15 + 10,
+                vy: Math.random() * -25 - 15
+            }));
+        }
+
+        // Right Cannon
+        for (let i = 0; i < 60; i++) {
+            this.particles.push(this.createParticle(width, height, {
+                vx: Math.random() * -15 - 10,
+                vy: Math.random() * -25 - 15
+            }));
+        }
+
+        if (!this.isActive) {
+            this.isActive = true;
+            this.animate();
+        }
+    },
+
+    /**
+     * Full celebration - Orchestrated Waves
      */
     celebrate() {
         this.init();
-        console.log('✨ [Confetti] Grand Celebration started!');
+        console.log('✨ [Confetti] Gratifying Grand Celebration started!');
 
         const width = window.innerWidth;
         const height = window.innerHeight;
 
-        // Spread across the whole bottom area
-        this.burst(width * 0.15, height, 80);
-        this.burst(width * 0.5, height, 120);
-        this.burst(width * 0.85, height, 80);
+        // Wave 1: Initial Bang
+        this.fireCannons();
+        this.burst(width * 0.5, height, 100, { power: 25, spread: 20 });
 
-        // Additional bursts after delay
+        // Wave 2: Center Follow-up
         setTimeout(() => {
-            this.burst(width * 0.35, height, 70);
-            this.burst(width * 0.65, height, 70);
-        }, 300);
+            this.burst(width * 0.5, height * 0.8, 80, { power: 15, spread: 40 });
+        }, 800);
 
+        // Wave 3: Side Cannon Refill
         setTimeout(() => {
-            this.burst(width * 0.5, height * 0.4, 100);
-        }, 500);
+            this.fireCannons();
+        }, 1800);
 
-        // Play celebration sound if available
+        // Wave 4: Mid-celebration Hype
+        setTimeout(() => {
+            this.burst(width * 0.3, height * 0.7, 50, { power: 12, spread: 30 });
+            this.burst(width * 0.7, height * 0.7, 50, { power: 12, spread: 30 });
+        }, 3500);
+
+        // Wave 5: Late Intensity
+        setTimeout(() => {
+            this.fireCannons();
+        }, 6000);
+
+        // Wave 6: Grand Finale - Massive Bang
+        setTimeout(() => {
+            this.fireCannons();
+            this.burst(width * 0.5, height, 200, { power: 30, spread: 25 });
+            console.log('🎆 [Confetti] Grand Finale!');
+        }, 8000);
+
+        // Wave 4: Glitter Shower (Extended)
+        const showerInterval = setInterval(() => {
+            if (this.particles.length < 500) {
+                this.burst(Math.random() * width, -20, 5, { power: -2, spread: 5 });
+            }
+        }, 120);
+
+        setTimeout(() => clearInterval(showerInterval), 8500);
+
+        // Play celebration sequences
         this.playSound();
     },
 
@@ -236,8 +300,13 @@ export const Confetti = {
             p.vy += p.gravity;
             p.vx *= p.friction;
             p.vy *= p.friction;
-            p.x += p.vx;
+
+            // Add wind and wobble drift
+            p.vx += p.wind;
+            p.x += p.vx + Math.sin(p.wobble) * 2; // Horizontal wobble
             p.y += p.vy;
+
+            p.wobble += p.wobbleSpeed;
             p.rotation += p.rotationSpeed;
             p.opacity -= p.decay;
 
