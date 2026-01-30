@@ -5,6 +5,7 @@
 import { Store } from '../store.js';
 import { PlannerService } from './PlannerService.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
+import { FocusAudio } from '../utils/FocusAudio.js';
 
 export const DragDropService = {
     draggedTask: null,
@@ -546,7 +547,7 @@ export const DragDropService = {
                     Store.unscheduleTask(taskId, true);
                     updated = true;
                     // Play deep gong for "parking" a task
-                    import('../utils/FocusAudio.js').then(m => m.FocusAudio.playZenGong());
+                    FocusAudio.playZenGong();
                 } else if (day && time) {
                     this.dayTasksCache = {};
                     const bestTime = this.findNearestAvailableStart(day, time, duration, taskId);
@@ -572,7 +573,7 @@ export const DragDropService = {
                         }
                         updated = true;
                         // Play crisp bell for scheduling
-                        import('../utils/FocusAudio.js').then(m => m.FocusAudio.playZenBell());
+                        FocusAudio.playZenBell();
                     }
                 }
 
