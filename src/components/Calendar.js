@@ -307,53 +307,68 @@ export const Calendar = {
      */
     renderGrid() {
         const grid = document.getElementById('calendarGrid');
-        DOMUtils.clear(grid);
-        this.columnCache = {}; // Reset cache on new grid render
-        const slots = this.getTimeSlots();
+        const currentMode = grid.dataset.viewMode;
+        const needsStructuralRefresh = currentMode !== this.viewMode;
 
-        // Render time column
-        const timeColumn = DOMUtils.createElement('div', { className: 'time-column' });
-        slots.forEach((slot) => {
-            timeColumn.appendChild(
-                DOMUtils.createElement('div', {
-                    className: 'time-slot-label',
-                    textContent: slot.label,
-                })
-            );
-        });
-        grid.appendChild(timeColumn);
+        if (needsStructuralRefresh) {
+            console.log(`Calendar: Structural refresh for ${this.viewMode} view`);
+            DOMUtils.clear(grid);
+            grid.dataset.viewMode = this.viewMode;
+            this.columnCache = {}; // Reset cache on new grid render
+            const slots = this.getTimeSlots();
 
-        // Render day columns
-        const daysToRender =
-            this.viewMode === 'week' ? this.days : [this.days[this.selectedDayIndex]];
-        const weekDates = this.getWeekDates();
-
-        daysToRender.forEach((day, index) => {
-            const dayIndex = this.viewMode === 'week' ? index : this.selectedDayIndex;
-            const isToday = weekDates[dayIndex] && this.isToday(weekDates[dayIndex]);
-
-            const dayColumn = DOMUtils.createElement('div', {
-                className: `day-column ${isToday ? 'today' : ''}`,
-                dataset: { day },
-            });
-
+            // Render time column
+            const timeColumn = DOMUtils.createElement('div', { className: 'time-column' });
             slots.forEach((slot) => {
-                const time = this.formatTime(slot.hour, slot.minute);
-                dayColumn.appendChild(
+                timeColumn.appendChild(
                     DOMUtils.createElement('div', {
-                        className: 'calendar-cell',
-                        dataset: { day, time },
+                        className: 'time-slot-label',
+                        textContent: slot.label,
                     })
                 );
             });
-            grid.appendChild(dayColumn);
-            this.columnCache[day] = dayColumn; // Cache the column element
-        });
+            grid.appendChild(timeColumn);
 
-        if (this.viewMode === 'week') {
-            grid.style.gridTemplateColumns = `var(--calendar-time-col, 60px) repeat(7, 1fr)`;
+            // Render day columns
+            const daysToRender =
+                this.viewMode === 'week' ? this.days : [this.days[this.selectedDayIndex]];
+            const weekDates = this.getWeekDates();
+
+            daysToRender.forEach((day, index) => {
+                const dayIndex = this.viewMode === 'week' ? index : this.selectedDayIndex;
+                const isToday = weekDates[dayIndex] && this.isToday(weekDates[dayIndex]);
+
+                const dayColumn = DOMUtils.createElement('div', {
+                    className: `day-column ${isToday ? 'today' : ''}`,
+                    dataset: { day },
+                });
+
+                slots.forEach((slot) => {
+                    const time = this.formatTime(slot.hour, slot.minute);
+                    dayColumn.appendChild(
+                        DOMUtils.createElement('div', {
+                            className: 'calendar-cell',
+                            dataset: { day, time },
+                        })
+                    );
+                });
+                grid.appendChild(dayColumn);
+                this.columnCache[day] = dayColumn; // Cache the column element
+            });
+
+            if (this.viewMode === 'week') {
+                grid.style.gridTemplateColumns = `var(--calendar-time-col, 60px) repeat(7, 1fr)`;
+            } else {
+                grid.style.gridTemplateColumns = `var(--calendar-time-col, 60px) 1fr`;
+            }
         } else {
-            grid.style.gridTemplateColumns = `var(--calendar-time-col, 60px) 1fr`;
+            // Re-sync columnCache if reusing existing structure
+            document.querySelectorAll('.day-column').forEach(col => {
+                const day = col.dataset.day;
+                this.columnCache[day] = col;
+                // Clear existing tasks but KEEP the slots
+                col.querySelectorAll('.calendar-task').forEach(t => t.remove());
+            });
         }
 
         this.renderScheduledTasks();
@@ -365,13 +380,14 @@ export const Calendar = {
      * Render all scheduled tasks on the calendar
      */
     renderScheduledTasks() {
+        // Clear all existing tasks first to avoid accumulation
+        document.querySelectorAll('.calendar-task').forEach(t => t.remove());
+
         // Get tasks for the current week (auto-creates if needed)
         const weekId = Store.getWeekIdentifier(this.currentWeekStart);
         let tasks = Store.getTasksForWeek(weekId);
 
-        document.querySelectorAll('.calendar-task').forEach((el) => el.remove());
-
-        // Apply filter if any filters are selected
+        // Filter tasks
         if (window.Filters) {
             tasks = tasks.filter((task) => {
                 if (window.Filters.selectedPaths.length === 0) return true;
@@ -383,8 +399,27 @@ export const Calendar = {
             });
         }
 
-        tasks.forEach((task) => {
-            this.renderTask(task);
+        // Group tasks by day for batched insertion
+        const tasksByDay = {};
+        tasks.forEach(task => {
+            if (!task.scheduledDay) return;
+            if (!tasksByDay[task.scheduledDay]) tasksByDay[task.scheduledDay] = [];
+            tasksByDay[task.scheduledDay].push(task);
+        });
+
+        // Use fragments to append tasks to each column
+        Object.keys(this.columnCache).forEach(day => {
+            const column = this.columnCache[day];
+            const tasksToRender = tasksByDay[day] || [];
+
+            // Build a fragment for this column
+            const fragment = document.createDocumentFragment();
+            tasksToRender.forEach(task => {
+                const taskEl = this.renderTask(task);
+                if (taskEl) fragment.appendChild(taskEl);
+            });
+
+            column.appendChild(fragment);
         });
     },
 
@@ -417,6 +452,7 @@ export const Calendar = {
                 top: `${top}px`,
                 height: `${height}px`,
             },
+            dataset: { taskId: task.id } // For event delegation
         });
 
         const card = new TaskCard(task);
@@ -433,89 +469,7 @@ export const Calendar = {
         column.appendChild(taskEl);
         this.updateTaskProgress(taskEl, task);
 
-        // Event listeners
-        const block = taskEl.querySelector('.task-block');
-        const deleteBtn = taskEl.querySelector('.task-delete');
-
-        // Track clicks for F key shortcut fallback
-        block.addEventListener('click', () => {
-            window.lastClickedTaskId = task.id;
-        });
-
-        block.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            if (this.onEditTask) this.onEditTask(task.id);
-            else if (window.App && window.App.editTask) window.App.editTask(task.id);
-        });
-
-        block.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const taskState = Store.getTask(task.id);
-            const wasCompleted = taskState ? taskState.completed : false;
-
-            // Play animation before toggling ONLY if we are completing the whole task
-            // or if it's already completed and we're toggling it back
-            const hasSteps = taskState && taskState.notes && taskState.notes.includes('[ ]');
-
-            if (taskState && !wasCompleted && !hasSteps) {
-                // No steps and about to complete - play animation
-                if (this.onPlayCompletionAnimation) this.onPlayCompletionAnimation(taskEl);
-                else if (window.App && window.App.playCompletionAnimation)
-                    window.App.playCompletionAnimation(taskEl);
-            }
-
-            // Use advance progress method instead of simple toggle
-            const result = Store.advanceTaskProgress(task.id);
-            const updatedTask = result ? result.task : null;
-
-            // Trigger individual task celebration if it JUST became completed
-            if (!wasCompleted && updatedTask && updatedTask.completed && window.Confetti) {
-                const rect = block.getBoundingClientRect();
-                const x = rect.left + rect.width / 2;
-                const y = rect.top + rect.height / 2;
-
-                // [NEW] Show Reward Text
-                Rewards.show(e.clientX, e.clientY, 'huge');
-                window.Confetti.burst(x, y, 40);
-
-                // Play animation if we didn't play it before (because it had steps)
-                if (hasSteps) {
-                    if (this.onPlayCompletionAnimation) this.onPlayCompletionAnimation(taskEl);
-                    else if (window.App && window.App.playCompletionAnimation)
-                        window.App.playCompletionAnimation(taskEl);
-                }
-            } else if (updatedTask && !updatedTask.completed && hasSteps) {
-                // [NEW] If not fully complete but steps advanced (and not un-toggled)
-                // We need a heuristic here: did progress increase?
-                // Simple approach: Always reward positive step interaction via context menu
-                // But context menu currently just advances progress. 
-                // If we advanced a step, reward it!
-                Rewards.show(e.clientX, e.clientY);
-            }
-
-            // Check if all tasks for the day are now complete (Daily Celebration)
-            if (!wasCompleted && updatedTask && updatedTask.completed) {
-                this.checkDailyCelebration(task.scheduledDay);
-            }
-        });
-
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const confirmed = await ConfirmModal.show(
-                    'Are you sure you want to delete this task?'
-                );
-                if (confirmed) {
-                    Store.deleteTask(task.id);
-                    this.renderScheduledTasks();
-                    if (window.TaskQueue) window.TaskQueue.refresh();
-                    if (window.Filters) window.Filters.refresh();
-                }
-            });
-        }
+        return taskEl;
     },
 
     /**
@@ -523,32 +477,29 @@ export const Calendar = {
      */
     updateTaskProgress(taskEl, task) {
         const overlay = taskEl.querySelector('.task-progress-overlay');
-        let progress = this.calculateProgress(task);
+        const { timeProgress, completionProgress } = this.calculateTaskProgress(task);
 
-        // Guard against NaN or invalid progress
-        if (isNaN(progress) || progress === null || progress === undefined) {
-            progress = 0;
-        }
+        // Classify as "passed" ONLY if the actual time slot has elapsed
+        const isTimePassed = timeProgress >= 1;
 
-        // Clamp progress
-        progress = Math.max(0, Math.min(1, progress));
+        // Visual progress is the higher of time or actual task completion
+        const visualProgress = Math.max(timeProgress, completionProgress);
 
         // Remove old classes to reset state
         if (overlay) overlay.classList.remove('in-progress', 'expired');
         taskEl.classList.remove('time-passed');
 
-        if (progress >= 1) {
-            // Time has fully passed
+        if (isTimePassed) {
+            taskEl.classList.add('time-passed');
             if (overlay) {
                 overlay.style.height = '100%';
                 overlay.classList.add('expired');
             }
-            taskEl.classList.add('time-passed');
-        } else if (progress > 0) {
+        } else if (visualProgress > 0) {
             // In progress or part-complete
             if (overlay) {
                 overlay.classList.add('in-progress');
-                const passedHeight = progress * 100;
+                const passedHeight = Math.min(1, visualProgress) * 100;
                 overlay.style.height = `${passedHeight.toFixed(1)}%`;
             }
         } else {
@@ -560,23 +511,20 @@ export const Calendar = {
     },
 
     /**
-     * Calculate progress (0 to 1) based on current time and mini-task completion
+     * Calculate both time-based and completion-based progress
      */
-    calculateProgress(task) {
-        if (!task.scheduledDay || !task.scheduledTime) return 0;
+    calculateTaskProgress(task) {
+        if (!task.scheduledDay || !task.scheduledTime) return { timeProgress: 0, completionProgress: 0 };
 
         // 1. Calculate time-based progress
         const weekDates = this.getWeekDates();
         const dayIndex = this.days.indexOf(task.scheduledDay?.toLowerCase());
-        if (dayIndex === -1) return 0;
+        if (dayIndex === -1) return { timeProgress: 0, completionProgress: 0 };
         const taskDate = weekDates[dayIndex];
-        if (!taskDate) return 0;
+        if (!taskDate) return { timeProgress: 0, completionProgress: 0 };
+
         const now = new Date();
-        const taskDateOnly = new Date(
-            taskDate.getFullYear(),
-            taskDate.getMonth(),
-            taskDate.getDate()
-        );
+        const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
         const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
         let timeProgress = 0;
@@ -588,7 +536,7 @@ export const Calendar = {
             const [startHours, startMinutes] = task.scheduledTime.split(':').map(Number);
             const start = new Date(now);
             start.setHours(startHours, startMinutes, 0, 0);
-            const duration = task.duration || 30; // Guard against missing duration
+            const duration = task.duration || 30;
             const end = new Date(start.getTime() + duration * 60 * 1000);
 
             if (now < start) timeProgress = 0;
@@ -596,26 +544,21 @@ export const Calendar = {
             else timeProgress = (now - start) / (duration * 60 * 1000);
         }
 
-        // 2. Calculate mini-task progress if present (ONLY if not active/running)
-        // If the task is active, strictly follow time to align with the time line
-        let miniTaskProgress = 0;
+        // 2. Calculate completion progress
+        let completionProgress = task.completed ? 1 : 0;
         const activeExec = Store.getState().activeExecution;
         const isActive = activeExec && activeExec.taskId === task.id && activeExec.running;
 
-        if (!isActive && task.notes) {
+        if (!isActive && !task.completed && task.notes) {
             const lines = task.notes.split('\n').filter((line) => line.trim());
             const miniTasks = lines.filter((line) => line.includes('[ ]') || line.includes('[x]'));
             if (miniTasks.length > 0) {
                 const completedCount = miniTasks.filter((line) => line.includes('[x]')).length;
-                miniTaskProgress = completedCount / miniTasks.length;
+                completionProgress = completedCount / miniTasks.length;
             }
         }
 
-        // 3. Return the higher of the two (unless active, then prioritized time)
-        if (isActive) {
-            return timeProgress;
-        }
-        return Math.max(timeProgress, miniTaskProgress);
+        return { timeProgress, completionProgress };
     },
 
     /**
@@ -799,6 +742,116 @@ export const Calendar = {
 
         grid.addEventListener('click', this.gridClickHandler);
         grid.addEventListener('keydown', this.gridKeyHandler);
+
+        // [NEW] Centralized Delegated Task Listeners
+        this.setupDelegatedTaskListeners(grid);
+    },
+
+    /**
+     * Centralized event delegation for all task interactions
+     */
+    /**
+     * Centralized event delegation for all task interactions
+     */
+    setupDelegatedTaskListeners(grid) {
+        // Cleanup existing listeners to ensure no duplicates
+        if (this.taskDelegationCleanup) {
+            this.taskDelegationCleanup();
+            this.taskDelegationCleanup = null;
+        }
+
+        // Define named handlers
+        const onDblClick = (e) => {
+            const taskEl = e.target.closest('.calendar-task');
+            if (taskEl && taskEl.dataset.taskId) {
+                e.stopPropagation();
+                const taskId = taskEl.dataset.taskId;
+                if (this.onEditTask) this.onEditTask(taskId);
+                else if (window.App && window.App.editTask) window.App.editTask(taskId);
+            }
+        };
+
+        const onContextMenu = (e) => {
+            const taskEl = e.target.closest('.calendar-task');
+            if (!taskEl || !taskEl.dataset.taskId) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const taskId = taskEl.dataset.taskId;
+            const block = taskEl.querySelector('.task-block');
+            const taskState = Store.getTask(taskId);
+
+            if (!taskState) return;
+
+            const wasCompleted = taskState.completed;
+            const hasSteps = taskState.notes && taskState.notes.includes('[ ]');
+
+            // Play animation for completion
+            if (!wasCompleted && !hasSteps) {
+                if (window.App && window.App.playCompletionAnimation) {
+                    window.App.playCompletionAnimation(taskEl);
+                }
+            }
+
+            const result = Store.advanceTaskProgress(taskId);
+            const updatedTask = result ? result.task : null;
+
+            // Celebrations
+            if (!wasCompleted && updatedTask && updatedTask.completed) {
+                if (window.Confetti && block) {
+                    const rect = block.getBoundingClientRect();
+                    Rewards.show(e.clientX, e.clientY, 'huge');
+                    window.Confetti.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 40);
+                }
+                this.checkDailyCelebration(updatedTask.scheduledDay);
+            } else if (updatedTask && !updatedTask.completed && hasSteps) {
+                Rewards.show(e.clientX, e.clientY);
+            }
+        };
+
+        const onClick = (e) => {
+            const taskEl = e.target.closest('.calendar-task');
+            const deleteBtn = e.target.closest('.task-delete');
+
+            if (deleteBtn && taskEl && taskEl.dataset.taskId) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.handleDeleteTask(taskEl.dataset.taskId);
+                return;
+            }
+
+            if (taskEl && taskEl.dataset.taskId) {
+                window.lastClickedTaskId = taskEl.dataset.taskId;
+            }
+        };
+
+        // Add listeners
+        grid.addEventListener('dblclick', onDblClick);
+        grid.addEventListener('contextmenu', onContextMenu);
+        grid.addEventListener('click', onClick);
+
+        // Save cleanup function
+        this.taskDelegationCleanup = () => {
+            grid.removeEventListener('dblclick', onDblClick);
+            grid.removeEventListener('contextmenu', onContextMenu);
+            grid.removeEventListener('click', onClick);
+        };
+    },
+
+
+    /**
+     * Handle task deletion via delegation
+     */
+    async handleDeleteTask(taskId) {
+        const confirmed = await ConfirmModal.show('Are you sure you want to delete this task?');
+        if (confirmed) {
+            Store.deleteTask(taskId);
+            // Re-render grid to reflect deletion (or we could surgerically remove the El)
+            this.renderGrid();
+            if (window.TaskQueue) window.TaskQueue.refresh();
+            if (window.Filters) window.Filters.refresh();
+        }
     },
 
     /**

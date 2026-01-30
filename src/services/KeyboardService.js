@@ -6,108 +6,127 @@ import { ModalService } from './ModalService.js';
 /**
  * KeyboardService - Handles global keyboard shortcuts
  */
+console.log('[KeyboardService] Module loading...');
 export const KeyboardService = {
     init() {
+        console.log('[KeyboardService] Initializing...');
         this.setupKeyboardShortcuts();
         this.setupShortcutsModal();
     },
 
     setupKeyboardShortcuts() {
+        console.log("[KeyboardService] setupKeyboardShortcuts entered");
+
+        // Use document for compatibility
         document.addEventListener('keydown', (e) => {
-            const shortcutsModal = document.getElementById('shortcutsModal');
-            const isModalOpen = ModalService.isOpen();
-            const isShortcutsOpen = shortcutsModal && shortcutsModal.classList.contains('active');
-            const isInputFocused =
-                document.activeElement.tagName === 'INPUT' ||
-                document.activeElement.tagName === 'TEXTAREA' ||
-                document.activeElement.tagName === 'SELECT';
+            try {
+                // Direct DOM checks are safer if modules have initialization races
+                const taskModal = document.getElementById('taskModal');
+                const shortcutsModal = document.getElementById('shortcutsModal');
 
-            // Close shortcuts modal with Escape
-            if (isShortcutsOpen && e.key === 'Escape') {
-                e.preventDefault();
-                this.closeShortcutsModal();
-                return;
-            }
+                const isTaskModalOpen = taskModal && taskModal.classList.contains('active');
+                const isShortcutsOpen = shortcutsModal && shortcutsModal.classList.contains('active');
 
-            // Modal shortcuts (Ctrl/Cmd + Enter to save)
-            if (isModalOpen) {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                // Fallback to ModalService if possible, but DOM is source of truth
+                const isModalOpen = isTaskModalOpen || isShortcutsOpen;
+
+                const activeEl = document.activeElement;
+                const activeTag = activeEl ? activeEl.tagName.toUpperCase() : 'NONE';
+                const isInputFocused = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT' || (activeEl && activeEl.isContentEditable);
+
+                // 1. Global Command Palette (Cmd+K / Ctrl+K) - ALWAYS ALLOW
+                if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
+                    console.log('[KeyboardService] Cmd+K detected (Global)');
                     e.preventDefault();
-                    document.dispatchEvent(new CustomEvent('modal:save'));
+                    if (window.CommandPalette) {
+                        window.CommandPalette.toggle();
+                    }
+                    return;
                 }
-                return;
-            }
 
-            // Don't trigger shortcuts when typing in inputs or shortcuts modal is open
-            if (isInputFocused || isShortcutsOpen) return;
+                // LOG EVERY SINGLE KEYDOWN IN TAURI
+                console.log(`[KeyboardService] KEYDOWN: "${e.key}" | Focus: ${activeTag} | Modal: ${isModalOpen} | Inputs: ${isInputFocused}`);
 
-            // Command Palette (Cmd/Ctrl + K)
-            if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                if (window.CommandPalette) window.CommandPalette.toggle();
-                return;
-            }
+                // 2. Toggles that work even if a modal is open (as long as not typing)
+                if (!isInputFocused && e.key.toLowerCase() === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                    console.log('[KeyboardService] Allowing "f" shortcut to bypass modal check');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.handleFocusModeShortcut();
+                    return;
+                }
 
-            switch (e.key.toLowerCase()) {
-                case 'n':
-                    e.preventDefault();
-                    // Dispatch event to open modal
-                    document.getElementById('newTaskBtn')?.click();
-                    break;
-                case 't':
-                    e.preventDefault();
-                    Calendar.setCurrentWeek(new Date());
-                    break;
-                case 'arrowleft':
-                    e.preventDefault();
-                    Calendar.currentWeekStart.setDate(Calendar.currentWeekStart.getDate() - 7);
-                    Store.setCurrentWeek(Calendar.currentWeekStart);
-                    break;
-                case 'arrowright':
-                    e.preventDefault();
-                    Calendar.currentWeekStart.setDate(Calendar.currentWeekStart.getDate() + 7);
-                    Store.setCurrentWeek(Calendar.currentWeekStart);
-                    break;
-                case 'w':
-                    e.preventDefault();
-                    Calendar.setViewMode('week');
-                    this.updateViewButtons('week');
-                    break;
-                case 'd':
-                    e.preventDefault();
-                    Calendar.setViewMode('day');
-                    this.updateViewButtons('day');
-                    break;
-                case ' ':
-                    if (e.shiftKey) {
-                        // Focus Mode shortcut (Shift + Space)
-                        const hoveredTask = document.querySelector(
-                            '.calendar-task:hover .task-block'
-                        );
-                        if (hoveredTask) {
+                if (isModalOpen || isInputFocused) {
+                    // Essential escape hatch for modals
+                    if (e.key === 'Escape') {
+                        if (isShortcutsOpen) {
+                            console.log('[KeyboardService] ESC: closing shortcuts modal');
                             e.preventDefault();
-                            const taskId = hoveredTask.dataset.taskId;
-                            if (window.FocusMode) window.FocusMode.open(taskId);
+                            this.closeShortcutsModal();
+                        } else if (isTaskModalOpen) {
+                            console.log('[KeyboardService] ESC: task modal is open, letting ModalService handle it');
                         }
                     }
-                    break;
-                case 'f': {
-                    // Focus Mode shortcut (F)
-                    if (window.FocusMode && window.FocusMode.isOpen) {
-                        // If already open, let the FocusMode internal handler take care of it (likely closing)
-                        return;
-                    }
 
-                    e.preventDefault();
-                    this.handleFocusModeShortcut();
-                    break;
+                    // Essential save hatch for modals
+                    if (isTaskModalOpen && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        console.log('[KeyboardService] Saving task modal via Cmd+Enter');
+                        e.preventDefault();
+                        document.dispatchEvent(new CustomEvent('modal:save'));
+                    }
+                    return;
                 }
-                case '?':
-                    e.preventDefault();
-                    this.toggleShortcutsModal();
-                    break;
+
+                // Single-key shortcuts
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+                const key = e.key.toLowerCase();
+                console.log(`[KeyboardService] Executing shortcut action for: ${key}`);
+
+                switch (key) {
+                    case 'n':
+                        e.preventDefault();
+                        document.getElementById('newTaskBtn')?.click();
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        document.getElementById('todayBtn')?.click();
+                        break;
+                    case 'w':
+                        e.preventDefault();
+                        if (window.Calendar) window.Calendar.setViewMode('week');
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        if (window.Calendar) window.Calendar.setViewMode('day');
+                        break;
+                    case 'f':
+                        // Focus Mode shortcut
+                        if (window.FocusMode && window.FocusMode.isOpen) {
+                            console.log('[KeyboardService] FocusMode is already open');
+                            return;
+                        }
+                        e.preventDefault();
+                        e.stopPropagation(); // Stop propagation to FocusMode.js
+                        this.handleFocusModeShortcut();
+                        break;
+                    case 'arrowleft':
+                        e.preventDefault();
+                        document.getElementById('prevWeek')?.click();
+                        break;
+                    case 'arrowright':
+                        e.preventDefault();
+                        document.getElementById('nextWeek')?.click();
+                        break;
+                    case '?':
+                        e.preventDefault();
+                        this.toggleShortcutsModal();
+                        break;
+                }
+            } catch (err) {
+                console.error('[KeyboardService] CRITICAL LISTENER ERROR:', err);
             }
-        });
+        }, true); // Use capture phase
     },
 
     updateViewButtons(mode) {
@@ -116,26 +135,45 @@ export const KeyboardService = {
     },
 
     handleFocusModeShortcut() {
-        // Try to find hovered task first
-        let hoveredTask = document.querySelector('.calendar-task:hover .task-block');
+        console.log('[KeyboardService] Attempting to find task for Focus Mode...');
 
-        // Fallback: find the most recently clicked task
-        if (!hoveredTask && window.lastClickedTaskId) {
-            hoveredTask = document.querySelector(
-                `.task-block[data-task-id="${window.lastClickedTaskId}"]`
-            );
+        // 1. Hovered task (either in calendar or queue)
+        let targetTaskEl = document.querySelector('.calendar-task:hover .task-block, .task-block:hover');
+
+        // 2. Fallback: Currently active/paused task in Store
+        if (!targetTaskEl) {
+            const activeExec = Store.getActiveExecution();
+            if (activeExec && activeExec.taskId) {
+                targetTaskEl = document.querySelector(`[data-task-id="${activeExec.taskId}"]`);
+                console.log('[KeyboardService] Fallback to active execution:', activeExec.taskId);
+            }
         }
 
-        // Fallback: find any visible scheduled task
-        if (!hoveredTask) {
-            hoveredTask = document.querySelector('.calendar-task .task-block');
+        // 3. Fallback: Last clicked task
+        if (!targetTaskEl && window.lastClickedTaskId) {
+            targetTaskEl = document.querySelector(`[data-task-id="${window.lastClickedTaskId}"]`);
+            console.log('[KeyboardService] Fallback to last clicked task:', window.lastClickedTaskId);
         }
 
-        if (hoveredTask) {
-            const taskId = hoveredTask.dataset.taskId;
-            if (window.FocusMode) window.FocusMode.open(taskId);
+        // 4. Fallback: Find literally any visible task block
+        if (!targetTaskEl) {
+            targetTaskEl = document.querySelector('.task-block');
+            if (targetTaskEl) console.log('[KeyboardService] Fallback to first available task block');
+        }
+
+        if (targetTaskEl && targetTaskEl.dataset.taskId) {
+            const taskId = targetTaskEl.dataset.taskId;
+            console.log('[KeyboardService] Success! Opening Focus Mode for:', taskId);
+            if (window.FocusMode) {
+                window.FocusMode.open(taskId);
+            } else {
+                console.error('[KeyboardService] window.FocusMode is not available');
+            }
         } else {
-            console.log('No task found to focus on.');
+            console.warn('[KeyboardService] No task found to focus.');
+            if (window.Toast) {
+                window.Toast.info('No task selected. Hover over a task or click one first.');
+            }
         }
     },
 

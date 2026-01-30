@@ -3,6 +3,7 @@ import { DOMUtils } from '../utils/DOMUtils.js';
 /**
  * Toast - Centralized notification system
  */
+console.log('[Toast] Module loading...');
 export const Toast = {
     container: null,
     toasts: [],
@@ -11,6 +12,11 @@ export const Toast = {
 
     init() {
         if (this.container) return;
+        if (!document.body) {
+            console.error('[Toast] document.body not found! Postponing init.');
+            setTimeout(() => this.init(), 100);
+            return;
+        }
         this.container = DOMUtils.createElement('div', { className: 'toast-container' });
         document.body.appendChild(this.container);
     },
@@ -40,6 +46,7 @@ export const Toast = {
      * Show an info toast
      */
     info(message, title = 'Info') {
+        console.log('[Toast] Info notification:', message);
         this.add('info', message, title);
     },
 
@@ -47,6 +54,7 @@ export const Toast = {
      * Core add method
      */
     add(type, message, title) {
+        console.log(`[Toast] Adding toast: ${type} - ${message}`);
         this.init();
 
         // Enforce max toasts

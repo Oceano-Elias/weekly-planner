@@ -294,6 +294,20 @@ export const Store = {
                         (resolved.type === 'template' && t.templateId !== resolved.templateId)
                 );
             }
+
+            // [NEW] If it was a template task, remove the template itself so it doesn't reappear in future weeks
+            if (resolved.type === 'template') {
+                const idToRemove = resolved.templateId;
+                state.templates = state.templates.filter((t) => t.id !== idToRemove);
+
+                // [FIX] Also clean up "orphan" instances in ALL weeks to prevent reappearing ghosts
+                Object.keys(state.weeklyInstances).forEach(weekId => {
+                    const week = state.weeklyInstances[weekId];
+                    if (week.tasks) {
+                        week.tasks = week.tasks.filter(t => t.templateId !== idToRemove);
+                    }
+                });
+            }
         }
 
         this.save();
@@ -681,10 +695,73 @@ export const Store = {
      * Get week identifier (e.g., '2026-W01')
      */
     getWeekIdentifier(date) {
-        const weekStart = PlannerService.getWeekStart(date);
-        const year = weekStart.getFullYear();
-        const week = Math.ceil(((weekStart - new Date(year, 0, 1)) / 86400000 + 1) / 7);
-        return `${year}-W${String(week).padStart(2, '0')}`;
+        return PlannerService.getWeekIdentifier(date);
+    },
+
+    /**
+     * Copy all tasks from the previous week into the specified week
+     * Returns true if tasks were copied, false if previous week was empty
+     */
+    copyFromPreviousWeek(targetWeekId) {
+        const prevWeekId = PlannerService.getPreviousWeekId(targetWeekId);
+        const prevTasks = this.getTasksForWeek(prevWeekId);
+
+        if (prevTasks.length === 0) {
+            console.log(`[Store] No tasks found in previous week (${prevWeekId}) to copy.`);
+            return false;
+        }
+
+        // Initialize instance if missing
+        if (!state.weeklyInstances[targetWeekId]) {
+            state.weeklyInstances[targetWeekId] = { tasks: [] };
+        }
+
+        const currentTasks = state.weeklyInstances[targetWeekId].tasks;
+
+        prevTasks.forEach((task) => {
+            // Check if a task with the same title, time, and day already exists to avoid duplication
+            const exists = currentTasks.some(
+                (t) => t.title === task.title && t.scheduledTime === task.scheduledTime && t.scheduledDay === task.scheduledDay
+            );
+
+            if (!exists) {
+                // If it's a template task, we add the template reference
+                // If it's a standalone task, we clone it as a new standalone
+                if (task.id.startsWith('template_')) {
+                    const templateId = task.id.split('_').slice(0, 2).join('_');
+                    currentTasks.push({
+                        templateId: templateId,
+                        completed: false,
+                        notes: task.notes || '',
+                        scheduledDay: task.scheduledDay,
+                        scheduledTime: task.scheduledTime,
+                        // [FIX] Copy overrides from the previous instance
+                        duration: task.duration,
+                        goal: task.goal || '',
+                        hierarchy: [...(task.hierarchy || [])],
+                        returnAnchor: task.returnAnchor || '',
+                    });
+                } else {
+                    currentTasks.push({
+                        instanceId: `inst_${state.nextId++}`,
+                        templateId: null,
+                        sourceTaskId: null,
+                        title: task.title,
+                        goal: task.goal || '',
+                        hierarchy: [...(task.hierarchy || [])],
+                        duration: task.duration,
+                        completed: false,
+                        notes: task.notes || '',
+                        scheduledDay: task.scheduledDay,
+                        scheduledTime: task.scheduledTime,
+                    });
+                }
+            }
+        });
+
+        this.save();
+        this.notify();
+        return true;
     },
 
     /**

@@ -366,6 +366,7 @@ export const FormHandler = {
         const hierarchy = this.getSelectedHierarchy();
         const duration = this.getSelectedDuration();
 
+        // 1. Validate Hierarchy (Required)
         if (hierarchy.length === 0) {
             const dept1 = document.getElementById('dept1');
             dept1.style.borderColor = 'var(--accent-error)';
@@ -376,27 +377,57 @@ export const FormHandler = {
             }, 500);
 
             dept1.focus();
+            Toast.error('Please select at least one category.');
             return;
         }
 
+        // 2. Validate & Sanitize Title
         const titleInput = document.getElementById('taskTitle');
-        const title = titleInput.value.trim() || hierarchy[hierarchy.length - 1];
+        let title = titleInput.value.trim();
 
+        // Default to last hierarchy item if empty
+        if (!title && hierarchy.length > 0) {
+            title = hierarchy[hierarchy.length - 1];
+        }
+
+        if (!title) {
+            titleInput.style.borderColor = 'var(--accent-error)';
+            titleInput.focus();
+            Toast.error('Task title is required.');
+            return;
+        }
+
+        // Sanitize title (escape basic HTML)
+        title = PlannerService.escapeHtml(title);
+
+        // 3. Validate Duration
+        if (isNaN(duration) || duration < 15 || duration > 480) {
+            Toast.error('Duration must be between 15 and 480 minutes.');
+            return;
+        }
+
+        // 4. Collect & Sanitize Notes/Steps
         let notes = '';
         if (this.pendingSteps.length > 0) {
             notes = this.pendingSteps
-                .map((step) =>
-                    step.startsWith('[ ] ') || step.startsWith('[x] ') ? step : `[ ] ${step}`
-                )
+                .map((step) => {
+                    const trimmed = step.trim();
+                    return trimmed.startsWith('[ ] ') || trimmed.startsWith('[x] ')
+                        ? trimmed
+                        : `[ ] ${trimmed}`;
+                })
+                .filter(step => step.length > 4) // Ignore empty checkboxes
                 .join('\n');
         }
 
         let resultId;
         if (currentEditingId) {
-            this.handleUpdateTask(currentEditingId, title, hierarchy, duration, notes);
+            const success = this.handleUpdateTask(currentEditingId, title, hierarchy, duration, notes);
+            if (!success) return; // Stop if update failed (e.g. overlap)
             resultId = currentEditingId;
         } else {
             resultId = this.handleCreateTask(title, hierarchy, duration, notes);
+            if (!resultId) return; // Stop if creation failed (e.g. scheduling overlap)
         }
 
         ModalService.close();
@@ -430,22 +461,26 @@ export const FormHandler = {
                 Toast.error(
                     `Cannot set duration to ${PlannerService.formatDuration(duration)} - overlaps another task.`
                 );
-                return;
+                return false;
             }
         }
         Store.updateTask(taskId, { title, hierarchy, duration, notes });
+        return true;
     },
 
     handleCreateTask(title, hierarchy, duration, notes) {
+        if (this.scheduledData) {
+            const dayTasks = Store.getTasksForDay(this.scheduledData.day);
+            if (!PlannerService.isSlotAvailable(this.scheduledData.time, duration, dayTasks)) {
+                Toast.error(`Cannot schedule at ${this.scheduledData.time} - overlaps another task.`);
+                return null;
+            }
+        }
+
         const task = Store.addTask({ title, hierarchy, duration, notes });
 
         if (this.scheduledData) {
-            const dayTasks = Store.getTasksForDay(this.scheduledData.day);
-            if (PlannerService.isSlotAvailable(this.scheduledData.time, duration, dayTasks)) {
-                Store.scheduleTask(task.id, this.scheduledData.day, this.scheduledData.time);
-            } else {
-                Toast.error(`Cannot schedule at ${this.scheduledData.time} - overlaps another task.`);
-            }
+            Store.scheduleTask(task.id, this.scheduledData.day, this.scheduledData.time);
             this.scheduledData = null;
         }
         return task.id;

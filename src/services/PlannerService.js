@@ -100,6 +100,68 @@ export const PlannerService = {
     },
 
     /**
+     * Get the week identifier (e.g., '2026-W01')
+     * Robust logic: uses the Monday of the week to determine the year
+     */
+    getWeekIdentifier(date) {
+        const monday = this.getWeekStart(date);
+        const year = monday.getFullYear();
+
+        // Calculate week number relative to the start of the year
+        const yearStart = new Date(year, 0, 1);
+        const dayOffset = (monday - yearStart) / 86400000;
+        const week = Math.floor(dayOffset / 7) + 1;
+
+        return `${year}-W${String(week).padStart(2, '0')}`;
+    },
+
+    /**
+     * Get the previous week's identifier
+     */
+    getPreviousWeekId(weekId) {
+        const [year, weekStr] = weekId.split('-W');
+        const targetWeek = parseInt(weekStr);
+        const yearInt = parseInt(year);
+
+        // Initial guess: Jan 1 + (week * 7) days (overshoot slightly to ensure we hit at least the week)
+        let date = new Date(yearInt, 0, 1 + (targetWeek * 7));
+
+        // Align to Monday
+        let monday = this.getWeekStart(date);
+
+        // Check what week this date actually is
+        let foundId = this.getWeekIdentifier(monday);
+
+        // Optimization: prevent infinite loops (though highly unlikely with week logic)
+        let attempts = 0;
+
+        // Adjust if we missed the target week
+        while (foundId !== weekId && attempts < 10) {
+            const [fYear, fWeek] = foundId.split('-W');
+            // If completely wrong year, break (should rely on simple logic then)
+            if (parseInt(fYear) !== yearInt && targetWeek > 5 && targetWeek < 50) break;
+
+            const fWeekInt = parseInt(fWeek);
+
+            if (fWeekInt > targetWeek) {
+                // We are too far ahead, go back
+                monday.setDate(monday.getDate() - 7);
+            } else if (fWeekInt < targetWeek) {
+                // We are behind, go forward
+                monday.setDate(monday.getDate() + 7);
+            }
+            foundId = this.getWeekIdentifier(monday);
+            attempts++;
+        }
+
+        // Now monday should be the start of the CURRENT week.
+        // Go back 7 days for PREVIOUS week.
+        monday.setDate(monday.getDate() - 7);
+
+        return this.getWeekIdentifier(monday);
+    },
+
+    /**
      * Escape HTML for safe display
      */
     escapeHtml(text) {

@@ -1,0 +1,172 @@
+/* =========================================
+   PiP (Picture-in-Picture) Styles
+   ========================================= */
+
+#pip-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+
+.pip-window {
+    width: calc(100% - 16px);
+    height: calc(100% - 16px);
+    margin: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 10px 25px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+    background: linear-gradient(180deg, rgba(18, 20, 28, 0.98) 0%, rgba(10, 11, 16, 0.98) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+}
+
+.pip-progress-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    margin-top: -6px;
+}
+
+.pip-ring-svg {
+    transform: rotate(-90deg);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+#pip-ring {
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
+}
+
+#pip-time {
+    position: absolute;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    font-variant-numeric: tabular-nums;
+    transition: opacity 0.2s ease;
+}
+
+#pip-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    -webkit-app-region: no-drag;
+    z-index: 10;
+}
+
+.pip-window:hover #pip-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.pip-window:hover #pip-time {
+    opacity: 0.1;
+}
+
+#pip-toggle-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent-primary, #6366f1);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+#pip-close-wrapper {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0.2;
+    transition: opacity 0.2s ease;
+    -webkit-app-region: no-drag;
+    z-index: 20;
+}
+
+.pip-window:hover #pip-close-wrapper {
+    opacity: 1;
+}
+
+#pip-close-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+#pip-close-btn:hover {
+    background: rgba(239, 68, 68, 0.8) !important;
+    color: white !important;
+}
+
+#pip-controls {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    opacity: 0.2;
+    transition: opacity 0.3s ease;
+    -webkit-app-region: no-drag;
+}
+
+.pip-window:hover #pip-controls {
+    opacity: 0.8;
+}
+
+#pip-controls:hover {
+    opacity: 1 !important;
+}
+
+#pip-restore-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+#pip-restore-btn:hover {
+    background: rgba(99, 102, 241, 0.8) !important;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}

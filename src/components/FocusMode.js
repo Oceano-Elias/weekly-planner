@@ -8,7 +8,10 @@ import { FocusModeUI } from './FocusModeUI.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 import { Toast } from './Toast.js';
 import { Rewards } from '../services/Rewards.js';
+import { TimerService } from '../services/TimerService.js';
+import { QuestStackController } from '../services/QuestStackController.js';
 
+console.log('[FocusMode] Module loading...');
 export const FocusMode = {
     isOpen: false,
     activeTaskId: null,
@@ -16,8 +19,6 @@ export const FocusMode = {
     sessionInterval: null,
     resizeHandler: null,
     positionRaf: null,
-    carouselAnimating: false,
-    lastDoneStepIndex: null,
     storeUnsubscribe: null,
 
     // Core session settings
@@ -25,25 +26,28 @@ export const FocusMode = {
     breakDuration: 5 * 60, // 5 minutes break
     closureThreshold: 5 * 60, // 5 minutes before end
 
-    // Pomodoro settings
-    workDuration: 25 * 60,
-    pomodoroSeconds: 25 * 60,
-    pomodoroMode: 'work',
-    pomodoroRunning: false,
-    pomodoroTimer: null,
-    pomodoroTargetEpoch: null,
     pipWindow: null,
 
-    // Long break cycle settings
-    longBreakDuration: 20 * 60, // 20-minute long break
-    pomodorosBeforeLongBreak: 4, // Cycle length
-    completedPomodoros: 0, // Counter (0-3, resets after long break)
-    totalPomodorosToday: 0, // Daily total
-    pomodoroSessionDate: null, // Date for daily reset
+    get pomodoroRunning() {
+        return TimerService.pomodoroRunning;
+    },
 
-    /**
-     * Open Focus Mode for a specific task
-     */
+    get pomodoroSeconds() {
+        return TimerService.pomodoroSeconds;
+    },
+
+    get pomodoroMode() {
+        return TimerService.pomodoroMode;
+    },
+
+    get workDuration() {
+        return TimerService.workDuration;
+    },
+
+    get breakDuration() {
+        return TimerService.breakDuration;
+    },
+
     open(taskId) {
         const task = Store.getTask(taskId);
         if (!task) return;
@@ -53,11 +57,20 @@ export const FocusMode = {
         this.closeFloatingTimer();
         this.hideBadge();
 
-        // Restore Pomodoro counter state from localStorage
-        this.restoreTimerState();
+        // 1. Initialize Modular Services
+        TimerService.init({
+            onModeSwitch: () => this.updateUI(),
+            updateFloatingTimer: () => this.updateFloatingTimer()
+        });
 
-        // Initialize or restore execution state
-        this.initializeExecutionState(task);
+        QuestStackController.init(taskId, {
+            onNavigate: () => this.updateUI(),
+            showSuccessVisuals: () => this.showSuccessVisuals(),
+            startStepTimer: (idx, steps) => this.startStepTimer(idx, steps)
+        });
+
+        // 2. Initialize Task Execution state in Store
+        this.initializeTaskExecution(task);
 
         this.render(task);
         FocusModeUI.setPageOverflow(true);
@@ -74,45 +87,49 @@ export const FocusMode = {
     },
 
     /**
-     * Initialize or restore state from Store
+     * Restore timer state from storage (called on App init)
      */
-    initializeExecutionState(task) {
+    async restoreTimerState() {
+        console.log('[FocusMode] Restoring timer state...');
+        const state = Store.getActiveExecution();
+        this.activeTaskId = state.taskId || this.activeTaskId;
+
+        TimerService.init({
+            onModeSwitch: () => this.updateUI(),
+            updateFloatingTimer: () => this.updateFloatingTimer()
+        });
+
+        await this.setupListeners();
+
+        if (this.activeTaskId) {
+            QuestStackController.init(this.activeTaskId);
+        }
+    },
+
+    /**
+     * Initialize task-specific execution state in Store
+     */
+    initializeTaskExecution(task) {
         const state = Store.getActiveExecution();
 
-        // 1. Check if the TASK itself has a saved session result (Per-Task Persistence)
+        // 1. Restore per-task persistence if it exists
         if (task.sessionResult) {
-            console.log('[Focus] Restoring session results from task metadata');
             Store.updateActiveExecution({
                 ...task.sessionResult,
                 taskId: this.activeTaskId,
                 running: false,
             });
-            this.lastDoneStepIndex = null;
             return;
         }
 
-        // 2. Fallback to global activeExecution if it matches the current task
-        // (Used for sessions in progress)
-        if (state.taskId === this.activeTaskId) {
-            return;
-        }
+        // 2. Avoid reset if we are already in session for this task
+        if (state.taskId === this.activeTaskId) return;
 
-        // 3. New: If the task is already completed, jump to results phase
-        if (task.completed) {
-            Store.updateActiveExecution({
-                taskId: this.activeTaskId,
-                running: false,
-                phase: 'completed',
-            });
-            this.lastDoneStepIndex = null;
-            return;
-        }
-
-        // 4. Otherwise, reset to orientation for a fresh start
+        // 3. Reset to orientation/completed based on task status
         Store.updateActiveExecution({
             taskId: this.activeTaskId,
             running: false,
-            phase: 'orientation',
+            phase: task.completed ? 'completed' : 'orientation',
             mode: 'work',
             sessionStartTime: null,
             accumulatedTime: 0,
@@ -123,7 +140,6 @@ export const FocusMode = {
                 const idx = lines.findIndex((l) => l.includes('[ ]'));
                 return idx === -1 && lines.length > 0 ? 0 : idx;
             })(),
-            // Reset step timing for new task
             stepTimings: [],
             pauseCount: 0,
             sessionStats: {
@@ -134,7 +150,6 @@ export const FocusMode = {
                 pomodorosUsed: 0,
             },
         });
-        this.lastDoneStepIndex = null;
     },
 
     /**
@@ -145,7 +160,7 @@ export const FocusMode = {
 
         const state = Store.getActiveExecution();
         // Check if session is "active" (accumulation > 0 or in break, even if paused)
-        const isActive = state.running || state.mode === 'break' || (state.mode === 'work' && state.accumulatedTime > 0);
+        const isActive = state.running || state.mode === 'break' || (state.mode === 'work' && state.accumulatedTime > 0) || this.pomodoroRunning;
 
         // Default to PiP enabled (disablePip = false) since settings are not implemented yet
         const disablePip = false;
@@ -153,7 +168,7 @@ export const FocusMode = {
         if (!isActive && state.phase !== 'completed') {
             this.stopSession(true);
             this.activeTaskId = null;
-        } else if (isActive && !disablePip) {
+        } else if ((isActive || this.pomodoroRunning) && !disablePip) {
             // Keep running in background/floating mode
             this.openFloatingTimer();
         }
@@ -195,7 +210,6 @@ export const FocusMode = {
         this.setupListeners();
         this.attachCarouselControls();
         this.updateUI();
-        this.startSessionInterval();
         this.schedulePositionCarouselCompleteButton();
         requestAnimationFrame(() => {
             FocusModeUI.removeCarouselInitialTransition();
@@ -227,10 +241,13 @@ export const FocusMode = {
 
         // Show Pomodoro counter
         FocusModeUI.updatePomodoroCounter(
-            this.completedPomodoros,
-            this.pomodorosBeforeLongBreak,
-            this.totalPomodorosToday
+            TimerService.completedPomodoros,
+            TimerService.pomodorosBeforeLongBreak,
+            TimerService.totalPomodorosToday
         );
+
+        // Update Pomodoro Clock display
+        TimerService.updateDisplay();
     },
 
     schedulePositionCarouselCompleteButton() {
@@ -270,110 +287,25 @@ export const FocusMode = {
     },
 
     animateCarouselRoll(toIndex, { markComplete }) {
-        if (this.carouselAnimating) return;
-        const state = Store.getActiveExecution();
-        const fromIndex = state.currentStepIndex;
-        if (toIndex === -1 || toIndex === fromIndex) return;
-
-        this.carouselAnimating = true;
-
-        const task = Store.getTask(this.activeTaskId);
-        const steps = (task?.notes || '').split('\n').filter((l) => l.trim() !== '');
-
-        FocusModeUI.animateForwardRoll({
-            fromIndex,
-            toIndex,
-            task,
-            onStepComplete: markComplete
-                ? () => {
-                    this.toggleMiniTask(fromIndex, true);
-                    this.recordStepCompletion(fromIndex, 'completed');
-                    // [NEW] Show Reward (Centered)
-                    Rewards.show(window.innerWidth / 2, window.innerHeight * 0.35);
-                    this.showSuccessVisuals();
-                }
-                : () => {
-                    // If not markComplete, it's a skip or manual navigaton
-                    this.recordStepCompletion(fromIndex, 'skipped');
-                },
-            onFinish: () => {
-                this.lastDoneStepIndex = fromIndex;
-                Store.updateActiveExecution({ currentStepIndex: toIndex });
-                this.startStepTimer(toIndex, steps);
-                this.updateUI();
-                this.carouselAnimating = false;
-                this.schedulePositionCarouselCompleteButton();
-            },
-        });
+        QuestStackController.animateCarouselRoll(toIndex, { markComplete });
     },
 
     /**
      * Start timing a step
      */
     startStepTimer(index, steps) {
-        if (index < 0 || index >= steps.length) return;
-
-        const state = Store.getActiveExecution();
-        const stepTimings = [...(state.stepTimings || [])];
-
-        // If timing already exists for this index and is skipped, we might be returning to it
-        // For now, let's only start IF it doesn't have a startedAt or was skipped
-        let timing = stepTimings.find((t) => t.stepIndex === index);
-
-        if (!timing) {
-            timing = {
-                stepIndex: index,
-                stepText: steps[index].replace(/\[[ x]\]/, '').trim(),
-                startedAt: Date.now(),
-                completedAt: null,
-                duration: 0,
-                status: 'active',
-            };
-            stepTimings.push(timing);
-        } else if (timing.status === 'skipped' || timing.status === 'active') {
-            timing.startedAt = Date.now();
-            timing.status = 'active';
-        }
-
-        Store.updateActiveExecution({ stepTimings });
+        QuestStackController.startStepTimer(index, steps);
     },
 
     /**
      * Record step completion or skip
      */
     recordStepCompletion(index, status = 'completed') {
-        const state = Store.getActiveExecution();
-        const stepTimings = [...(state.stepTimings || [])];
-        const timing = stepTimings.find((t) => t.stepIndex === index);
-
-        if (timing && timing.status === 'active') {
-            timing.completedAt = Date.now();
-            timing.duration += timing.completedAt - timing.startedAt;
-            timing.status = status;
-            Store.updateActiveExecution({ stepTimings });
-        }
+        QuestStackController.recordStepCompletion(index, status);
     },
 
     animateCarouselRollReverse(toIndex) {
-        if (this.carouselAnimating) return;
-        const state = Store.getActiveExecution();
-        const fromIndex = state.currentStepIndex;
-        if (toIndex === -1 || toIndex === fromIndex) return;
-
-        this.carouselAnimating = true;
-
-        FocusModeUI.animateBackwardRoll({
-            fromIndex,
-            toIndex,
-            task: Store.getTask(this.activeTaskId),
-            onFinish: () => {
-                Store.updateActiveExecution({ currentStepIndex: toIndex });
-                this.lastDoneStepIndex = null;
-                this.updateUI();
-                this.carouselAnimating = false;
-                this.schedulePositionCarouselCompleteButton();
-            },
-        });
+        QuestStackController.animateCarouselRollReverse(toIndex);
     },
 
     /**
@@ -403,14 +335,14 @@ export const FocusMode = {
 
                         // Use specific methods for each action to ensure clean state
                         if (action === 'toggle') {
-                            const state = Store.getActiveExecution();
-                            if (state.running) this.pauseSession();
-                            else this.startSession();
-                            this.updateUI();
+                            if (this.activeTaskId) {
+                                this.toggleSession();
+                            } else {
+                                this.startPauseTimer();
+                            }
                         }
                         if (action === 'reset') {
                             this.resetTimer();
-                            this.updateUI();
                         }
                         if (action === 'request-state') {
                             this.updateFloatingTimer();
@@ -490,8 +422,15 @@ export const FocusMode = {
         }
 
         this.activeKeyHandler = (e) => {
+            // ONLY handle keys if the Focus Mode modal is actually open
+            if (!this.isOpen) return;
+
             // Skip if typing in an input field
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const activeTag = document.activeElement ? document.activeElement.tagName.toUpperCase() : '';
+            if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+
+            // Log for debugging
+            console.log(`[FocusMode] key: ${e.key}, code: ${e.code}`);
 
             // Enter: Complete current step
             if (e.key === 'Enter') {
@@ -502,6 +441,7 @@ export const FocusMode = {
 
             // Space: Toggle pause/resume
             if (e.key === ' ' || e.code === 'Space') {
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
                 e.preventDefault(); // Prevent page scroll
                 const state = Store.getActiveExecution();
                 if (state.running) {
@@ -515,6 +455,7 @@ export const FocusMode = {
 
             // Arrow Up: Navigate to previous step
             if (e.key === 'ArrowUp') {
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
                 e.preventDefault();
                 this.navigateToPrevVisibleStep();
                 return;
@@ -522,6 +463,7 @@ export const FocusMode = {
 
             // Arrow Down: Navigate to next step (skip)
             if (e.key === 'ArrowDown') {
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
                 e.preventDefault();
                 this.skipToNextStep();
                 return;
@@ -529,13 +471,19 @@ export const FocusMode = {
 
             // S: Skip current step
             if (e.key.toLowerCase() === 's') {
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
                 this.skipToNextStep();
                 return;
             }
 
-            // Escape or F: Close Focus Mode
-            if (e.key === 'Escape' || e.key.toLowerCase() === 'f') {
+            // Escape or F: Close Focus Mode - must NOT have modifiers
+            const isF = e.key.toLowerCase() === 'f' || e.code === 'KeyF';
+            const isEsc = e.key === 'Escape' || e.code === 'Escape';
+
+            if ((isEsc || isF) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                e.preventDefault();
                 this.close();
+                return;
             }
         };
         document.addEventListener('keydown', this.activeKeyHandler);
@@ -1191,241 +1139,30 @@ export const FocusMode = {
     // POMODORO TIMER METHODS
     // =========================================
 
-    /**
-     * Update timer display
-     */
-    updateTimerDisplay() {
-        const totalSeconds = this.pomodoroMode === 'work' ? this.workDuration : this.breakDuration;
-        FocusModeUI.updatePomodoroTimer(this.pomodoroSeconds, totalSeconds, this.pomodoroMode);
-    },
+
 
     /**
      * Start/Pause timer
      */
     startPauseTimer() {
-        if (this.pomodoroRunning) {
-            // Pause
-            if (this.pomodoroTimer) clearInterval(this.pomodoroTimer);
-            this.pomodoroTimer = null;
-            this.pomodoroRunning = false;
-            FocusModeUI.updatePomodoroStartPauseButton(false);
-            this.pomodoroTargetEpoch = null;
-            this.persistTimerState();
-            this.updateFloatingTimer();
-        } else {
-            // Start
-            this.pomodoroRunning = true;
-            FocusModeUI.updatePomodoroStartPauseButton(true);
-            this.pomodoroTargetEpoch = Date.now() + this.pomodoroSeconds * 1000;
-            this.startPomodoroInterval();
-            this.persistTimerState();
-            this.updateFloatingTimer();
-        }
+        TimerService.startPause();
     },
 
     /**
      * Reset timer
      */
     resetTimer() {
-        if (this.pomodoroTimer) clearInterval(this.pomodoroTimer);
-        this.pomodoroTimer = null;
-        this.pomodoroRunning = false;
-        this.pomodoroMode = 'work';
-        this.pomodoroSeconds = this.workDuration;
-        this.pomodoroTargetEpoch = null;
-
-        FocusModeUI.updatePomodoroStartPauseButton(false);
-
-        this.updateTimerDisplay();
-        this.persistTimerState();
-        this.updateFloatingTimer();
+        TimerService.reset();
     },
 
     /**
      * Switch between work and break mode
      */
-    switchMode() {
-        clearInterval(this.pomodoroTimer);
-        this.pomodoroRunning = false;
-
-        if (this.pomodoroMode === 'work') {
-            // Completed a Pomodoro! Increment counters
-            this.completedPomodoros++;
-            this.totalPomodorosToday++;
-
-            // Track session stats
-            const state = Store.getActiveExecution();
-            const sessionStats = { ...(state.sessionStats || {}) };
-            sessionStats.pomodorosUsed = (sessionStats.pomodorosUsed || 0) + 1;
-            Store.updateActiveExecution({ sessionStats });
-
-            this.pomodoroMode = 'break';
-
-            // Check if this is time for a long break (every 4 Pomodoros)
-            const isLongBreak = this.completedPomodoros >= this.pomodorosBeforeLongBreak;
-
-            if (isLongBreak) {
-                this.pomodoroSeconds = this.longBreakDuration;
-                this.completedPomodoros = 0; // Reset cycle counter
-                if (Notification.permission === 'granted') {
-                    new Notification('🎉 Great work! Long break time!', {
-                        body: `You completed ${this.pomodorosBeforeLongBreak} Pomodoros! Enjoy a 20-min break.`,
-                    });
-                }
-            } else {
-                this.pomodoroSeconds = this.breakDuration;
-                if (Notification.permission === 'granted') {
-                    new Notification('🎉 Focus session complete!', {
-                        body: `Pomodoro ${this.completedPomodoros}/${this.pomodorosBeforeLongBreak} done. Short break time!`,
-                    });
-                }
-            }
-        } else {
-            this.pomodoroMode = 'work';
-            this.pomodoroSeconds = this.workDuration;
-            if (Notification.permission === 'granted') {
-                new Notification('💪 Break over!', {
-                    body: `Ready for Pomodoro ${this.completedPomodoros + 1}/${this.pomodorosBeforeLongBreak}?`,
-                });
-            }
-        }
-
-        FocusModeUI.updatePomodoroStartPauseButton(false);
-        FocusModeUI.updatePomodoroCounter(
-            this.completedPomodoros,
-            this.pomodorosBeforeLongBreak,
-            this.totalPomodorosToday
-        );
-
-        this.updateTimerDisplay();
-        this.pomodoroTargetEpoch = null;
-        this.persistTimerState();
-        this.updateFloatingTimer();
-    },
-
-    /**
-     * Stop timer when closing modal
-     */
     stopTimer() {
-        if (this.pomodoroTimer) {
-            clearInterval(this.pomodoroTimer);
-            this.pomodoroTimer = null;
-        }
-        this.pomodoroRunning = false;
-        this.pomodoroTargetEpoch = null;
-        this.persistTimerState();
-        this.updateFloatingTimer();
+        TimerService.cleanup();
     },
 
-    persistTimerState() {
-        const today = new Date().toDateString();
-        const state = {
-            mode: this.pomodoroMode,
-            running: this.pomodoroRunning,
-            remaining: this.pomodoroSeconds,
-            targetEpoch: this.pomodoroTargetEpoch,
-            work: this.workDuration,
-            break: this.breakDuration,
-            // Pomodoro cycle tracking
-            completedPomodoros: this.completedPomodoros,
-            totalPomodorosToday: this.totalPomodorosToday,
-            pomodoroSessionDate: today,
-            updatedAt: Date.now(),
-        };
-        try {
-            localStorage.setItem('focusModeTimerState', JSON.stringify(state));
-        } catch {
-            // Ignore storage errors
-        }
-    },
 
-    restoreTimerState() {
-        try {
-            let state = null;
-            try {
-                state = JSON.parse(localStorage.getItem('focusModeTimerState') || 'null');
-            } catch {
-                console.error('[FocusMode] Failed to parse focusModeTimerState');
-            }
-
-            if (!state) {
-                this._resetLocalTimerState();
-                return;
-            }
-
-            this.workDuration = Number(state.work) || 25 * 60;
-            this.breakDuration = Number(state.break) || 5 * 60;
-            this.pomodoroMode = state.mode === 'break' ? 'break' : 'work';
-
-            // Restore Pomodoro counters with date validation
-            const today = new Date().toDateString();
-            if (state.pomodoroSessionDate === today) {
-                this.completedPomodoros = Number(state.completedPomodoros) || 0;
-                this.totalPomodorosToday = Number(state.totalPomodorosToday) || 0;
-            } else {
-                this.completedPomodoros = 0;
-                this.totalPomodorosToday = 0;
-            }
-            this.pomodoroSessionDate = today;
-
-            if (state.targetEpoch && state.running) {
-                const now = Date.now();
-                const remaining = Math.max(0, Math.round((Number(state.targetEpoch) - now) / 1000));
-
-                this.pomodoroSeconds = remaining;
-                this.pomodoroRunning = remaining > 0;
-                this.pomodoroTargetEpoch = Number(state.targetEpoch);
-
-                if (this.pomodoroRunning && !this.pomodoroTimer) {
-                    this.startPomodoroInterval();
-                }
-            } else {
-                this.pomodoroSeconds = Number(state.remaining) ||
-                    (this.pomodoroMode === 'work' ? this.workDuration : this.breakDuration);
-                this.pomodoroRunning = false;
-                this.pomodoroTargetEpoch = null;
-            }
-        } catch (err) {
-            console.error('[FocusMode] Critical fail in restoreTimerState:', err);
-            this._resetLocalTimerState();
-        }
-    },
-
-    /**
-     * Helper to reset local timer state to defaults
-     * @private
-     */
-    _resetLocalTimerState() {
-        this.pomodoroMode = 'work';
-        this.pomodoroSeconds = this.workDuration || 25 * 60;
-        this.pomodoroRunning = false;
-        this.pomodoroTargetEpoch = null;
-        this.completedPomodoros = 0;
-        this.totalPomodorosToday = 0;
-        this.pomodoroSessionDate = new Date().toDateString();
-    },
-
-    /**
-     * Start the internal pomodoro tick interval
-     * @private
-     */
-    startPomodoroInterval() {
-        if (this.pomodoroTimer) clearInterval(this.pomodoroTimer);
-        this.pomodoroTimer = setInterval(() => {
-            try {
-                if (!this.pomodoroTargetEpoch) return;
-                const r = Math.max(0, Math.round((this.pomodoroTargetEpoch - Date.now()) / 1000));
-                this.pomodoroSeconds = r;
-                this.updateTimerDisplay();
-                this.updateFloatingTimer();
-                if (r <= 0) {
-                    this.switchMode();
-                }
-            } catch (err) {
-                console.error('[FocusMode] Error in pomodoro interval:', err);
-            }
-        }, 1000);
-    },
 
     async openFloatingTimer() {
         const api = window.documentPictureInPicture;
@@ -1585,61 +1322,69 @@ export const FocusMode = {
     },
 
     updateFloatingTimer() {
-        if (this.isOpen) {
-            this.hideBadge();
-            return;
-        }
+        // [FIX] Allow updates even if open, so PiP stays in sync if visible
+        // if (this.isOpen) {
+        //     this.hideBadge();
+        //     return;
+        // }
+
         const state = Store.getActiveExecution();
-        if (state.running || state.mode === 'break') {
-            const totalSeconds = state.mode === 'work' ? this.sessionDuration : this.breakDuration;
-            let secondsRemaining = 0;
+
+        // [FIX] Prioritize Active Task Session over generic Pomodoro
+        let seconds, total, mode, running;
+
+        if (state.taskId && (state.running || state.accumulatedTime > 0 || state.mode === 'break')) {
+            const now = Date.now();
+            const currentSessionElapsed = (state.running && state.sessionStartTime) ? now - state.sessionStartTime : 0;
+            const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
+
+            const duration = this.sessionDuration || 25 * 60;
+
             if (state.mode === 'work') {
-                const currentSessionElapsed = state.sessionStartTime
-                    ? Date.now() - state.sessionStartTime
-                    : 0;
-                const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
-                secondsRemaining = Math.max(0, totalSeconds - Math.floor(totalElapsedMs / 1000));
+                seconds = Math.max(0, duration - Math.floor(totalElapsedMs / 1000));
+                total = duration;
             } else {
-                const breakElapsed = state.breakStartTime
-                    ? Math.floor((Date.now() - state.breakStartTime) / 1000)
-                    : 0;
-                secondsRemaining = Math.max(0, totalSeconds - breakElapsed);
+                // Break mode
+                const breakElapsed = state.breakStartTime ? Math.floor((now - state.breakStartTime) / 1000) : 0;
+                const breakDur = this.breakDuration || 5 * 60;
+                seconds = Math.max(0, breakDur - breakElapsed);
+                total = breakDur;
             }
-            // Tauri Event-Based Update
-            if (window.__TAURI__) {
-                try {
-                    window.__TAURI__.event.emit('pip-update', {
-                        seconds: secondsRemaining,
-                        total: totalSeconds,
-                        mode: state.mode,
-                        running: state.running
-                    });
-                } catch (e) {
-                    console.error('Failed to emit pip-update', e);
-                }
-            } else {
-                // Browser Fallback
-                FocusModeUI.updatePipUI(
-                    this.pipWindow,
-                    secondsRemaining,
-                    state.mode,
-                    state.running,
-                    totalSeconds
-                );
-            }
-            FocusModeUI.updateBadge(secondsRemaining, state.mode, state.running);
-            return;
+
+            mode = state.mode;
+            running = state.running;
+        } else {
+            // Fallback to generic Pomodoro
+            seconds = TimerService.pomodoroSeconds;
+            total = TimerService.pomodoroMode === 'work' ? TimerService.workDuration : TimerService.breakDuration;
+            mode = TimerService.pomodoroMode;
+            running = TimerService.pomodoroRunning;
         }
 
-        const totalSeconds = this.pomodoroMode === 'work' ? this.workDuration : this.breakDuration;
-        FocusModeUI.updatePipUI(
-            this.pipWindow,
-            this.pomodoroSeconds,
-            this.pomodoroMode,
-            this.pomodoroRunning,
-            totalSeconds
-        );
-        this.updateBadge();
+        // Tauri Event-Based Update
+        if (window.__TAURI__) {
+            try {
+                // console.log('[FocusMode] Emitting pip-update', seconds);
+                window.__TAURI__.event.emit('pip-update', {
+                    seconds: seconds,
+                    total: total,
+                    mode: mode,
+                    running: running
+                });
+            } catch (e) {
+                console.error('Failed to emit pip-update', e);
+            }
+        } else {
+            // Browser Fallback
+            FocusModeUI.updatePipUI(
+                this.pipWindow,
+                TimerService.pomodoroSeconds,
+                TimerService.pomodoroMode,
+                TimerService.pomodoroRunning,
+                totalSeconds
+            );
+        }
+        FocusModeUI.updateBadge(TimerService.pomodoroSeconds, TimerService.pomodoroMode, TimerService.pomodoroRunning);
     },
 
     closeFloatingTimer() {
@@ -1655,17 +1400,17 @@ export const FocusMode = {
 
     showBadge() {
         FocusModeUI.showBadge(
-            this.pomodoroSeconds,
-            this.pomodoroMode,
-            this.pomodoroRunning,
+            TimerService.pomodoroSeconds,
+            TimerService.pomodoroMode,
+            TimerService.pomodoroRunning,
             () => this.startPauseTimer(),
             () => this.resetTimer(),
-            () => this.open(this.currentTaskId) // Open Focus Mode on click
+            () => this.open(this.activeTaskId) // Open Focus Mode on click
         );
     },
 
     updateBadge() {
-        FocusModeUI.updateBadge(this.pomodoroSeconds, this.pomodoroMode, this.pomodoroRunning);
+        FocusModeUI.updateBadge(TimerService.pomodoroSeconds, TimerService.pomodoroMode, TimerService.pomodoroRunning);
     },
 
     hideBadge() {
