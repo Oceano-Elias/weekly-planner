@@ -1907,10 +1907,48 @@ export const FocusModeUI = {
 
         if (isRolling) {
             carousel.classList.add('carousel-rolling');
-            document.getElementById('carouselCompleteBtn')?.classList.add('hidden');
         } else {
             carousel.classList.remove('carousel-rolling');
+            // Inject complete button into new active card
+            this.injectCompleteButtonIntoActiveCard();
         }
+    },
+
+    /**
+     * Inject complete button into active card if not already present
+     */
+    injectCompleteButtonIntoActiveCard() {
+        const activeCard = document.querySelector('.carousel-card.active');
+        if (!activeCard) return;
+
+        // Don't add if card is completed or button already exists
+        if (activeCard.classList.contains('is-completed')) return;
+        if (activeCard.querySelector('.card-complete-btn')) return;
+
+        const completeBtn = DOMUtils.createElement(
+            'button',
+            {
+                className: 'step-action-btn complete-btn card-complete-btn',
+                id: 'carouselCompleteBtn',
+                title: 'Mark step complete (Enter)',
+            },
+            [
+                DOMUtils.createSVG(
+                    'svg',
+                    {
+                        width: '16',
+                        height: '16',
+                        viewBox: '0 0 24 24',
+                        fill: 'none',
+                        stroke: 'currentColor',
+                        'stroke-width': '2',
+                    },
+                    [DOMUtils.createSVG('path', { d: 'M20 6L9 17l-5-5' })]
+                ),
+                document.createTextNode(' Complete'),
+            ]
+        );
+        activeCard.appendChild(completeBtn);
     },
 
     /**
