@@ -1,0 +1,46 @@
+/* Sidebar Queue - Drag & Drop Visuals */
+
+/* When dragging ANY task, make the sidebar look like a valid destination */
+body.dnd-active #taskQueue {
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+/* Add a "Drop here" hint when dragging starts */
+body.dnd-active #taskQueue::after {
+    content: 'Drop here to unschedule';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 0.9rem;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 1;
+}
+
+/* Hide helper text if the queue isn't empty and we aren't hovering yet? 
+   No, clearer to always show it as a watermark if drag is active. */
+
+/* Active Hover State - When actually dragging OVER the queue */
+body.dnd-active #taskQueue.drag-over {
+    border-color: var(--accent-primary, #6366f1);
+    background-color: rgba(99, 102, 241, 0.1);
+    box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+body.dnd-active #taskQueue.drag-over::after {
+    color: var(--accent-primary, #6366f1);
+    content: 'Release to Park';
+    font-weight: 600;
+    opacity: 1;
+}
+
+/* Ensure the empty state doesn't conflict */
+body.dnd-active #taskQueue .task-queue-empty {
+    opacity: 0.2;
+    /* Fade out empty illustration so watermark is visible */
+}

@@ -47,6 +47,7 @@ import './styles/command-palette.css';
 import './styles/toast.css';
 import './styles/rewards.css';
 import './styles/pip.css';
+import './styles/sidebar-queue.css';
 
 // Export modules for use in other components without window pollution
 export { App };

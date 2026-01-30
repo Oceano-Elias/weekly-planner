@@ -545,6 +545,8 @@ export const DragDropService = {
                 if (queue && !pointerCandidate.isStamp) {
                     Store.unscheduleTask(taskId, true);
                     updated = true;
+                    // Play deep gong for "parking" a task
+                    import('../utils/FocusAudio.js').then(m => m.FocusAudio.playZenGong());
                 } else if (day && time) {
                     this.dayTasksCache = {};
                     const bestTime = this.findNearestAvailableStart(day, time, duration, taskId);
@@ -569,6 +571,8 @@ export const DragDropService = {
                             Store.rescheduleTaskInWeek(taskId, day, bestTime);
                         }
                         updated = true;
+                        // Play crisp bell for scheduling
+                        import('../utils/FocusAudio.js').then(m => m.FocusAudio.playZenBell());
                     }
                 }
 

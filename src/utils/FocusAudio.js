@@ -129,33 +129,19 @@ export const FocusAudio = {
     },
 
     /**
-     * Task achieved - Grand multi-layered melody
+     * Task achieved - Zen Scale (for major success)
      */
     playTaskAchieved() {
         if (!this.enabled) return;
-
-        // Sequence of arpeggios for massive gratification
-        this.playArpeggio(523.25, 2.0, 0.4, -0.6); // Left C5
-        setTimeout(() => this.playArpeggio(659.25, 1.8, 0.35, 0.6), 400); // Right E5
-        setTimeout(() => this.playArpeggio(783.99, 1.6, 0.3, -0.3), 800); // Left-center G5
-        setTimeout(() => this.playArpeggio(1046.50, 1.4, 0.25, 0.3), 1200); // Right-center C6
-
-        // Grand Finale at 8s - Massive shimmer chord
-        setTimeout(() => {
-            // C MAJOR TRIAD (Inverted/Spread)
-            this.playTone(523.25, 3.0, 'sine', 0.2, -0.5); // C5
-            this.playTone(659.25, 3.0, 'triangle', 0.15, 0.5); // E5
-            this.playTone(783.99, 3.0, 'sine', 0.15, 0); // G5
-            this.playTone(1046.50, 3.0, 'triangle', 0.1, -0.3); // C6
-            this.playTone(1318.51, 3.0, 'sine', 0.1, 0.3); // E6
-            this.playTone(1567.98, 3.0, 'sine', 0.08, 0); // G6
-
-            // Final high sparkle
+        // Pentatonic Scale: C D E G A
+        const notes = [523.25, 587.33, 659.25, 783.99, 880.00];
+        notes.forEach((freq, i) => {
             setTimeout(() => {
-                this.playTone(2093.00, 2.0, 'sine', 0.05, 0); // C7
-                this.playTone(3135.96, 2.0, 'triangle', 0.03, 0); // G7
-            }, 500);
-        }, 8000);
+                this.playTone(freq, 0.6, 'sine', 0.15, (i / 4) - 0.5);
+            }, i * 150);
+        });
+        // End with a Gong
+        setTimeout(() => this.playZenGong(), 800);
     },
 
     /**
@@ -169,6 +155,79 @@ export const FocusAudio = {
             console.warn('[FocusAudio] Failed to save preference:', e);
         }
     },
+
+    /**
+     * Zen Gong - Deep, metallic, resonant (for major events like Drag Drop or Session Start)
+     */
+    playZenGong() {
+        if (!this.enabled) return;
+        const ctx = this.getContext();
+        const now = ctx.currentTime;
+
+        // Base freq and partials for metallic gong sound
+        const baseFreq = 160;
+        const partials = [1.0, 1.41, 1.73, 2.15, 3.4];
+
+        partials.forEach((ratio, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.frequency.value = baseFreq * ratio;
+            osc.type = i === 0 ? 'sine' : 'triangle'; // Fund is sine, partials metallic
+
+            // Randomize slight detuning for richness
+            osc.detune.value = (Math.random() - 0.5) * 15;
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            const dura = 3.0 / ratio; // Higher partials decay faster
+
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.15 / (i + 1), now + 0.05); // Attack
+            gain.gain.exponentialRampToValueAtTime(0.001, now + dura); // Decay
+
+            osc.start(now);
+            osc.stop(now + dura);
+        });
+    },
+
+    /**
+     * Zen Bell - Clear, crisp, high (for completion/success)
+     */
+    playZenBell() {
+        if (!this.enabled) return;
+        const ctx = this.getContext();
+        const now = ctx.currentTime;
+
+        // Bell fundamental
+        const freq = 880; // A5
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        // Sharp metallic attack
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(3000, now);
+        filter.frequency.exponentialRampToValueAtTime(500, now + 1.5);
+
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+
+        osc.start(now);
+        osc.stop(now + 2.0);
+    },
+
+
 
     /**
      * Toggle audio on/off

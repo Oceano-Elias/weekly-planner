@@ -624,6 +624,9 @@ export const FocusMode = {
 
         this.startSessionInterval();
 
+        // Zen Gong for deep focus start
+        FocusAudio.playZenGong();
+
         // Update visual states
         this.updateUI();
     },
