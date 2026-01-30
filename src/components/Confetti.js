@@ -143,7 +143,6 @@ export const Confetti = {
      */
     celebrate() {
         this.init();
-        console.log('✨ [Confetti] Gratifying Grand Celebration started!');
 
         const width = window.innerWidth;
         const height = window.innerHeight;
@@ -177,7 +176,6 @@ export const Confetti = {
         setTimeout(() => {
             this.fireCannons();
             this.burst(width * 0.5, height, 200, { power: 30, spread: 25 });
-            console.log('🎆 [Confetti] Grand Finale!');
         }, 8000);
 
         // Wave 4: Glitter Shower (Extended)
@@ -360,5 +358,4 @@ export const Confetti = {
 if (typeof window !== 'undefined') {
     window.Confetti = Confetti;
     window.celebrate = () => Confetti.celebrate();
-    console.log('🎊 Confetti loaded. Type celebrate() in console to trigger manually.');
 }

@@ -1,7 +1,6 @@
 /**
  * App - Main application initialization
  */
-console.log('[Main] Entry point loading...');
 
 import iconUrl from '/icon.png';
 
@@ -57,7 +56,6 @@ const App = {
      * Initialize the application with Error Boundary
      */
     init() {
-        console.log('[App] Starting initialization...');
 
         // Global error handling for deep debugging
         window.addEventListener('error', (event) => {
@@ -78,7 +76,6 @@ const App = {
 
         const safeInit = (name, fn) => {
             try {
-                console.log(`[App] Initializing ${name}...`);
                 fn();
             } catch (err) {
                 console.error(`[App] CRITICAL: ${name} failed to initialize:`, err);
@@ -130,7 +127,6 @@ const App = {
                 });
             }
 
-            console.log('[App] Initialization complete');
         } catch (error) {
             console.error('[App] FATAL BOOT ERROR:', error);
             if (this.handleCriticalError) this.handleCriticalError(error);
@@ -213,7 +209,6 @@ const App = {
         if (badge) {
             badge.textContent = `v${APP_VERSION}`;
         }
-        console.log(`[App] Weekly Planner v${APP_VERSION}`);
     },
 
     setupFavicon() {
@@ -461,12 +456,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 navigator.serviceWorker
                     .register(swPath)
                     .then((registration) => {
-                        console.log('[App] Service Worker registered at:', swPath);
                         setInterval(() => {
                             if (navigator.onLine) registration.update();
                         }, 60000);
                     })
-                    .catch((err) => console.log('[App] SW registration failed:', err));
             });
         }
     }

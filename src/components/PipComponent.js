@@ -6,7 +6,6 @@ export const PipComponent = {
      * Initialize the PiP UI and event listeners
      */
     init() {
-        console.log('[PipComponent] Initializing PiP Mode (Event-Driven)');
 
         // 1. Force transparency on background
         document.documentElement.style.setProperty('background', 'transparent', 'important');
@@ -165,7 +164,6 @@ export const PipComponent = {
     },
 
     async restoreToMain() {
-        console.log('[PiP] restoreToMain triggered');
         const tauri = window.__TAURI__;
         if (!tauri) {
             window.close();

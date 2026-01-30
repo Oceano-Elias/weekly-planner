@@ -11,7 +11,6 @@ import { Rewards } from '../services/Rewards.js';
 import { TimerService } from '../services/TimerService.js';
 import { QuestStackController } from '../services/QuestStackController.js';
 
-console.log('[FocusMode] Module loading...');
 export const FocusMode = {
     isOpen: false,
     activeTaskId: null,
@@ -90,7 +89,6 @@ export const FocusMode = {
      * Restore timer state from storage (called on App init)
      */
     async restoreTimerState() {
-        console.log('[FocusMode] Restoring timer state...');
         const state = Store.getActiveExecution();
         this.activeTaskId = state.taskId || this.activeTaskId;
 
@@ -331,7 +329,6 @@ export const FocusMode = {
                         const action = event?.payload?.action;
                         if (!action) return;
 
-                        console.log('[FocusMode] Received PiP Action:', action);
 
                         // Use specific methods for each action to ensure clean state
                         if (action === 'toggle') {
@@ -362,7 +359,6 @@ export const FocusMode = {
                 try {
                     const cmd = JSON.parse(e.newValue);
                     if (Date.now() - cmd.ts < 2000) { // Only process recent commands
-                        console.log('[FocusMode] Received command:', cmd.action);
                         if (cmd.action === 'start') this.startSession();
                         if (cmd.action === 'pause') this.pauseSession();
                         if (cmd.action === 'reset') this.resetTimer();
@@ -430,7 +426,6 @@ export const FocusMode = {
             if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
 
             // Log for debugging
-            console.log(`[FocusMode] key: ${e.key}, code: ${e.code}`);
 
             // Enter: Complete current step
             if (e.key === 'Enter') {
@@ -897,7 +892,6 @@ export const FocusMode = {
 
         // Log for debugging
         const completedCount = taskLines.filter((l) => l.includes('[x]')).length;
-        console.log(`[Focus] Checking achievement: ${completedCount}/${taskLines.length}`);
 
         const state = Store.getActiveExecution();
         const allCompleted =
@@ -906,7 +900,6 @@ export const FocusMode = {
         const alreadyTransitioning = state.phase === 'completion';
 
         if (allCompleted && !alreadyTransitioning) {
-            console.log('[Focus] SUCCESS! All tasks completed. Celebrating...');
             this.celebrateTaskAchieved();
         } else {
             // Update UI even if not all complete (to show progress)
@@ -965,7 +958,6 @@ export const FocusMode = {
 
     notifyPhaseChange(phase) {
         FocusModeUI.showPhaseNotification(phase);
-        console.log(`[Focus] Phase changed to: ${phase}`);
     },
 
     /**
@@ -1222,7 +1214,6 @@ export const FocusMode = {
                     await pipWin.setFocus();
                     this.pipWindow = pipWin;
                 } else {
-                    console.log('[FocusMode] Static PiP window not found, creating new one...');
                     // Create new window if static one is missing
                     pipWin = new WebviewWindow('focus-pip', {
                         url: 'index.html?mode=pip',
@@ -1242,7 +1233,6 @@ export const FocusMode = {
 
                     // Wait for it to be created
                     pipWin.once('tauri://created', async () => {
-                        console.log('[FocusMode] Dynamic PiP window created');
                         await pipWin.show();
                         await pipWin.setFocus();
                         this.pipWindow = pipWin;
@@ -1270,7 +1260,6 @@ export const FocusMode = {
                         // re-opening will just find the existing one or create new.
                         // But cleaning up is good practice.
                         this.pipWindow.onCloseRequested(async (event) => {
-                            console.log('[FocusMode] PiP Window close requested');
                             this.pipWindow = null;
                         });
                     }
@@ -1367,7 +1356,6 @@ export const FocusMode = {
         // Tauri Event-Based Update
         if (window.__TAURI__) {
             try {
-                // console.log('[FocusMode] Emitting pip-update', seconds);
                 window.__TAURI__.event.emit('pip-update', {
                     seconds: seconds,
                     total: total,
