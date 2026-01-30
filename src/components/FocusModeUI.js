@@ -614,6 +614,35 @@ export const FocusModeUI = {
 
             if (isCompleted) card.classList.add('is-completed');
             card.appendChild(this.getCarouselCardInner(role, idx, cleanText, isCompleted));
+
+            // Embed Complete button inside active card (so it animates with it)
+            if (role === 'active' && !isCompleted) {
+                const completeBtn = DOMUtils.createElement(
+                    'button',
+                    {
+                        className: 'step-action-btn complete-btn card-complete-btn',
+                        id: 'carouselCompleteBtn',
+                        title: 'Mark step complete (Enter)',
+                    },
+                    [
+                        DOMUtils.createSVG(
+                            'svg',
+                            {
+                                width: '16',
+                                height: '16',
+                                viewBox: '0 0 24 24',
+                                fill: 'none',
+                                stroke: 'currentColor',
+                                'stroke-width': '2',
+                            },
+                            [DOMUtils.createSVG('path', { d: 'M20 6L9 17l-5-5' })]
+                        ),
+                        document.createTextNode(' Complete'),
+                    ]
+                );
+                card.appendChild(completeBtn);
+            }
+
             return card;
         };
 
@@ -628,32 +657,6 @@ export const FocusModeUI = {
         carousel.appendChild(buildCard('behind', behindIndex, 2));
 
         fragment.appendChild(carousel);
-
-        // Complete Button
-        const completeBtn = DOMUtils.createElement(
-            'button',
-            {
-                className: 'step-action-btn complete-btn carousel-complete-btn',
-                id: 'carouselCompleteBtn',
-                title: 'Mark step complete (Enter)',
-            },
-            [
-                DOMUtils.createSVG(
-                    'svg',
-                    {
-                        width: '16',
-                        height: '16',
-                        viewBox: '0 0 24 24',
-                        fill: 'none',
-                        stroke: 'currentColor',
-                        'stroke-width': '2',
-                    },
-                    [DOMUtils.createSVG('path', { d: 'M20 6L9 17l-5-5' })]
-                ),
-                document.createTextNode(' Complete'),
-            ]
-        );
-        fragment.appendChild(completeBtn);
 
         // Navigation
         const nav = DOMUtils.createElement(
