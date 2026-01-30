@@ -510,10 +510,14 @@ export const FocusMode = {
             this.navigateToNextVisibleStep();
         });
 
-        completeBtn?.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.completeCurrentStep();
+        // Use event delegation for complete button (it gets re-injected after carousel roll)
+        stackContainer.addEventListener('click', (e) => {
+            const completeBtn = e.target.closest('#carouselCompleteBtn');
+            if (completeBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.completeCurrentStep();
+            }
         });
 
         stackContainer.querySelector('#restartSessionBtn')?.addEventListener('click', (e) => {

@@ -716,14 +716,14 @@ export const FocusModeUI = {
             ]
         );
         fragment.appendChild(nav);
-
         return fragment;
     },
 
     /**
-     * Update a carousel card element's state and content
+     * Update a carousel card's classes, depth, and optionally content
      */
     updateCarouselCard(cardEl, stateClass, index, lines) {
+        // Remove all animation and role classes
         cardEl.classList.remove(
             'active',
             'upcoming',
@@ -743,10 +743,19 @@ export const FocusModeUI = {
         );
         cardEl.classList.add(stateClass);
 
+        // Depth calculation
+        const depth =
+            stateClass === 'active' ? 0 : stateClass === 'behind' || stateClass === 'below' ? 2 : 1;
+        cardEl.style.setProperty('--depth', depth);
+
+        // If same index, skip content rebuild (just update classes)
+        if (cardEl.dataset.index === String(index)) {
+            return;
+        }
+
         if (index === -1) {
             cardEl.classList.add('empty');
             cardEl.dataset.index = '-1';
-            cardEl.style.setProperty('--depth', 1);
             DOMUtils.clear(cardEl);
             return;
         }
@@ -759,10 +768,7 @@ export const FocusModeUI = {
             cardEl.classList.add('is-completed');
         }
 
-        const depth =
-            stateClass === 'active' ? 0 : stateClass === 'behind' || stateClass === 'below' ? 2 : 1;
         cardEl.dataset.index = String(index);
-        cardEl.style.setProperty('--depth', depth);
 
         DOMUtils.clear(cardEl);
         cardEl.appendChild(this.getCarouselCardInner(stateClass, index, cleanText, isCompleted));

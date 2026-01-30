@@ -868,13 +868,12 @@
     pointer-events: none;
     transform-style: preserve-3d;
     backface-visibility: hidden;
+    will-change: transform, opacity;
+    /* Transform animates, but styling is instant */
     transition:
         transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-        opacity 0.35s ease,
-        box-shadow 0.35s ease,
-        background-color 0.35s ease,
-        border-color 0.35s ease,
-        filter 0.35s ease;
+        opacity 0.35s ease;
+    /* No transition on box-shadow, background, border - instant styling */
 }
 
 .carousel-card.step-complete-flash {
@@ -1002,9 +1001,10 @@
         0 0 0 1px color-mix(in srgb, var(--task-color) 50%, transparent),
         0 0 80px color-mix(in srgb, var(--task-color) 20%, transparent),
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     pointer-events: auto;
+    will-change: transform, opacity, backdrop-filter;
 }
 
 .carousel-card.active::after {
