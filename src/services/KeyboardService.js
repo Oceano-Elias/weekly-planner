@@ -67,8 +67,8 @@ export const KeyboardService = {
                             if (isShortcutsOpen) {
                                 e.preventDefault();
                                 this.closeShortcutsModal();
-                            } else if (isTaskModalOpen) {
                             }
+                            // Task modal Escape is handled by ModalService
                         }
 
                         // Essential save hatch for modals
@@ -102,9 +102,7 @@ export const KeyboardService = {
                             if (window.Calendar) window.Calendar.setViewMode('day');
                             break;
                         case 'f':
-                            // Focus Mode shortcut
-                            if (window.FocusMode && window.FocusMode.isOpen) {
-                            }
+                            // Focus Mode shortcut - handled below
                             e.preventDefault();
                             e.stopPropagation(); // Stop propagation to FocusMode.js
                             this.handleFocusModeShortcut();
