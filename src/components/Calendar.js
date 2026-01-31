@@ -145,9 +145,7 @@ export const Calendar = {
 
         // Empty corner cell
         // Empty corner cell (aligns with time column)
-        header.appendChild(
-            DOMUtils.createElement('div', { className: 'calendar-header-cell' })
-        );
+        header.appendChild(DOMUtils.createElement('div', { className: 'calendar-header-cell' }));
 
         if (this.viewMode === 'week') {
             dates.forEach((date, index) => {
@@ -204,34 +202,30 @@ export const Calendar = {
                 hour12: true,
             });
 
-            const headerCell = DOMUtils.createElement(
-                'div',
-                { className: 'day-view-header-new' },
-                [
-                    DOMUtils.createElement('div', { className: 'day-header-left' }, [
-                        DOMUtils.createElement('span', {
-                            className: `day-header-date ${isToday ? 'today' : ''}`,
-                            textContent: dateStr,
-                        }),
-                    ]),
-                    DOMUtils.createElement('div', { className: 'day-header-center' }, [
-                        DOMUtils.createElement('input', {
-                            type: 'text',
-                            className: 'day-header-goal',
-                            placeholder: "🎯 Set today's goal...",
-                            dataset: { day: dayName },
-                            value: goal,
-                        }),
-                    ]),
-                    DOMUtils.createElement('div', { className: 'day-header-right' }, [
-                        DOMUtils.createElement('span', {
-                            className: 'day-header-clock',
-                            id: 'dayHeaderClock',
-                            textContent: timeStr,
-                        }),
-                    ]),
-                ]
-            );
+            const headerCell = DOMUtils.createElement('div', { className: 'day-view-header-new' }, [
+                DOMUtils.createElement('div', { className: 'day-header-left' }, [
+                    DOMUtils.createElement('span', {
+                        className: `day-header-date ${isToday ? 'today' : ''}`,
+                        textContent: dateStr,
+                    }),
+                ]),
+                DOMUtils.createElement('div', { className: 'day-header-center' }, [
+                    DOMUtils.createElement('input', {
+                        type: 'text',
+                        className: 'day-header-goal',
+                        placeholder: "🎯 Set today's goal...",
+                        dataset: { day: dayName },
+                        value: goal,
+                    }),
+                ]),
+                DOMUtils.createElement('div', { className: 'day-header-right' }, [
+                    DOMUtils.createElement('span', {
+                        className: 'day-header-clock',
+                        id: 'dayHeaderClock',
+                        textContent: timeStr,
+                    }),
+                ]),
+            ]);
             header.appendChild(headerCell);
             header.style.gridTemplateColumns = `var(--calendar-time-col, 60px) 1fr`;
 
@@ -363,11 +357,11 @@ export const Calendar = {
             }
         } else {
             // Re-sync columnCache if reusing existing structure
-            document.querySelectorAll('.day-column').forEach(col => {
+            document.querySelectorAll('.day-column').forEach((col) => {
                 const day = col.dataset.day;
                 this.columnCache[day] = col;
                 // Clear existing tasks but KEEP the slots
-                col.querySelectorAll('.calendar-task').forEach(t => t.remove());
+                col.querySelectorAll('.calendar-task').forEach((t) => t.remove());
             });
         }
 
@@ -381,7 +375,7 @@ export const Calendar = {
      */
     renderScheduledTasks() {
         // Clear all existing tasks first to avoid accumulation
-        document.querySelectorAll('.calendar-task').forEach(t => t.remove());
+        document.querySelectorAll('.calendar-task').forEach((t) => t.remove());
 
         // Get tasks for the current week (auto-creates if needed)
         const weekId = Store.getWeekIdentifier(this.currentWeekStart);
@@ -401,20 +395,20 @@ export const Calendar = {
 
         // Group tasks by day for batched insertion
         const tasksByDay = {};
-        tasks.forEach(task => {
+        tasks.forEach((task) => {
             if (!task.scheduledDay) return;
             if (!tasksByDay[task.scheduledDay]) tasksByDay[task.scheduledDay] = [];
             tasksByDay[task.scheduledDay].push(task);
         });
 
         // Use fragments to append tasks to each column
-        Object.keys(this.columnCache).forEach(day => {
+        Object.keys(this.columnCache).forEach((day) => {
             const column = this.columnCache[day];
             const tasksToRender = tasksByDay[day] || [];
 
             // Build a fragment for this column
             const fragment = document.createDocumentFragment();
-            tasksToRender.forEach(task => {
+            tasksToRender.forEach((task) => {
                 const taskEl = this.renderTask(task);
                 if (taskEl) fragment.appendChild(taskEl);
             });
@@ -442,9 +436,7 @@ export const Calendar = {
 
         const isCompact = task.duration <= PlannerService.SLOT_DURATION;
         const activeExec = Store.getState().activeExecution;
-        const isActive = activeExec &&
-            activeExec.taskId === task.id &&
-            activeExec.running;
+        const isActive = activeExec && activeExec.taskId === task.id && activeExec.running;
 
         const taskEl = DOMUtils.createElement('div', {
             className: `calendar-task ${task.completed ? 'completed' : ''} ${isCompact ? 'compact' : ''} ${isActive ? 'active-focus' : ''}`,
@@ -452,11 +444,15 @@ export const Calendar = {
                 top: `${top}px`,
                 height: `${height}px`,
             },
-            dataset: { taskId: task.id } // For event delegation
+            dataset: { taskId: task.id }, // For event delegation
         });
 
         const card = new TaskCard(task);
-        const taskBlockEl = card.render({ isDayView: this.viewMode === 'day', isCompact, isActive });
+        const taskBlockEl = card.render({
+            isDayView: this.viewMode === 'day',
+            isCompact,
+            isActive,
+        });
         taskBlockEl.draggable = false;
         taskEl.appendChild(taskBlockEl);
 
@@ -514,7 +510,8 @@ export const Calendar = {
      * Calculate both time-based and completion-based progress
      */
     calculateTaskProgress(task) {
-        if (!task.scheduledDay || !task.scheduledTime) return { timeProgress: 0, completionProgress: 0 };
+        if (!task.scheduledDay || !task.scheduledTime)
+            return { timeProgress: 0, completionProgress: 0 };
 
         // 1. Calculate time-based progress
         const weekDates = this.getWeekDates();
@@ -524,7 +521,11 @@ export const Calendar = {
         if (!taskDate) return { timeProgress: 0, completionProgress: 0 };
 
         const now = new Date();
-        const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+        const taskDateOnly = new Date(
+            taskDate.getFullYear(),
+            taskDate.getMonth(),
+            taskDate.getDate()
+        );
         const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
         let timeProgress = 0;
@@ -802,7 +803,11 @@ export const Calendar = {
                 if (window.Confetti && block) {
                     const rect = block.getBoundingClientRect();
                     Rewards.show(e.clientX, e.clientY, 'huge');
-                    window.Confetti.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 40);
+                    window.Confetti.burst(
+                        rect.left + rect.width / 2,
+                        rect.top + rect.height / 2,
+                        40
+                    );
                 }
                 this.checkDailyCelebration(updatedTask.scheduledDay);
             } else if (updatedTask && !updatedTask.completed && hasSteps) {
@@ -838,7 +843,6 @@ export const Calendar = {
             grid.removeEventListener('click', onClick);
         };
     },
-
 
     /**
      * Handle task deletion via delegation
@@ -1031,5 +1035,5 @@ export const Calendar = {
             window.addEventListener('pointermove', onPointerMove);
             window.addEventListener('pointerup', onPointerUp);
         });
-    }
+    },
 };

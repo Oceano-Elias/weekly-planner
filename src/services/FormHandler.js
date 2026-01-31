@@ -416,13 +416,19 @@ export const FormHandler = {
                         ? trimmed
                         : `[ ] ${trimmed}`;
                 })
-                .filter(step => step.length > 4) // Ignore empty checkboxes
+                .filter((step) => step.length > 4) // Ignore empty checkboxes
                 .join('\n');
         }
 
         let resultId;
         if (currentEditingId) {
-            const success = this.handleUpdateTask(currentEditingId, title, hierarchy, duration, notes);
+            const success = this.handleUpdateTask(
+                currentEditingId,
+                title,
+                hierarchy,
+                duration,
+                notes
+            );
             if (!success) return; // Stop if update failed (e.g. overlap)
             resultId = currentEditingId;
         } else {
@@ -472,7 +478,9 @@ export const FormHandler = {
         if (this.scheduledData) {
             const dayTasks = Store.getTasksForDay(this.scheduledData.day);
             if (!PlannerService.isSlotAvailable(this.scheduledData.time, duration, dayTasks)) {
-                Toast.error(`Cannot schedule at ${this.scheduledData.time} - overlaps another task.`);
+                Toast.error(
+                    `Cannot schedule at ${this.scheduledData.time} - overlaps another task.`
+                );
                 return null;
             }
         }

@@ -22,7 +22,6 @@ export const FocusMode = {
 
     // Core session settings
     sessionDuration: 25 * 60, // 25 minutes default
-    breakDuration: 5 * 60, // 5 minutes break
     closureThreshold: 5 * 60, // 5 minutes before end
 
     pipWindow: null,
@@ -59,13 +58,13 @@ export const FocusMode = {
         // 1. Initialize Modular Services
         TimerService.init({
             onModeSwitch: () => this.updateUI(),
-            updateFloatingTimer: () => this.updateFloatingTimer()
+            updateFloatingTimer: () => this.updateFloatingTimer(),
         });
 
         QuestStackController.init(taskId, {
             onNavigate: () => this.updateUI(),
             showSuccessVisuals: () => this.showSuccessVisuals(),
-            startStepTimer: (idx, steps) => this.startStepTimer(idx, steps)
+            startStepTimer: (idx, steps) => this.startStepTimer(idx, steps),
         });
 
         // 2. Initialize Task Execution state in Store
@@ -94,7 +93,7 @@ export const FocusMode = {
 
         TimerService.init({
             onModeSwitch: () => this.updateUI(),
-            updateFloatingTimer: () => this.updateFloatingTimer()
+            updateFloatingTimer: () => this.updateFloatingTimer(),
         });
 
         await this.setupListeners();
@@ -158,7 +157,11 @@ export const FocusMode = {
 
         const state = Store.getActiveExecution();
         // Check if session is "active" (accumulation > 0 or in break, even if paused)
-        const isActive = state.running || state.mode === 'break' || (state.mode === 'work' && state.accumulatedTime > 0) || this.pomodoroRunning;
+        const isActive =
+            state.running ||
+            state.mode === 'break' ||
+            (state.mode === 'work' && state.accumulatedTime > 0) ||
+            this.pomodoroRunning;
 
         // Default to PiP enabled (disablePip = false) since settings are not implemented yet
         const disablePip = false;
@@ -170,7 +173,6 @@ export const FocusMode = {
             // Keep running in background/floating mode
             this.openFloatingTimer();
         }
-
 
         // Remove the keyboard listener
         if (this.activeKeyHandler) {
@@ -200,7 +202,11 @@ export const FocusMode = {
         const container = document.getElementById('focusModeContainer');
         const state = Store.getActiveExecution();
         const isBreak = state.mode === 'break';
-        const activeStepTitle = FocusModeUI.getActiveStepTitle(task, state.currentStepIndex, isBreak);
+        const activeStepTitle = FocusModeUI.getActiveStepTitle(
+            task,
+            state.currentStepIndex,
+            isBreak
+        );
 
         DOMUtils.clear(container);
         container.appendChild(FocusModeUI.getMainTemplate(task, state, activeStepTitle));
@@ -329,7 +335,6 @@ export const FocusMode = {
                         const action = event?.payload?.action;
                         if (!action) return;
 
-
                         // Use specific methods for each action to ensure clean state
                         if (action === 'toggle') {
                             if (this.activeTaskId) {
@@ -358,7 +363,8 @@ export const FocusMode = {
             if (e.key === 'focusModeCommand' && e.newValue) {
                 try {
                     const cmd = JSON.parse(e.newValue);
-                    if (Date.now() - cmd.ts < 2000) { // Only process recent commands
+                    if (Date.now() - cmd.ts < 2000) {
+                        // Only process recent commands
                         if (cmd.action === 'start') this.startSession();
                         if (cmd.action === 'pause') this.pauseSession();
                         if (cmd.action === 'reset') this.resetTimer();
@@ -422,7 +428,9 @@ export const FocusMode = {
             if (!this.isOpen) return;
 
             // Skip if typing in an input field
-            const activeTag = document.activeElement ? document.activeElement.tagName.toUpperCase() : '';
+            const activeTag = document.activeElement
+                ? document.activeElement.tagName.toUpperCase()
+                : '';
             if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
 
             // Log for debugging
@@ -591,9 +599,7 @@ export const FocusMode = {
                 () => {
                     const taskId = this.activeTaskId;
                     this.close();
-                    window.dispatchEvent(
-                        new CustomEvent('edit-task', { detail: { taskId } })
-                    );
+                    window.dispatchEvent(new CustomEvent('edit-task', { detail: { taskId } }));
                 }
             );
             return;
@@ -1138,8 +1144,6 @@ export const FocusMode = {
     // POMODORO TIMER METHODS
     // =========================================
 
-
-
     /**
      * Start/Pause timer
      */
@@ -1161,8 +1165,6 @@ export const FocusMode = {
         TimerService.cleanup();
     },
 
-
-
     async openFloatingTimer() {
         const api = window.documentPictureInPicture;
 
@@ -1177,7 +1179,7 @@ export const FocusMode = {
                 const winLabel = 'focus-pip';
 
                 // Check if already open
-                // In v2 we can't easily check existence without async, so we just try to create. 
+                // In v2 we can't easily check existence without async, so we just try to create.
                 // If it exists, Tauri usually focuses it unless we handle it.
                 // Let's rely on creating a NEW one or overwriting.
 
@@ -1187,9 +1189,9 @@ export const FocusMode = {
                 // Discovery of the WebviewWindow constructor
                 const WebviewWindow =
                     (tauri.webviewWindow && tauri.webviewWindow.WebviewWindow) || // v2 modern
-                    (tauri.window && tauri.window.WebviewWindow) ||              // v1/v2 compatibility
-                    (tauri.window && tauri.window.Window) ||                     // v2 Window fallback
-                    tauri.WebviewWindow;                                         // v1 top-level fallback
+                    (tauri.window && tauri.window.WebviewWindow) || // v1/v2 compatibility
+                    (tauri.window && tauri.window.Window) || // v2 Window fallback
+                    tauri.WebviewWindow; // v1 top-level fallback
 
                 if (typeof WebviewWindow !== 'function') {
                     Toast.error('Error: Tauri WebviewWindow constructor NOT found');
@@ -1206,7 +1208,7 @@ export const FocusMode = {
                     } else if (tauri.window && tauri.window.getCurrent) {
                         // v1 fallback to list all windows
                         const windows = await tauri.window.getAll();
-                        pipWin = windows.find(w => w.label === 'focus-pip');
+                        pipWin = windows.find((w) => w.label === 'focus-pip');
                     }
                 } catch (err) {
                     Toast.error('Error getting pip window by label: ' + err.message);
@@ -1232,7 +1234,7 @@ export const FocusMode = {
                         transparent: true,
                         skipTaskbar: true,
                         x: 20,
-                        y: 20
+                        y: 20,
                     });
 
                     // Wait for it to be created
@@ -1260,7 +1262,7 @@ export const FocusMode = {
                     if (label) {
                         // We don't want to add multiple listeners here either
 
-                        // Note: We're not rigorously tracking close here because 
+                        // Note: We're not rigorously tracking close here because
                         // re-opening will just find the existing one or create new.
                         // But cleaning up is good practice.
                         this.pipWindow.onCloseRequested(async (event) => {
@@ -1329,9 +1331,13 @@ export const FocusMode = {
         // [FIX] Prioritize Active Task Session over generic Pomodoro
         let seconds, total, mode, running;
 
-        if (state.taskId && (state.running || state.accumulatedTime > 0 || state.mode === 'break')) {
+        if (
+            state.taskId &&
+            (state.running || state.accumulatedTime > 0 || state.mode === 'break')
+        ) {
             const now = Date.now();
-            const currentSessionElapsed = (state.running && state.sessionStartTime) ? now - state.sessionStartTime : 0;
+            const currentSessionElapsed =
+                state.running && state.sessionStartTime ? now - state.sessionStartTime : 0;
             const totalElapsedMs = (state.accumulatedTime || 0) + currentSessionElapsed;
 
             const duration = this.sessionDuration || 25 * 60;
@@ -1341,7 +1347,9 @@ export const FocusMode = {
                 total = duration;
             } else {
                 // Break mode
-                const breakElapsed = state.breakStartTime ? Math.floor((now - state.breakStartTime) / 1000) : 0;
+                const breakElapsed = state.breakStartTime
+                    ? Math.floor((now - state.breakStartTime) / 1000)
+                    : 0;
                 const breakDur = this.breakDuration || 5 * 60;
                 seconds = Math.max(0, breakDur - breakElapsed);
                 total = breakDur;
@@ -1352,7 +1360,10 @@ export const FocusMode = {
         } else {
             // Fallback to generic Pomodoro
             seconds = TimerService.pomodoroSeconds;
-            total = TimerService.pomodoroMode === 'work' ? TimerService.workDuration : TimerService.breakDuration;
+            total =
+                TimerService.pomodoroMode === 'work'
+                    ? TimerService.workDuration
+                    : TimerService.breakDuration;
             mode = TimerService.pomodoroMode;
             running = TimerService.pomodoroRunning;
         }
@@ -1364,7 +1375,7 @@ export const FocusMode = {
                     seconds: seconds,
                     total: total,
                     mode: mode,
-                    running: running
+                    running: running,
                 });
             } catch (e) {
                 console.error('Failed to emit pip-update', e);
@@ -1373,13 +1384,17 @@ export const FocusMode = {
             // Browser Fallback
             FocusModeUI.updatePipUI(
                 this.pipWindow,
-                TimerService.pomodoroSeconds,
-                TimerService.pomodoroMode,
-                TimerService.pomodoroRunning,
-                totalSeconds
+                seconds,
+                mode,
+                running,
+                total
             );
         }
-        FocusModeUI.updateBadge(TimerService.pomodoroSeconds, TimerService.pomodoroMode, TimerService.pomodoroRunning);
+        FocusModeUI.updateBadge(
+            TimerService.pomodoroSeconds,
+            TimerService.pomodoroMode,
+            TimerService.pomodoroRunning
+        );
     },
 
     closeFloatingTimer() {
@@ -1405,7 +1420,11 @@ export const FocusMode = {
     },
 
     updateBadge() {
-        FocusModeUI.updateBadge(TimerService.pomodoroSeconds, TimerService.pomodoroMode, TimerService.pomodoroRunning);
+        FocusModeUI.updateBadge(
+            TimerService.pomodoroSeconds,
+            TimerService.pomodoroMode,
+            TimerService.pomodoroRunning
+        );
     },
 
     hideBadge() {

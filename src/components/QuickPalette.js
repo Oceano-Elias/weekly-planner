@@ -28,42 +28,49 @@ export const QuickPalette = {
         // Add Header/Instruction
         const header = DOMUtils.createElement('div', { className: 'palette-header' }, [
             DOMUtils.createElement('h3', { textContent: 'Quick Stamps' }),
-            DOMUtils.createElement('p', { textContent: 'Drag departments directly onto the calendar to rapid-fire your schedule.' })
+            DOMUtils.createElement('p', {
+                textContent:
+                    'Drag departments directly onto the calendar to rapid-fire your schedule.',
+            }),
         ]);
         container.appendChild(header);
 
         const grid = DOMUtils.createElement('div', { className: 'palette-grid' });
 
-        topLevels.forEach(deptName => {
+        topLevels.forEach((deptName) => {
             const dept = Departments.get(deptName);
             const color = dept.color;
             const abbr = dept.abbr;
 
-            const stamp = DOMUtils.createElement('div', {
-                className: 'palette-stamp glass-surface-hover',
-                dataset: {
-                    type: 'stamp',
-                    dept: deptName,
-                    color: color
+            const stamp = DOMUtils.createElement(
+                'div',
+                {
+                    className: 'palette-stamp glass-surface-hover',
+                    dataset: {
+                        type: 'stamp',
+                        dept: deptName,
+                        color: color,
+                    },
+                    style: { '--dept-color': color },
                 },
-                style: { '--dept-color': color }
-            }, [
-                DOMUtils.createElement('div', {
-                    className: 'stamp-badge',
-                    style: { backgroundColor: color },
-                    textContent: abbr
-                }),
-                DOMUtils.createElement('div', {
-                    className: 'stamp-label',
-                    textContent: deptName
-                })
-            ]);
+                [
+                    DOMUtils.createElement('div', {
+                        className: 'stamp-badge',
+                        style: { backgroundColor: color },
+                        textContent: abbr,
+                    }),
+                    DOMUtils.createElement('div', {
+                        className: 'stamp-label',
+                        textContent: deptName,
+                    }),
+                ]
+            );
 
             grid.appendChild(stamp);
         });
 
         container.appendChild(grid);
-    }
+    },
 };
 
 window.QuickPalette = QuickPalette;

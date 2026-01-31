@@ -16,7 +16,6 @@ export const DepartmentSettings = {
     editingPath: null,
     editingField: null,
     draggedPath: null,
-    draggedPath: null,
     dragOverPath: null,
     pendingConfirmAction: null,
 
@@ -147,7 +146,7 @@ export const DepartmentSettings = {
         '#F97316', // Deep Orange
         '#2563EB', // Bright Blue
         '#64748B', // Cool Slate
-        '#DC2626'  // Bright Red
+        '#DC2626', // Bright Red
     ],
 
     /**
@@ -262,7 +261,10 @@ export const DepartmentSettings = {
             const data = parent.children[currentName];
             delete parent.children[currentName];
             parent.children[newName] = { ...data, abbr: newAbbr };
-            this.migrationsPending.push({ oldPath: path, newPath: [...path.slice(0, -1), newName] });
+            this.migrationsPending.push({
+                oldPath: path,
+                newPath: [...path.slice(0, -1), newName],
+            });
         }
     },
 
@@ -289,7 +291,6 @@ export const DepartmentSettings = {
         }
         return name.substring(0, 2).toUpperCase();
     },
-
 
     /**
      * Escape JSON string for use in HTML attributes
@@ -351,7 +352,7 @@ export const DepartmentSettings = {
      */
     close() {
         if (this.hasChanges) {
-            this.showConfirm("You have unsaved changes. Discard them?", () => {
+            this.showConfirm('You have unsaved changes. Discard them?', () => {
                 this._performClose();
             });
             return;
@@ -507,7 +508,7 @@ export const DepartmentSettings = {
                         <span class="dept-badge" 
                               style="background: ${data.color || '#6366F1'}"
                               ondblclick="window.DepartmentSettings.startEditing('${escPath}', 'abbr', event)">
-                            ${isEditingAbbr ? `<input type="text" class="dept-inline-input" value="${data.abbr || ''}" maxlength="3" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : (data.abbr || name.substring(0, 2))}
+                            ${isEditingAbbr ? `<input type="text" class="dept-inline-input" value="${data.abbr || ''}" maxlength="3" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : data.abbr || name.substring(0, 2)}
                         </span>
                         <span class="dept-name" ondblclick="window.DepartmentSettings.startEditing('${escPath}', 'name', event)">
                             ${isEditingName ? `<input type="text" class="dept-inline-input" value="${name}" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : name}
@@ -565,7 +566,7 @@ export const DepartmentSettings = {
                     <span class="dept-badge small"
                           style="background: ${parentColor}"
                           ondblclick="window.DepartmentSettings.startEditing('${escPath}', 'abbr', event)">
-                        ${isEditingAbbr ? `<input type="text" class="dept-inline-input" value="${data.abbr || ''}" maxlength="3" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : (data.abbr || name.substring(0, 2))}
+                        ${isEditingAbbr ? `<input type="text" class="dept-inline-input" value="${data.abbr || ''}" maxlength="3" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : data.abbr || name.substring(0, 2)}
                     </span>
                     <span class="dept-name" ondblclick="window.DepartmentSettings.startEditing('${escPath}', 'name', event)">
                         ${isEditingName ? `<input type="text" class="dept-inline-input" value="${name}" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : name}
@@ -607,7 +608,7 @@ export const DepartmentSettings = {
                 <span class="dept-badge tiny"
                       style="background: ${parentColor}"
                       ondblclick="window.DepartmentSettings.startEditing('${escPath}', 'abbr', event)">
-                    ${isEditingAbbr ? `<input type="text" class="dept-inline-input" value="${data.abbr || ''}" maxlength="3" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : (data.abbr || name.substring(0, 2))}
+                    ${isEditingAbbr ? `<input type="text" class="dept-inline-input" value="${data.abbr || ''}" maxlength="3" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : data.abbr || name.substring(0, 2)}
                 </span>
                 <span class="dept-name" ondblclick="window.DepartmentSettings.startEditing('${escPath}', 'name', event)">
                     ${isEditingName ? `<input type="text" class="dept-inline-input" value="${name}" onblur="window.DepartmentSettings.confirmEdit()" onkeydown="window.DepartmentSettings.handleEditKeydown(event)">` : name}
@@ -632,7 +633,7 @@ export const DepartmentSettings = {
      * Add a new top-level department (Inline)
      */
     addDepartment() {
-        const tempName = "NEW DEPARTMENT";
+        const tempName = 'NEW DEPARTMENT';
         this.editingData[tempName] = {
             color: '#6366F1',
             abbr: 'NEW',
@@ -660,7 +661,7 @@ export const DepartmentSettings = {
      */
     addChild(pathStr) {
         const path = this.parsePath(pathStr);
-        const tempName = "New Sub-dept";
+        const tempName = 'New Sub-dept';
 
         let target = this.editingData;
         for (let i = 0; i < path.length; i++) {
@@ -693,16 +694,15 @@ export const DepartmentSettings = {
         this.startEditing(JSON.stringify(path), 'name');
     },
 
-
-
     /**
      * Render a curated color palette
      */
     renderColorPicker(pathOrStr, currentColor) {
-        const escPath = typeof pathOrStr === 'string' ? pathOrStr : this.escapePath(JSON.stringify(pathOrStr));
+        const escPath =
+            typeof pathOrStr === 'string' ? pathOrStr : this.escapePath(JSON.stringify(pathOrStr));
         let html = '<div class="dept-swatch-grid">';
 
-        this.curatedColors.forEach(color => {
+        this.curatedColors.forEach((color) => {
             const isSelected = color.toUpperCase() === currentColor.toUpperCase();
             html += `
                 <div class="dept-swatch ${isSelected ? 'active' : ''}" 
@@ -729,7 +729,10 @@ export const DepartmentSettings = {
      * Update color for a top-level department
      */
     updateColor(pathOrStr, color) {
-        const path = typeof pathOrStr === 'string' ? JSON.parse(pathOrStr.replace(/&quot;/g, '"')) : pathOrStr;
+        const path =
+            typeof pathOrStr === 'string'
+                ? JSON.parse(pathOrStr.replace(/&quot;/g, '"'))
+                : pathOrStr;
         if (path.length === 1) {
             this.editingData[path[0]].color = color;
             this.updateTreeView();
@@ -761,11 +764,10 @@ export const DepartmentSettings = {
 
         const el = event.target.closest('[draggable="true"]');
         if (el) {
-            // Use the "header" part of the card for the drag image 
+            // Use the "header" part of the card for the drag image
             // to avoid dragging children together in the ghost image
-            const dragImage = el.querySelector('.dept-parent') ||
-                el.querySelector('.dept-child-content') ||
-                el;
+            const dragImage =
+                el.querySelector('.dept-parent') || el.querySelector('.dept-child-content') || el;
 
             // Offset the drag image so the cursor is over the handle/icon
             if (event.dataTransfer.setDragImage) {
@@ -850,10 +852,12 @@ export const DepartmentSettings = {
         const sourceName = sourcePath[sourcePath.length - 1];
         if (sourcePath.length > 1) {
             for (let i = 0; i < sourcePath.length - 1; i++) {
-                sourceParent = i === 0 ? sourceParent[sourcePath[i]] : sourceParent.children[sourcePath[i]];
+                sourceParent =
+                    i === 0 ? sourceParent[sourcePath[i]] : sourceParent.children[sourcePath[i]];
             }
         }
-        const branchData = sourcePath.length === 1 ? sourceParent[sourceName] : sourceParent.children[sourceName];
+        const branchData =
+            sourcePath.length === 1 ? sourceParent[sourceName] : sourceParent.children[sourceName];
 
         // 2. Identify Move Type (Reorder vs Reparent)
         const sourceParentPath = sourcePath.slice(0, -1);
@@ -863,7 +867,7 @@ export const DepartmentSettings = {
         // 3. Perform Move
         if (isReorder) {
             // REORDER: Swap siblings
-            let parentData = (sourcePath.length === 1) ? this.editingData : sourceParent.children;
+            let parentData = sourcePath.length === 1 ? this.editingData : sourceParent.children;
             const entries = Object.entries(parentData);
             const sourceIdx = entries.findIndex(([n]) => n === sourceName);
             const targetIdx = entries.findIndex(([n]) => n === targetPath[targetPath.length - 1]);
@@ -897,21 +901,21 @@ export const DepartmentSettings = {
             // Add to target node
             let targetNode = this.editingData;
             for (let i = 0; i < targetPath.length; i++) {
-                targetNode = i === 0 ? targetNode[targetPath[i]] : targetNode.children[targetPath[i]];
+                targetNode =
+                    i === 0 ? targetNode[targetPath[i]] : targetNode.children[targetPath[i]];
             }
             if (!targetNode.children) targetNode.children = {};
             targetNode.children[sourceName] = branchData;
 
             this.migrationsPending.push({
                 oldPath: sourcePath,
-                newPath: [...targetPath, sourceName]
+                newPath: [...targetPath, sourceName],
             });
         }
 
         this.handleDragEnd(event);
         this.updateTreeView();
     },
-
 };
 
 // Make globally available

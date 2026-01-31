@@ -36,8 +36,8 @@ export class TaskCard {
 
         // Use a unified layout class for base styling
         // Use a unified layout class with Day View adjustments
-        const actualStandard = isDayView ? (task.duration >= 45 && task.duration < 60) : isStandard;
-        const actualFull = isDayView ? (task.duration >= 60) : isFull;
+        const actualStandard = isDayView ? task.duration >= 45 && task.duration < 60 : isStandard;
+        const actualFull = isDayView ? task.duration >= 60 : isFull;
 
         const className = `glass-surface glass-surface-hover task-block ${task.completed ? 'completed' : ''} ${isDayView ? 'day-view' : ''} ${isCompact ? 'layout-compact' : actualStandard ? 'layout-standard' : actualFull ? 'layout-full' : ''} ${isActive ? 'is-active' : ''}`;
 
@@ -97,7 +97,9 @@ export class TaskCard {
 
         // Add running icon if active
         if (isActive) {
-            headerLeft.appendChild(DOMUtils.createElement('div', { className: 'task-running-icon' }));
+            headerLeft.appendChild(
+                DOMUtils.createElement('div', { className: 'task-running-icon' })
+            );
         }
 
         headerLeft.appendChild(
@@ -141,7 +143,7 @@ export class TaskCard {
                 DOMUtils.createElement('span', {
                     className: 'step-text',
                     innerHTML: isAllComplete
-                        ? '<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4\" style=\"margin-right:4px\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>Complete'
+                        ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" style="margin-right:4px"><polyline points="20 6 9 17 4 12"></polyline></svg>Complete'
                         : stepText,
                 })
             );

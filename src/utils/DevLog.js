@@ -21,5 +21,5 @@ export const DevLog = {
     // Errors always log (they're important)
     error(...args) {
         console.error(...args);
-    }
+    },
 };

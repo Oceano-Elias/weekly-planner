@@ -1,4 +1,3 @@
-
 const PlannerService = {
     getWeekStart(date) {
         const d = new Date(date);
@@ -22,7 +21,7 @@ const PlannerService = {
         const yearInt = parseInt(year);
 
         // Initial guess: Jan 1 + (week * 7) days
-        let date = new Date(yearInt, 0, 1 + (targetWeek * 7));
+        let date = new Date(yearInt, 0, 1 + targetWeek * 7);
 
         // Align to Monday
         let monday = this.getWeekStart(date);
@@ -49,13 +48,13 @@ const PlannerService = {
 
         monday.setDate(monday.getDate() - 7);
         return this.getWeekIdentifier(monday);
-    }
+    },
 };
 
-const current = "2026-W06";
+const current = '2026-W06';
 const prev = PlannerService.getPreviousWeekId(current);
 console.log(`Current: ${current}, Previous: ${prev}`);
 
-const yearTransition = "2026-W01";
+const yearTransition = '2026-W01';
 const prevYear = PlannerService.getPreviousWeekId(yearTransition);
 console.log(`Current: ${yearTransition}, Previous: ${prevYear}`);

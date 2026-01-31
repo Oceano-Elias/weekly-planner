@@ -134,10 +134,10 @@ export const FocusAudio = {
     playTaskAchieved() {
         if (!this.enabled) return;
         // Pentatonic Scale: C D E G A
-        const notes = [523.25, 587.33, 659.25, 783.99, 880.00];
+        const notes = [523.25, 587.33, 659.25, 783.99, 880.0];
         notes.forEach((freq, i) => {
             setTimeout(() => {
-                this.playTone(freq, 0.6, 'sine', 0.15, (i / 4) - 0.5);
+                this.playTone(freq, 0.6, 'sine', 0.15, i / 4 - 0.5);
             }, i * 150);
         });
         // End with a Gong
@@ -226,8 +226,6 @@ export const FocusAudio = {
         osc.start(now);
         osc.stop(now + 2.0);
     },
-
-
 
     /**
      * Toggle audio on/off

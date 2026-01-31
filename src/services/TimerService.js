@@ -25,7 +25,7 @@ export const TimerService = {
         onTick: null,
         onModeSwitch: null,
         onStateChange: null,
-        updateFloatingTimer: null
+        updateFloatingTimer: null,
     },
 
     init(callbacks = {}) {
@@ -130,19 +130,32 @@ export const TimerService = {
             if (isLongBreak) {
                 this.pomodoroSeconds = this.longBreakDuration;
                 this.completedPomodoros = 0; // Reset cycle
-                this.notify('🎉 Great work! Long break time!', `You completed ${this.pomodorosBeforeLongBreak} Pomodoros! Enjoy a 20-min break.`);
+                this.notify(
+                    '🎉 Great work! Long break time!',
+                    `You completed ${this.pomodorosBeforeLongBreak} Pomodoros! Enjoy a 20-min break.`
+                );
             } else {
                 this.pomodoroSeconds = this.breakDuration;
-                this.notify('🎉 Focus session complete!', `Pomodoro ${this.completedPomodoros}/${this.pomodorosBeforeLongBreak} done. Short break time!`);
+                this.notify(
+                    '🎉 Focus session complete!',
+                    `Pomodoro ${this.completedPomodoros}/${this.pomodorosBeforeLongBreak} done. Short break time!`
+                );
             }
         } else {
             this.pomodoroMode = 'work';
             this.pomodoroSeconds = this.workDuration;
-            this.notify('💪 Break over!', `Ready for Pomodoro ${this.completedPomodoros + 1}/${this.pomodorosBeforeLongBreak}?`);
+            this.notify(
+                '💪 Break over!',
+                `Ready for Pomodoro ${this.completedPomodoros + 1}/${this.pomodorosBeforeLongBreak}?`
+            );
         }
 
         FocusModeUI.updatePomodoroStartPauseButton(false);
-        FocusModeUI.updatePomodoroCounter(this.completedPomodoros, this.pomodorosBeforeLongBreak, this.totalPomodorosToday);
+        FocusModeUI.updatePomodoroCounter(
+            this.completedPomodoros,
+            this.pomodorosBeforeLongBreak,
+            this.totalPomodorosToday
+        );
 
         this.updateDisplay();
         this.persistState();
@@ -166,11 +179,13 @@ export const TimerService = {
         const data = {
             completedPomodoros: this.completedPomodoros,
             totalPomodorosToday: this.totalPomodorosToday,
-            pomodoroSeconds: this.pomodoroRunning ? Math.round((this.pomodoroTargetEpoch - Date.now()) / 1000) : this.pomodoroSeconds,
+            pomodoroSeconds: this.pomodoroRunning
+                ? Math.round((this.pomodoroTargetEpoch - Date.now()) / 1000)
+                : this.pomodoroSeconds,
             pomodoroMode: this.pomodoroMode,
             pomodoroRunning: this.pomodoroRunning,
             lastUpdate: Date.now(),
-            pomodoroSessionDate: new Date().toDateString()
+            pomodoroSessionDate: new Date().toDateString(),
         };
         localStorage.setItem('focus_pomodoro_state', JSON.stringify(data));
     },
@@ -206,10 +221,14 @@ export const TimerService = {
             this.updateDisplay();
         }
 
-        FocusModeUI.updatePomodoroCounter(this.completedPomodoros, this.pomodorosBeforeLongBreak, this.totalPomodorosToday);
+        FocusModeUI.updatePomodoroCounter(
+            this.completedPomodoros,
+            this.pomodorosBeforeLongBreak,
+            this.totalPomodorosToday
+        );
     },
 
     cleanup() {
         this.stopInterval();
-    }
+    },
 };

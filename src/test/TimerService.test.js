@@ -7,7 +7,7 @@ vi.mock('../components/FocusModeUI', () => ({
         updatePomodoroTimer: vi.fn(),
         updatePomodoroStartPauseButton: vi.fn(),
         updatePomodoroCounter: vi.fn(),
-    }
+    },
 }));
 
 describe('TimerService', () => {

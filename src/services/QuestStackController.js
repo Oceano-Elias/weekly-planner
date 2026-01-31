@@ -16,7 +16,7 @@ export const QuestStackController = {
         onStepComplete: null,
         onNavigate: null,
         showSuccessVisuals: null,
-        startStepTimer: null
+        startStepTimer: null,
     },
 
     init(taskId, callbacks = {}) {
@@ -43,22 +43,22 @@ export const QuestStackController = {
             task,
             onStepComplete: markComplete
                 ? () => {
-                    this.toggleMiniTask(fromIndex, true);
-                    this.recordStepCompletion(fromIndex, 'completed');
-                    // Show Reward (Centered)
-                    Rewards.show(window.innerWidth / 2, window.innerHeight * 0.35);
-                    if (this.callbacks.showSuccessVisuals) this.callbacks.showSuccessVisuals();
-                }
+                      this.toggleMiniTask(fromIndex, true);
+                      this.recordStepCompletion(fromIndex, 'completed');
+                      // Show Reward (Centered)
+                      Rewards.show(window.innerWidth / 2, window.innerHeight * 0.35);
+                      if (this.callbacks.showSuccessVisuals) this.callbacks.showSuccessVisuals();
+                  }
                 : () => {
-                    this.recordStepCompletion(fromIndex, 'skipped');
-                },
+                      this.recordStepCompletion(fromIndex, 'skipped');
+                  },
             onFinish: () => {
                 this.lastDoneStepIndex = fromIndex;
                 this.carouselAnimating = false;
                 Store.updateActiveExecution({ currentStepIndex: toIndex });
                 if (this.callbacks.startStepTimer) this.callbacks.startStepTimer(toIndex, steps);
                 if (this.callbacks.onNavigate) this.callbacks.onNavigate(toIndex);
-            }
+            },
         });
     },
 
@@ -82,7 +82,7 @@ export const QuestStackController = {
                 Store.updateActiveExecution({ currentStepIndex: toIndex });
                 if (this.callbacks.startStepTimer) this.callbacks.startStepTimer(toIndex, steps);
                 if (this.callbacks.onNavigate) this.callbacks.onNavigate(toIndex);
-            }
+            },
         });
     },
 
@@ -156,5 +156,5 @@ export const QuestStackController = {
             timing.status = status;
             Store.updateActiveExecution({ stepTimings });
         }
-    }
+    },
 };

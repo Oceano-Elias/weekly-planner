@@ -12,7 +12,7 @@ vi.mock('../components/FocusModeUI', () => ({
         updatePipUI: vi.fn(),
         hideBadge: vi.fn(),
         showBadge: vi.fn(),
-    }
+    },
 }));
 
 vi.mock('../components/FocusAudio', () => ({
@@ -22,7 +22,7 @@ vi.mock('../components/FocusAudio', () => ({
         playStepComplete: vi.fn(),
         playTaskAchieved: vi.fn(),
         toggle: vi.fn(),
-    }
+    },
 }));
 
 describe('FocusMode Timer Logic', () => {
@@ -46,13 +46,13 @@ describe('FocusMode Timer Logic', () => {
                     close: vi.fn(),
                 })),
                 getAllWindows: vi.fn(() => Promise.resolve([])),
-            }
+            },
         };
     });
 
     it('should calculate remaining seconds correctly from targetEpoch', () => {
         const now = Date.now();
-        const target = now + (25 * 60 * 1000); // 25 mins
+        const target = now + 25 * 60 * 1000; // 25 mins
 
         // Simulate restoreTimerState logic
         const remaining = Math.max(0, Math.round((target - now) / 1000));

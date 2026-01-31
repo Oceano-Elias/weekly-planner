@@ -124,7 +124,7 @@ export const PlannerService = {
         const yearInt = parseInt(year);
 
         // Initial guess: Jan 1 + (week * 7) days (overshoot slightly to ensure we hit at least the week)
-        let date = new Date(yearInt, 0, 1 + (targetWeek * 7));
+        let date = new Date(yearInt, 0, 1 + targetWeek * 7);
 
         // Align to Monday
         let monday = this.getWeekStart(date);

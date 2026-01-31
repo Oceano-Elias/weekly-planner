@@ -1,4 +1,3 @@
-
 import { FocusAudio } from '../utils/FocusAudio.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 
@@ -21,7 +20,7 @@ export const Rewards = {
         'Crushed It!',
         'Boom!',
         'Easy!',
-        'Steady!'
+        'Steady!',
     ],
 
     /**
@@ -42,8 +41,8 @@ export const Rewards = {
             textContent: phrase,
             style: {
                 left: `${x}px`,
-                top: `${y}px`
-            }
+                top: `${y}px`,
+            },
         });
 
         if (type === 'huge') {
@@ -56,5 +55,5 @@ export const Rewards = {
         setTimeout(() => {
             el.remove();
         }, 1000);
-    }
+    },
 };

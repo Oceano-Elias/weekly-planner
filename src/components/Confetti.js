@@ -86,7 +86,7 @@ export const Confetti = {
             decay: 0.005 + Math.random() * 0.008, // Slower decay for longer life
             wind,
             wobble: Math.random() * 10,
-            wobbleSpeed: 0.05 + Math.random() * 0.1
+            wobbleSpeed: 0.05 + Math.random() * 0.1,
         };
     },
 
@@ -97,7 +97,9 @@ export const Confetti = {
         this.init();
 
         for (let i = 0; i < count; i++) {
-            const vy = options.power ? (Math.random() * -options.power - options.power / 2) : undefined;
+            const vy = options.power
+                ? Math.random() * -options.power - options.power / 2
+                : undefined;
             const vx = options.spread ? (Math.random() - 0.5) * options.spread : undefined;
 
             this.particles.push(this.createParticle(x, y, { vx, vy }));
@@ -118,18 +120,22 @@ export const Confetti = {
 
         // Left Cannon
         for (let i = 0; i < 60; i++) {
-            this.particles.push(this.createParticle(0, height, {
-                vx: Math.random() * 15 + 10,
-                vy: Math.random() * -25 - 15
-            }));
+            this.particles.push(
+                this.createParticle(0, height, {
+                    vx: Math.random() * 15 + 10,
+                    vy: Math.random() * -25 - 15,
+                })
+            );
         }
 
         // Right Cannon
         for (let i = 0; i < 60; i++) {
-            this.particles.push(this.createParticle(width, height, {
-                vx: Math.random() * -15 - 10,
-                vy: Math.random() * -25 - 15
-            }));
+            this.particles.push(
+                this.createParticle(width, height, {
+                    vx: Math.random() * -15 - 10,
+                    vy: Math.random() * -25 - 15,
+                })
+            );
         }
 
         if (!this.isActive) {

@@ -301,10 +301,10 @@ export const Store = {
                 state.templates = state.templates.filter((t) => t.id !== idToRemove);
 
                 // [FIX] Also clean up "orphan" instances in ALL weeks to prevent reappearing ghosts
-                Object.keys(state.weeklyInstances).forEach(weekId => {
+                Object.keys(state.weeklyInstances).forEach((weekId) => {
                     const week = state.weeklyInstances[weekId];
                     if (week.tasks) {
-                        week.tasks = week.tasks.filter(t => t.templateId !== idToRemove);
+                        week.tasks = week.tasks.filter((t) => t.templateId !== idToRemove);
                     }
                 });
             }
@@ -412,8 +412,8 @@ export const Store = {
 
         // Combine queue tasks and week tasks, avoiding duplicates by sourceTaskId
         const all = [...state.tasks];
-        weekTasks.forEach(wt => {
-            if (!all.find(t => t.id === wt.sourceTaskId || t.id === wt.id)) {
+        weekTasks.forEach((wt) => {
+            if (!all.find((t) => t.id === wt.sourceTaskId || t.id === wt.id)) {
                 all.push(wt);
             }
         });
@@ -721,7 +721,10 @@ export const Store = {
         prevTasks.forEach((task) => {
             // Check if a task with the same title, time, and day already exists to avoid duplication
             const exists = currentTasks.some(
-                (t) => t.title === task.title && t.scheduledTime === task.scheduledTime && t.scheduledDay === task.scheduledDay
+                (t) =>
+                    t.title === task.title &&
+                    t.scheduledTime === task.scheduledTime &&
+                    t.scheduledDay === task.scheduledDay
             );
 
             if (!exists) {
@@ -1202,7 +1205,7 @@ export const Store = {
         const totalInterruptions = sessions.reduce((sum, s) => sum + (s.interruptions || 0), 0);
         const totalSessions = sessions.length;
         const totalVelocity = sessions.reduce((sum, s) => sum + (s.velocity || 0), 0);
-        const avgVelocity = totalSessions > 0 ? (totalVelocity / totalSessions) : 0;
+        const avgVelocity = totalSessions > 0 ? totalVelocity / totalSessions : 0;
 
         // Distraction Rate = Interruptions / Hour of Focus
         // Avoid division by zero
@@ -1222,7 +1225,13 @@ export const Store = {
      * Record a focus session
      * @param {Object} sessionData - { taskId, duration, scheduledDuration, stepsCompleted, interruptions }
      */
-    recordFocusSession({ taskId, duration, scheduledDuration, stepsCompleted = 0, interruptions = 0 }) {
+    recordFocusSession({
+        taskId,
+        duration,
+        scheduledDuration,
+        stepsCompleted = 0,
+        interruptions = 0,
+    }) {
         if (!state.focusStats) {
             state.focusStats = {
                 sessions: [],
@@ -1233,7 +1242,7 @@ export const Store = {
         }
 
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const velocity = scheduledDuration > 0 ? (duration / scheduledDuration) : 1;
+        const velocity = scheduledDuration > 0 ? duration / scheduledDuration : 1;
 
         const session = {
             date: today,
@@ -1506,7 +1515,7 @@ export const Store = {
                     sessions: [],
                     currentStreak: 0,
                     totalFocusTime: 0,
-                    lastSessionDate: null
+                    lastSessionDate: null,
                 };
 
                 // Sanitize weekly instances too

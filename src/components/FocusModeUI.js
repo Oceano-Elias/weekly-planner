@@ -319,14 +319,14 @@ export const FocusModeUI = {
         const overlay = DOMUtils.createElement('div', {
             id: 'missingStepsOverlay',
             className: 'stop-confirm-overlay', // Re-use existing overlay style
-            style: { zIndex: '2000' }
+            style: { zIndex: '2000' },
         });
 
         const modal = DOMUtils.createElement('div', { className: 'stop-confirm-modal' }, [
             DOMUtils.createElement('div', {
                 className: 'stop-confirm-icon',
                 textContent: '📝',
-                style: { width: '48px', height: '48px', fontSize: '24px' }
+                style: { width: '48px', height: '48px', fontSize: '24px' },
             }),
             DOMUtils.createElement('div', {
                 className: 'stop-confirm-title',
@@ -334,7 +334,8 @@ export const FocusModeUI = {
             }),
             DOMUtils.createElement('div', {
                 className: 'stop-confirm-message',
-                textContent: 'Please add some steps to your task before starting a Focus Session. This helps you stay on track!',
+                textContent:
+                    'Please add some steps to your task before starting a Focus Session. This helps you stay on track!',
             }),
             DOMUtils.createElement('div', { className: 'stop-confirm-buttons' }, [
                 DOMUtils.createElement('button', {
@@ -1706,7 +1707,6 @@ export const FocusModeUI = {
                     </button>
                 </div>
             </div>`;
-
     },
 
     /**
@@ -1727,10 +1727,12 @@ export const FocusModeUI = {
             // Toggle Icon for Start/Pause
             if (running) {
                 // Pause Icon
-                startPauseEl.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
+                startPauseEl.innerHTML =
+                    '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
             } else {
                 // Play Icon
-                startPauseEl.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+                startPauseEl.innerHTML =
+                    '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
             }
 
             if (modeDot) {
@@ -1751,9 +1753,9 @@ export const FocusModeUI = {
     },
 
     /**
-     * Get floating badge template
+     * Get controls badge template (for interactive badges)
      */
-    getBadgeTemplate() {
+    getControlsBadgeTemplate() {
         return `
             <span id="badgeMode" class="badge-mode"></span>
             <span id="badgeTime" class="badge-time"></span>
@@ -2065,11 +2067,13 @@ export const FocusModeUI = {
         // Root Container - Minimize padding for tighter fit
         const root = doc.createElement('div');
         root.id = 'pipRoot';
-        root.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;box-sizing:border-box;background:#0f1117;color:#f0f6fc;font-family:Outfit,system-ui,sans-serif;overflow:hidden;position:relative;';
+        root.style.cssText =
+            'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;box-sizing:border-box;background:#0f1117;color:#f0f6fc;font-family:Outfit,system-ui,sans-serif;overflow:hidden;position:relative;';
 
         // Container for the Circle
         const timerContainer = doc.createElement('div');
-        timerContainer.style.cssText = 'position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:8px;';
+        timerContainer.style.cssText =
+            'position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:8px;';
 
         // SVG Ring
         const ns = 'http://www.w3.org/2000/svg';
@@ -2105,7 +2109,8 @@ export const FocusModeUI = {
         const timeText = doc.createElement('div');
         timeText.id = 'pipTime';
         timeText.textContent = '--:--';
-        timeText.style.cssText = 'position:absolute;font-size:28px;font-weight:700;letter-spacing:-1px;color:#fff;text-shadow:0 0 20px rgba(99,102,241,0.4);';
+        timeText.style.cssText =
+            'position:absolute;font-size:28px;font-weight:700;letter-spacing:-1px;color:#fff;text-shadow:0 0 20px rgba(99,102,241,0.4);';
         timerContainer.appendChild(timeText);
 
         root.appendChild(timerContainer);
@@ -2115,24 +2120,29 @@ export const FocusModeUI = {
         controls.style.cssText = 'display:flex;gap:12px;z-index:10;';
 
         // Helper style for icon buttons
-        const btnStyle = 'width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.2s;';
+        const btnStyle =
+            'width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.2s;';
 
         const startBtn = doc.createElement('button');
         startBtn.id = 'pipStartPause';
         // Initial Icon (valid SVG)
-        startBtn.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-        startBtn.style.cssText = btnStyle + 'background:#6366f1;box-shadow:0 4px 12px rgba(99,102,241,0.3);';
+        startBtn.innerHTML =
+            '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+        startBtn.style.cssText =
+            btnStyle + 'background:#6366f1;box-shadow:0 4px 12px rgba(99,102,241,0.3);';
 
         const resetBtn = doc.createElement('button');
         resetBtn.id = 'pipReset';
         resetBtn.title = 'Reset';
-        resetBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
+        resetBtn.innerHTML =
+            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
         resetBtn.style.cssText = btnStyle;
 
         const expandBtn = doc.createElement('button');
         expandBtn.id = 'pipExpand';
         expandBtn.title = 'Return to App';
-        expandBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+        expandBtn.innerHTML =
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
         expandBtn.style.cssText = btnStyle;
 
         controls.appendChild(resetBtn);
@@ -2332,10 +2342,13 @@ export const FocusModeUI = {
 
                 // Save position
                 const rect = el.getBoundingClientRect();
-                localStorage.setItem('floatingPomodoroBadgePos', JSON.stringify({
-                    left: rect.left,
-                    top: rect.top
-                }));
+                localStorage.setItem(
+                    'floatingPomodoroBadgePos',
+                    JSON.stringify({
+                        left: rect.left,
+                        top: rect.top,
+                    })
+                );
             }
         });
 

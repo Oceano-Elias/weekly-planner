@@ -33,9 +33,7 @@ export const DragDropService = {
         }
 
         const fromPoint =
-            typeof document !== 'undefined'
-                ? document.elementFromPoint(clientX, clientY)
-                : null;
+            typeof document !== 'undefined' ? document.elementFromPoint(clientX, clientY) : null;
         if (fromPoint?.closest?.('.time-column') || targetEl?.closest?.('.time-column'))
             return null;
 
@@ -71,11 +69,13 @@ export const DragDropService = {
         this.clearCollisionHighlights();
 
         // Clear all column highlights
-        document.querySelectorAll('.day-column.drag-over').forEach(c => c.classList.remove('drag-over'));
+        document
+            .querySelectorAll('.day-column.drag-over')
+            .forEach((c) => c.classList.remove('drag-over'));
     },
 
     clearCollisionHighlights() {
-        this.collisionTasks.forEach(el => el.classList.remove('drag-blocked'));
+        this.collisionTasks.forEach((el) => el.classList.remove('drag-blocked'));
         this.collisionTasks = [];
     },
 
@@ -321,7 +321,7 @@ export const DragDropService = {
                         hierarchy: [stampBlock.dataset.dept],
                         duration: 60, // Default for stamps
                         color: stampBlock.dataset.color,
-                        isStamp: true
+                        isStamp: true,
                     };
                 } else {
                     taskId = taskBlock.dataset.taskId;
@@ -372,7 +372,9 @@ export const DragDropService = {
                     this.prepareHitTestCache();
                     this.ensureDropIndicator();
 
-                    const task = pointerCandidate.isStamp ? pointerCandidate.taskData : Store.getTask(pointerCandidate.taskId);
+                    const task = pointerCandidate.isStamp
+                        ? pointerCandidate.taskData
+                        : Store.getTask(pointerCandidate.taskId);
                     this.draggedTask = task;
                     this.draggedElement = pointerCandidate.taskBlock;
 
@@ -559,13 +561,15 @@ export const DragDropService = {
                                 title: pointerCandidate.taskData.title,
                                 hierarchy: pointerCandidate.taskData.hierarchy,
                                 duration: pointerCandidate.taskData.duration,
-                                notes: ''
+                                notes: '',
                             });
                             Store.scheduleTask(newTask.id, day, bestTime);
 
                             // Visual feedback for spawn
                             setTimeout(() => {
-                                const newEl = document.querySelector(`.calendar-task[data-task-id="${newTask.id}"] .task-block`);
+                                const newEl = document.querySelector(
+                                    `.calendar-task[data-task-id="${newTask.id}"] .task-block`
+                                );
                                 if (newEl) newEl.classList.add('spawned');
                             }, 50);
                         } else {
@@ -624,7 +628,7 @@ export const DragDropService = {
         const column = startCell.closest('.day-column');
 
         // Apply column highlight
-        document.querySelectorAll('.day-column.drag-over').forEach(c => {
+        document.querySelectorAll('.day-column.drag-over').forEach((c) => {
             if (c !== column) c.classList.remove('drag-over');
         });
         if (column) column.classList.add('drag-over');
@@ -647,7 +651,13 @@ export const DragDropService = {
             fits && this.isSlotAvailable(day, time, this.draggedTask.duration, this.draggedTask.id);
 
         this.showDropIndicator(column, slotIndex, slotsToShow, isAvailable);
-        this.updateCollisionHighlights(day, time, this.draggedTask.duration, this.draggedTask.id, column);
+        this.updateCollisionHighlights(
+            day,
+            time,
+            this.draggedTask.duration,
+            this.draggedTask.id,
+            column
+        );
     },
 
     updateCollisionHighlights(day, startTime, duration, excludeTaskId, column) {
@@ -661,16 +671,16 @@ export const DragDropService = {
         const endTotal = startTotal + duration;
 
         const collidingIds = dayTasks
-            .filter(task => {
+            .filter((task) => {
                 if (task.id === excludeTaskId || !task.scheduledTime) return false;
                 const [taskHour, taskMin] = task.scheduledTime.split(':').map(Number);
                 const taskStart = taskHour * 60 + taskMin;
                 const taskEnd = taskStart + task.duration;
                 return startTotal < taskEnd && endTotal > taskStart;
             })
-            .map(t => t.id);
+            .map((t) => t.id);
 
-        collidingIds.forEach(id => {
+        collidingIds.forEach((id) => {
             const el = column.querySelector(`.calendar-task[data-task-id="${id}"] .task-block`);
             if (el) {
                 el.classList.add('drag-blocked');

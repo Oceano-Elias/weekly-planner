@@ -6,7 +6,6 @@ export const PipComponent = {
      * Initialize the PiP UI and event listeners
      */
     init() {
-
         // 1. Force transparency on background
         document.documentElement.style.setProperty('background', 'transparent', 'important');
         document.body.style.setProperty('background', 'transparent', 'important');
@@ -107,13 +106,14 @@ export const PipComponent = {
             if (e.target.closest('#pip-click-area')) return; // Allow click to pass through to toggle logic
 
             const tauriWin = window.__TAURI__?.window || window.__TAURI__?.webviewWindow;
-            const current = tauriWin?.getCurrentWebviewWindow?.() ||
+            const current =
+                tauriWin?.getCurrentWebviewWindow?.() ||
                 tauriWin?.getCurrentWindow?.() ||
                 tauriWin?.getCurrent?.() ||
                 tauriWin?.appWindow;
 
             if (current && current.startDragging) {
-                current.startDragging().catch(e => console.error('Drag failed:', e));
+                current.startDragging().catch((e) => console.error('Drag failed:', e));
             }
         });
 
@@ -152,7 +152,8 @@ export const PipComponent = {
 
         try {
             const webviewWin = tauri.webviewWindow || tauri.window;
-            const getAllWins = webviewWin.getAllWebviewWindows || webviewWin.getAll || webviewWin.getAllWindows;
+            const getAllWins =
+                webviewWin.getAllWebviewWindows || webviewWin.getAll || webviewWin.getAllWindows;
             const all = typeof getAllWins === 'function' ? await getAllWins() : [];
             const mainWin = all.find((w) => w.label !== 'focus-pip');
             const targetLabel = mainWin?.label || 'main';
@@ -172,13 +173,15 @@ export const PipComponent = {
 
         try {
             const tauriWin = tauri.window || tauri.webviewWindow;
-            const current = tauriWin?.getCurrentWebviewWindow?.() ||
+            const current =
+                tauriWin?.getCurrentWebviewWindow?.() ||
                 tauriWin?.getCurrentWindow?.() ||
                 tauriWin?.getCurrent?.() ||
                 tauriWin?.appWindow;
 
             // Attempt to focus main window
-            const getAllWins = tauriWin.getAllWebviewWindows || tauriWin.getAll || tauriWin.getAllWindows;
+            const getAllWins =
+                tauriWin.getAllWebviewWindows || tauriWin.getAll || tauriWin.getAllWindows;
             const all = typeof getAllWins === 'function' ? await getAllWins() : [];
             const mainWin = all.find((w) => w.label !== 'focus-pip');
 
@@ -196,5 +199,5 @@ export const PipComponent = {
             console.error('Failed to restore main window:', e);
             window.close();
         }
-    }
+    },
 };

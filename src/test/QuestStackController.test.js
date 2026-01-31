@@ -7,13 +7,13 @@ vi.mock('../components/FocusModeUI', () => ({
         animateForwardRoll: vi.fn(),
         animateBackwardRoll: vi.fn(),
         updateQuestStack: vi.fn(),
-    }
+    },
 }));
 
 vi.mock('../services/Rewards', () => ({
     Rewards: {
-        show: vi.fn()
-    }
+        show: vi.fn(),
+    },
 }));
 
 describe('QuestStackController', () => {
@@ -27,7 +27,7 @@ describe('QuestStackController', () => {
         mockTask = {
             id: 'test-task',
             notes: '[ ] Step 1\n[ ] Step 2',
-            completed: false
+            completed: false,
         };
 
         // Mock Store.getTask to return our mock task

@@ -56,11 +56,13 @@ const App = {
      * Initialize the application with Error Boundary
      */
     init() {
-
         // Global error handling for deep debugging
         window.addEventListener('error', (event) => {
             console.error('[GLOBAL ERROR]:', event.error || event.message);
-            if (window.Toast) window.Toast.error('A system error occurred: ' + (event.error?.message || event.message));
+            if (window.Toast)
+                window.Toast.error(
+                    'A system error occurred: ' + (event.error?.message || event.message)
+                );
         });
 
         window.addEventListener('unhandledrejection', (event) => {
@@ -126,7 +128,6 @@ const App = {
                     }
                 });
             }
-
         } catch (error) {
             console.error('[App] FATAL BOOT ERROR:', error);
             if (this.handleCriticalError) this.handleCriticalError(error);
@@ -244,7 +245,9 @@ const App = {
                     () => {
                         Store.setTemplateFromCurrentWeek();
                         const count = Store.getTemplateCount();
-                        Toast.success(`Template updated! ${count} tasks will appear in all future weeks.`);
+                        Toast.success(
+                            `Template updated! ${count} tasks will appear in all future weeks.`
+                        );
                     }
                 );
             });
@@ -253,20 +256,19 @@ const App = {
         const copyLastWeekBtn = document.getElementById('copyLastWeekBtn');
         if (copyLastWeekBtn) {
             copyLastWeekBtn.addEventListener('click', () => {
-                const currentWeekId = Store.getWeekIdentifier(Calendar.currentWeekStart || new Date());
-                ConfirmModal.show(
-                    'Copy all tasks from the previous week into this week?',
-                    () => {
-                        const success = Store.copyFromPreviousWeek(currentWeekId);
-                        if (success) {
-                            Calendar.refresh();
-                            TaskQueue.refresh();
-                            Toast.success('Tasks copied from previous week!');
-                        } else {
-                            Toast.warning('No tasks found in previous week to copy.');
-                        }
-                    }
+                const currentWeekId = Store.getWeekIdentifier(
+                    Calendar.currentWeekStart || new Date()
                 );
+                ConfirmModal.show('Copy all tasks from the previous week into this week?', () => {
+                    const success = Store.copyFromPreviousWeek(currentWeekId);
+                    if (success) {
+                        Calendar.refresh();
+                        TaskQueue.refresh();
+                        Toast.success('Tasks copied from previous week!');
+                    } else {
+                        Toast.warning('No tasks found in previous week to copy.');
+                    }
+                });
             });
         }
 
@@ -347,10 +349,10 @@ const App = {
      */
     setupDropdowns() {
         const dropdownConfigs = [
-            { id: 'moreActionsDropdown', btnId: 'moreActionsBtn', menuId: 'moreActionsMenu' }
+            { id: 'moreActionsDropdown', btnId: 'moreActionsBtn', menuId: 'moreActionsMenu' },
         ];
 
-        dropdownConfigs.forEach(config => {
+        dropdownConfigs.forEach((config) => {
             const dropdown = document.getElementById(config.id);
             const toggleBtn = document.getElementById(config.btnId);
             const menu = document.getElementById(config.menuId);
@@ -362,7 +364,7 @@ const App = {
                 e.stopPropagation();
 
                 // Close other open dropdowns first
-                dropdownConfigs.forEach(other => {
+                dropdownConfigs.forEach((other) => {
                     if (other.id !== config.id) {
                         const otherEl = document.getElementById(other.id);
                         const otherBtn = document.getElementById(other.btnId);
@@ -401,9 +403,7 @@ const App = {
                 }
             });
         });
-    }
-    ,
-
+    },
     updateBadgeCounts() {
         const queueCount = Store.getQueueTasks().length;
         const queueTab = document.querySelector('.sidebar-tab[data-tab="queue"]');
@@ -435,7 +435,7 @@ const App = {
             overlay.remove();
             taskEl.classList.remove('completing');
         }, 600);
-    }
+    },
 };
 
 // Initialize when DOM is ready
@@ -453,13 +453,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const basePath = window.location.pathname.replace(new RegExp('/[^/]*$'), '/');
                 const swPath = basePath + 'sw.js';
 
-                navigator.serviceWorker
-                    .register(swPath)
-                    .then((registration) => {
-                        setInterval(() => {
-                            if (navigator.onLine) registration.update();
-                        }, 60000);
-                    })
+                navigator.serviceWorker.register(swPath).then((registration) => {
+                    setInterval(() => {
+                        if (navigator.onLine) registration.update();
+                    }, 60000);
+                });
             });
         }
     }
