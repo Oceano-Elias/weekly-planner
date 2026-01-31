@@ -1578,13 +1578,13 @@ export const FocusModeUI = {
                 'aria-label': state.running
                     ? 'Pause'
                     : (state.accumulatedTime || 0) > 0
-                        ? 'Resume'
-                        : 'Start Focus',
+                      ? 'Resume'
+                      : 'Start Focus',
                 title: state.running
                     ? 'Pause'
                     : (state.accumulatedTime || 0) > 0
-                        ? 'Resume'
-                        : 'Start Focus',
+                      ? 'Resume'
+                      : 'Start Focus',
             });
             if (!state.running) {
                 toggleBtn.appendChild(

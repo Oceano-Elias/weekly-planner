@@ -93,23 +93,28 @@ export const UpdateNotification = {
             });
 
             // Also check for waiting service worker on page load
-            navigator.serviceWorker.ready.then((registration) => {
-                if (registration.waiting) {
-                    this.show();
-                }
+            navigator.serviceWorker.ready
+                .then((registration) => {
+                    if (registration.waiting) {
+                        this.show();
+                    }
 
-                // Listen for new service worker becoming available
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            this.show();
-                        }
+                    // Listen for new service worker becoming available
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (
+                                newWorker.state === 'installed' &&
+                                navigator.serviceWorker.controller
+                            ) {
+                                this.show();
+                            }
+                        });
                     });
+                })
+                .catch(() => {
+                    // Silently ignore - SW not supported in this context
                 });
-            }).catch(() => {
-                // Silently ignore - SW not supported in this context
-            });
         }
     },
 

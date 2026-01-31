@@ -1,7 +1,6 @@
 import { Store } from '../store.js';
 import { Departments } from '../departments.js';
 import { PlannerService } from './PlannerService.js';
-import { ConfirmModal } from '../components/ConfirmModal.js';
 import { ModalService } from './ModalService.js';
 import { Toast } from '../components/Toast.js';
 

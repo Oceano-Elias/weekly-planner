@@ -1,7 +1,5 @@
 import { Store } from '../store.js';
-import { Calendar } from '../components/Calendar.js';
 import FocusTrap from '../utils/FocusTrap.js';
-import { ModalService } from './ModalService.js';
 
 /**
  * KeyboardService - Handles global keyboard shortcuts

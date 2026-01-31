@@ -1382,13 +1382,7 @@ export const FocusMode = {
             }
         } else {
             // Browser Fallback
-            FocusModeUI.updatePipUI(
-                this.pipWindow,
-                seconds,
-                mode,
-                running,
-                total
-            );
+            FocusModeUI.updatePipUI(this.pipWindow, seconds, mode, running, total);
         }
         FocusModeUI.updateBadge(
             TimerService.pomodoroSeconds,

@@ -12,9 +12,8 @@ import { Analytics } from './components/Analytics.js';
 import { FocusMode } from './components/FocusMode.js';
 import { ConfirmModal } from './components/ConfirmModal.js';
 import { UpdateNotification } from './components/UpdateNotification.js';
-import { DepartmentSettings } from './components/DepartmentSettings.js';
+// DepartmentSettings and WeeklySummary lazy-loaded on demand
 import { Confetti } from './components/Confetti.js';
-import { WeeklySummary } from './components/WeeklySummary.js';
 import { QuickPalette } from './components/QuickPalette.js';
 import { CommandPalette } from './components/CommandPalette.js';
 import { Toast } from './components/Toast.js';
@@ -304,7 +303,8 @@ const App = {
     setupSettings() {
         const settingsBtn = document.getElementById('settingsBtn');
         if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => {
+            settingsBtn.addEventListener('click', async () => {
+                const { DepartmentSettings } = await import('./components/DepartmentSettings.js');
                 DepartmentSettings.open();
             });
         }
@@ -345,7 +345,10 @@ const App = {
 
         const summaryBtn = document.getElementById('weeklySummaryBtn');
         if (summaryBtn) {
-            summaryBtn.addEventListener('click', () => WeeklySummary.open());
+            summaryBtn.addEventListener('click', async () => {
+                const { WeeklySummary } = await import('./components/WeeklySummary.js');
+                WeeklySummary.open();
+            });
         }
     },
 

@@ -4,7 +4,6 @@
 
 import { Store } from '../store.js';
 import { FocusModeUI } from '../components/FocusModeUI.js';
-import { FocusAudio } from '../utils/FocusAudio.js';
 import { Rewards } from './Rewards.js';
 
 export const QuestStackController = {
@@ -43,15 +42,15 @@ export const QuestStackController = {
             task,
             onStepComplete: markComplete
                 ? () => {
-                      this.toggleMiniTask(fromIndex, true);
-                      this.recordStepCompletion(fromIndex, 'completed');
-                      // Show Reward (Centered)
-                      Rewards.show(window.innerWidth / 2, window.innerHeight * 0.35);
-                      if (this.callbacks.showSuccessVisuals) this.callbacks.showSuccessVisuals();
-                  }
+                    this.toggleMiniTask(fromIndex, true);
+                    this.recordStepCompletion(fromIndex, 'completed');
+                    // Show Reward (Centered)
+                    Rewards.show(window.innerWidth / 2, window.innerHeight * 0.35);
+                    if (this.callbacks.showSuccessVisuals) this.callbacks.showSuccessVisuals();
+                }
                 : () => {
-                      this.recordStepCompletion(fromIndex, 'skipped');
-                  },
+                    this.recordStepCompletion(fromIndex, 'skipped');
+                },
             onFinish: () => {
                 this.lastDoneStepIndex = fromIndex;
                 this.carouselAnimating = false;
