@@ -1,6 +1,6 @@
 [package]
 name = "weekly-planner"
-version = "1.0.0"
+version = "3.2.0"
 description = "A beautiful, offline-capable weekly planner with hierarchical task management"
 authors = ["Weekly Planner Team"]
 license = "MIT"

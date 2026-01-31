@@ -1,7 +1,7 @@
 {
     "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
     "productName": "Weekly Planner",
-    "version": "1.0.1",
+    "version": "3.2.0",
     "identifier": "com.weeklyplanner.app",
     "build": {
         "frontendDist": "../dist",
