@@ -81,6 +81,10 @@ export const UpdateNotification = {
      * Setup service worker message listeners
      */
     setupListeners() {
+        // Skip in non-HTTP environments (Tauri uses tauri:// protocol)
+        const isHttpProtocol = ['http:', 'https:'].includes(window.location.protocol);
+        if (!isHttpProtocol) return;
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
@@ -103,6 +107,8 @@ export const UpdateNotification = {
                         }
                     });
                 });
+            }).catch(() => {
+                // Silently ignore - SW not supported in this context
             });
         }
     },

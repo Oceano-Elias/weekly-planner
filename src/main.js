@@ -67,7 +67,12 @@ const App = {
 
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[UNHANDLED REJECTION]:', event.reason);
-            if (window.Toast) window.Toast.error('A background process failed.');
+            const message = event.reason?.message || event.reason || 'Unknown async error';
+            if (window.Toast) {
+                window.Toast.error(`Background error: ${message}`);
+            } else {
+                alert(`Background error (debug): ${message}`);
+            }
         });
 
         // Initialize PiP Mode if requested (Tauri-only)
@@ -442,8 +447,9 @@ const App = {
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
 
-    // Service Worker Registration
-    if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    // Service Worker Registration (skip in Tauri - uses tauri:// protocol)
+    const isHttpProtocol = ['http:', 'https:'].includes(window.location.protocol);
+    if (import.meta.env.PROD && 'serviceWorker' in navigator && isHttpProtocol) {
         const isLocalhost =
             window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const isHttps = window.location.protocol === 'https:';
