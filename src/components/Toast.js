@@ -1,9 +1,10 @@
+import { DevLog } from '../utils/DevLog.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 
 /**
  * Toast - Centralized notification system
  */
-console.log('[Toast] Module loading...');
+DevLog.log('[Toast] Module loading...');
 export const Toast = {
     container: null,
     toasts: [],
@@ -46,7 +47,7 @@ export const Toast = {
      * Show an info toast
      */
     info(message, title = 'Info') {
-        console.log('[Toast] Info notification:', message);
+        DevLog.log('[Toast] Info notification:', message);
         this.add('info', message, title);
     },
 
@@ -54,7 +55,7 @@ export const Toast = {
      * Core add method
      */
     add(type, message, title) {
-        console.log(`[Toast] Adding toast: ${type} - ${message}`);
+        DevLog.log(`[Toast] Adding toast: ${type} - ${message}`);
         this.init();
 
         // Enforce max toasts

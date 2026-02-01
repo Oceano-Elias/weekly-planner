@@ -3,6 +3,7 @@
  */
 
 import { PlannerService } from './services/PlannerService.js';
+import { DevLog } from './utils/DevLog.js';
 
 const STORAGE_KEY = 'weeklyPlanner_v3';
 
@@ -197,7 +198,7 @@ export const Store = {
                         activeExecution: state.activeExecution,
                     })
                 );
-                console.log('[Store] Changes persisted to localStorage');
+                DevLog.log('[Store] Changes persisted to localStorage');
             } catch (e) {
                 console.error('Error saving to storage:', e);
             }
@@ -454,7 +455,7 @@ export const Store = {
         }
 
         if (existing) {
-            console.log(
+            DevLog.log(
                 `[Store] Updating existing instance for task: ${task.title} to ${day} ${time}`
             );
             // Update existing instance position
@@ -466,7 +467,7 @@ export const Store = {
             existing.notes = task.notes || '';
             if (!existing.sourceTaskId) existing.sourceTaskId = taskId;
         } else {
-            console.log(`[Store] Creating new instance for task: ${task.title} on ${day} ${time}`);
+            DevLog.log(`[Store] Creating new instance for task: ${task.title} on ${day} ${time}`);
             // Create a new week-specific entry
             state.weeklyInstances[currentWeekId].tasks.push({
                 instanceId: `inst_${state.nextId++}`,
@@ -518,7 +519,7 @@ export const Store = {
             }
 
             if (instance) {
-                console.log(
+                DevLog.log(
                     `[Store] Rescheduling week-standalone instance ${taskId} to ${day} ${time}`
                 );
                 instance.scheduledDay = day;
@@ -542,7 +543,7 @@ export const Store = {
 
             const instance = weekInstances.tasks.find((t) => t.templateId === templateId);
             if (instance) {
-                console.log(`[Store] Rescheduling template instance ${taskId} to ${day} ${time}`);
+                DevLog.log(`[Store] Rescheduling template instance ${taskId} to ${day} ${time}`);
                 instance.scheduledDay = day;
                 instance.scheduledTime = time;
                 this.save(true); // Force immediate save for DnD
@@ -707,7 +708,7 @@ export const Store = {
         const prevTasks = this.getTasksForWeek(prevWeekId);
 
         if (prevTasks.length === 0) {
-            console.log(`[Store] No tasks found in previous week (${prevWeekId}) to copy.`);
+            DevLog.log(`[Store] No tasks found in previous week (${prevWeekId}) to copy.`);
             return false;
         }
 
@@ -848,7 +849,7 @@ export const Store = {
     migrateToWeeklySystem() {
         if (state.migrated) return;
 
-        console.log('Migrating to per-week system...');
+        DevLog.log('Migrating to per-week system...');
 
         // Create templates from currently scheduled tasks
         const scheduledTasks = state.tasks.filter((t) => t.scheduledDay && t.scheduledTime);
@@ -888,7 +889,7 @@ export const Store = {
         state.migrated = true;
         this.save();
 
-        console.log(`Migration complete. Created ${state.templates.length} templates.`);
+        DevLog.log(`Migration complete. Created ${state.templates.length} templates.`);
     },
 
     /**

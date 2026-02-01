@@ -1,3 +1,4 @@
+import { DevLog } from '../utils/DevLog.js';
 /**
  * Filters - Premium department filtering (top-level only)
  */
@@ -25,13 +26,13 @@ export const Filters = {
 
         // Subscribe to store changes to update task counts
         Store.subscribe(() => {
-            console.log('Filters: Store updated, refreshing task counts...');
+            DevLog.log('Filters: Store updated, refreshing task counts...');
             this.refresh();
         });
 
         // Listen for department updates
         window.addEventListener('departmentsUpdated', () => {
-            console.log('Filters: Departments updated, re-rendering...');
+            DevLog.log('Filters: Departments updated, re-rendering...');
             this.refresh();
         });
     },

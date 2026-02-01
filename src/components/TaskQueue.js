@@ -1,3 +1,4 @@
+import { DevLog } from '../utils/DevLog.js';
 /**
  * Task Queue - Manages the sidebar task queue display
  */
@@ -25,7 +26,7 @@ export const TaskQueue = {
 
         // Subscribe to store changes for automatic UI updates
         Store.subscribe(() => {
-            console.log('TaskQueue: Store updated, refreshing UI...');
+            DevLog.log('TaskQueue: Store updated, refreshing UI...');
             this.refresh();
         });
     },
@@ -238,15 +239,15 @@ export const TaskQueue = {
                 deleteBtn.addEventListener('click', async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Delete button clicked for task:', taskId);
+                    DevLog.log('Delete button clicked for task:', taskId);
                     const confirmed = await ConfirmModal.show(
                         'Are you sure you want to delete this task?'
                     );
                     if (confirmed) {
-                        console.log('User confirmed delete');
+                        DevLog.log('User confirmed delete');
                         Store.deleteTask(taskId);
                     } else {
-                        console.log('User canceled delete');
+                        DevLog.log('User canceled delete');
                     }
                 });
             }

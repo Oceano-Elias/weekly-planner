@@ -1,3 +1,4 @@
+import { DevLog } from '../utils/DevLog.js';
 /**
  * FocusModeUI - Pure UI templates for FocusMode component
  */
@@ -2039,7 +2040,7 @@ export const FocusModeUI = {
      * Set up PiP window document styles and initial content
      */
     setupPipWindow(pip, onStartPause, onReset, onRestore) {
-        console.log('[FocusModeUI] Setting up PiP Window (DOM API Version)', { pip });
+        DevLog.log('[FocusModeUI] Setting up PiP Window (DOM API Version)', { pip });
         const doc = pip.document;
 
         // Clear existing
@@ -2154,25 +2155,25 @@ export const FocusModeUI = {
         doc.body.appendChild(root);
 
         // Attach listeners directly to elements we just created
-        console.log('[FocusModeUI] Attaching listeners to created elements');
+        DevLog.log('[FocusModeUI] Attaching listeners to created elements');
 
         // Use both onclick and addEventListener for redundancy
         startBtn.onclick = (e) => {
-            console.log('[FocusModeUI] PiP Start Clicked (onclick)');
+            DevLog.log('[FocusModeUI] PiP Start Clicked (onclick)');
             e.preventDefault();
             e.stopPropagation();
             onStartPause(e);
         };
 
         resetBtn.onclick = (e) => {
-            console.log('[FocusModeUI] PiP Reset Clicked (onclick)');
+            DevLog.log('[FocusModeUI] PiP Reset Clicked (onclick)');
             e.preventDefault();
             e.stopPropagation();
             onReset(e);
         };
 
         expandBtn.onclick = (e) => {
-            console.log('[FocusModeUI] PiP Expand Clicked (onclick)');
+            DevLog.log('[FocusModeUI] PiP Expand Clicked (onclick)');
             e.preventDefault();
             e.stopPropagation();
             onRestore(e);
@@ -2180,7 +2181,7 @@ export const FocusModeUI = {
 
         // Double click on body
         const handleRestore = (e) => {
-            console.log('[FocusModeUI] PiP Body Double Clicked');
+            DevLog.log('[FocusModeUI] PiP Body Double Clicked');
             // Ignore if clicking on buttons
             if (e.target.closest('button')) return;
             onRestore(e);

@@ -1,3 +1,4 @@
+import { DevLog } from '../utils/DevLog.js';
 /**
  * Calendar Grid - Renders and manages the weekly and daily calendar views
  */
@@ -8,6 +9,7 @@ import { TaskCard } from './TaskCard.js';
 import { ConfirmModal } from './ConfirmModal.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 import { Rewards } from '../services/Rewards.js';
+import { DateTimeService } from '../services/DateTimeService.js';
 
 export const Calendar = {
     currentWeekStart: null,
@@ -65,7 +67,7 @@ export const Calendar = {
 
         // Subscribe to store changes
         Store.subscribe(() => {
-            console.log('Calendar: Store updated, refreshing tasks...');
+            DevLog.log('Calendar: Store updated, refreshing tasks...');
             this.renderScheduledTasks();
         });
     },
@@ -80,7 +82,7 @@ export const Calendar = {
         // Auto-generate week instances from template if they don't exist
         const weekId = Store.getWeekIdentifier(this.currentWeekStart);
         if (!Store.hasWeekInstances(weekId)) {
-            console.log(`Auto-generating week ${weekId} from template...`);
+            DevLog.log(`Auto-generating week ${weekId} from template...`);
             Store.createWeekFromTemplate(weekId);
         }
     },
@@ -107,23 +109,14 @@ export const Calendar = {
         if (this.viewMode === 'day') {
             // Show just the selected day
             const date = dates[this.selectedDayIndex];
-            return date.toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-            });
+            return DateTimeService.formatFullDate(date);
         }
 
         // Week view - show range
         const start = dates[0];
         const end = dates[6];
 
-        const options = { month: 'long', day: 'numeric' };
-        const startStr = start.toLocaleDateString('en-US', options);
-        const endStr = end.toLocaleDateString('en-US', { ...options, year: 'numeric' });
-
-        return `${startStr} - ${endStr}`;
+        return DateTimeService.formatWeekRange(start, end);
     },
 
     /**
@@ -188,19 +181,11 @@ export const Calendar = {
             const goal = goals[dayName] || '';
 
             // Format date nicely
-            const dateStr = date.toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-            });
+            const dateStr = DateTimeService.formatDayHeader(date);
 
             // Current time for initial render (will be updated by timer)
             const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            });
+            const timeStr = DateTimeService.formatCurrentTime(now);
 
             const headerCell = DOMUtils.createElement('div', { className: 'day-view-header-new' }, [
                 DOMUtils.createElement('div', { className: 'day-header-left' }, [
@@ -305,7 +290,7 @@ export const Calendar = {
         const needsStructuralRefresh = currentMode !== this.viewMode;
 
         if (needsStructuralRefresh) {
-            console.log(`Calendar: Structural refresh for ${this.viewMode} view`);
+            DevLog.log(`Calendar: Structural refresh for ${this.viewMode} view`);
             DOMUtils.clear(grid);
             grid.dataset.viewMode = this.viewMode;
             this.columnCache = {}; // Reset cache on new grid render
@@ -631,11 +616,7 @@ export const Calendar = {
         const top = (totalMinutes / 30) * cellHeight;
 
         // Format current time for display (e.g., "10:45 AM")
-        const timeStr = now.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-        });
+        const timeStr = DateTimeService.formatCurrentTime(now);
 
         marker.style.display = 'block';
         marker.style.top = `${top}px`;
@@ -918,11 +899,7 @@ export const Calendar = {
             const clockEl = document.getElementById('dayHeaderClock');
             if (clockEl) {
                 const now = new Date();
-                const timeStr = now.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                });
+                const timeStr = DateTimeService.formatCurrentTime(now);
                 clockEl.textContent = timeStr;
             } else {
                 // Clock element not found, stop timer (probably switched to week view)
@@ -939,7 +916,7 @@ export const Calendar = {
         const weekId = Store.getWeekIdentifier(this.currentWeekStart);
         const dayTasks = Store.getTasksForWeek(weekId).filter((t) => t.scheduledDay === day);
 
-        console.log(
+        DevLog.log(
             'Checking celebration for',
             day,
             '- Tasks:',
@@ -952,10 +929,10 @@ export const Calendar = {
 
         const allComplete = dayTasks.every((t) => t.completed);
 
-        console.log('All complete?', allComplete);
+        DevLog.log('All complete?', allComplete);
 
         if (allComplete && window.Confetti) {
-            console.log('🎊 Triggering confetti celebration!');
+            DevLog.log('🎊 Triggering confetti celebration!');
             // Small delay to let the completion animation finish
             setTimeout(() => {
                 window.Confetti.celebrate();
