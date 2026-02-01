@@ -12,6 +12,7 @@ import { Rewards } from '../services/Rewards.js';
 import { DateTimeService } from '../services/DateTimeService.js';
 
 export const Calendar = {
+    // #region State & Configuration
     currentWeekStart: null,
     // Use shared constants from PlannerService
     get days() {
@@ -34,7 +35,9 @@ export const Calendar = {
     onEditTask: null,
     onOpenModalWithSchedule: null,
     onPlayCompletionAnimation: null,
+    // #endregion
 
+    // #region Core Methods
     /**
      * Set the view mode
      */
@@ -126,7 +129,9 @@ export const Calendar = {
         const today = new Date();
         return date.toDateString() === today.toDateString();
     },
+    // #endregion
 
+    // #region Rendering
     /**
      * Render the calendar header (days)
      */
@@ -452,7 +457,9 @@ export const Calendar = {
 
         return taskEl;
     },
+    // #endregion
 
+    // #region Progress & Time
     /**
      * Update visual progress for a task (grey wash for past portion)
      */
@@ -622,7 +629,9 @@ export const Calendar = {
         marker.style.top = `${top}px`;
         marker.setAttribute('data-time', timeStr);
     },
+    // #endregion
 
+    // #region Navigation & View
     /**
      * Setup view switcher listeners
      */
@@ -693,7 +702,9 @@ export const Calendar = {
             if (window.TaskQueue) window.TaskQueue.refresh();
         });
     },
+    // #endregion
 
+    // #region Event Handlers
     /**
      * Setup cell click to open form
      */
