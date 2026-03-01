@@ -831,7 +831,7 @@ export const FocusModeUI = {
     /**
      * Orchestrate backward roll animation
      */
-    animateBackwardRoll({ fromIndex, toIndex, task, onFinish }) {
+    animateBackwardRoll({ fromIndex: _fromIndex, toIndex, task, onFinish }) {
         const els = this.getCarouselElements();
         if (
             !els.carousel ||

@@ -783,7 +783,7 @@ export const DepartmentSettings = {
     /**
      * Handle drag end
      */
-    handleDragEnd(event) {
+    handleDragEnd(_event) {
         this.draggedPath = null;
         this.dragOverPath = null;
 

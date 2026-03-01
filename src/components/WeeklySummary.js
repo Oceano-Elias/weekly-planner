@@ -4,7 +4,6 @@
  */
 
 import { Store } from '../store.js';
-import { PlannerService } from '../services/PlannerService.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 
 export const WeeklySummary = {

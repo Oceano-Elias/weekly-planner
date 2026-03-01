@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { FocusMode } from '../components/FocusMode';
 import { Store } from '../store';
 
 // Mock FocusModeUI and FocusAudio to avoid DOM/Audio dependencies

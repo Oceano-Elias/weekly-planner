@@ -504,7 +504,6 @@ export const FocusMode = {
 
         const navUp = stackContainer.querySelector('#carouselNavUpBtn');
         const navDown = stackContainer.querySelector('#carouselNavDownBtn');
-        const completeBtn = stackContainer.querySelector('#carouselCompleteBtn');
 
         navUp?.addEventListener('click', (e) => {
             e.preventDefault();
@@ -900,9 +899,6 @@ export const FocusMode = {
         // Explicitly check for lines that are tasks
         const taskLines = lines.filter((l) => l.includes('[ ]') || l.includes('[x]'));
 
-        // Log for debugging
-        const completedCount = taskLines.filter((l) => l.includes('[x]')).length;
-
         const state = Store.getActiveExecution();
         const allCompleted =
             (taskLines.length > 0 && taskLines.every((l) => l.includes('[x]'))) ||
@@ -1172,11 +1168,6 @@ export const FocusMode = {
         if (window.__TAURI__) {
             try {
                 // Try to create/open a separate window
-                const { Window } = window.__TAURI__.window; // Tauri v2
-                // Or WebviewWindow: const { WebviewWindow } = window.__TAURI__.window; // Tauri v1/v2 compatibility
-
-                // We'll trust that withGlobalTauri exposes what we need, usually window.__TAURI__.window contains the constructors
-                const winLabel = 'focus-pip';
 
                 // Check if already open
                 // In v2 we can't easily check existence without async, so we just try to create.
@@ -1265,7 +1256,7 @@ export const FocusMode = {
                         // Note: We're not rigorously tracking close here because
                         // re-opening will just find the existing one or create new.
                         // But cleaning up is good practice.
-                        this.pipWindow.onCloseRequested(async (event) => {
+                        this.pipWindow.onCloseRequested(async (_event) => {
                             this.pipWindow = null;
                         });
                     }
@@ -1287,7 +1278,7 @@ export const FocusMode = {
             // Try to force resize (Chrome often caches user's last size, this might help)
             try {
                 if (pip.resizeTo) pip.resizeTo(160, 190);
-            } catch (e) {
+            } catch {
                 // Ignore resize errors
             }
 
@@ -1297,7 +1288,7 @@ export const FocusMode = {
             FocusModeUI.setupPipWindow(pip, pip.startPause, pip.resetTimer, () => {
                 try {
                     pip.close(); // Force close
-                } catch (e) {
+                } catch {
                     // Ignore
                 }
                 window.focus(); // Try to bring main window to front

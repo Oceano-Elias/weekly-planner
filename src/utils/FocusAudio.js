@@ -15,7 +15,7 @@ export const FocusAudio = {
     init() {
         try {
             this.enabled = localStorage.getItem(STORAGE_KEY) !== 'false';
-        } catch (e) {
+        } catch {
             this.enabled = true;
         }
     },

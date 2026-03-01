@@ -247,6 +247,46 @@
     filter: drop-shadow(0 0 8px var(--task-color));
 }
 
+/* =========================================
+   TIMER ARC URGENCY — colour shift as time runs out
+   Applied via JS: add .timer-warning / .timer-critical class to .outer-ring-fill
+   ========================================= */
+.outer-ring-fill.timer-warning {
+    filter: drop-shadow(0 0 10px #f59e0b);
+    /* stroke set to amber in JS */
+}
+
+.outer-ring-fill.timer-critical {
+    filter: drop-shadow(0 0 14px #ef4444);
+    animation: criticalPulse 0.8s ease-in-out infinite;
+    /* stroke set to red in JS */
+}
+
+@keyframes criticalPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.75;
+    }
+}
+
+/* Ring time also shifts colour based on urgency */
+.ring-time.timer-warning {
+    color: #fbbf24;
+    text-shadow: 0 0 30px rgba(251, 191, 36, 0.4);
+}
+
+.ring-time.timer-critical {
+    color: #f87171;
+    text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+    animation: criticalPulse 0.8s ease-in-out infinite, premiumTimePulse 2s ease-in-out infinite;
+}
+
+
 .inner-ring-bg {
     fill: none;
     stroke: rgba(255, 255, 255, 0.06);

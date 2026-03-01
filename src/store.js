@@ -4,6 +4,7 @@
 
 import { PlannerService } from './services/PlannerService.js';
 import { DevLog } from './utils/DevLog.js';
+import { parseTaskId, resolveWeekInstance } from './utils/TaskIdParser.js';
 
 const STORAGE_KEY = 'weeklyPlanner_v3';
 
@@ -105,6 +106,40 @@ export const Store = {
                 console.error('Error in store listener:', e);
             }
         });
+    },
+
+    // =========================================
+    // UNDO / REDO STACK
+    // =========================================
+    _undoStack: [],
+    _maxUndo: 30,
+
+    /**
+     * Push an undo thunk onto the stack.
+     * `fn` is a zero-argument function that reverts the last mutation.
+     */
+    pushUndo(fn) {
+        this._undoStack.push(fn);
+        if (this._undoStack.length > this._maxUndo) {
+            this._undoStack.shift(); // keep bounded
+        }
+    },
+
+    /**
+     * Undo the last reversible action.
+     * Returns true if an undo was executed.
+     */
+    undo() {
+        const fn = this._undoStack.pop();
+        if (!fn) return false;
+        try {
+            fn();
+        } catch (e) {
+            console.error('[Store] Undo failed:', e);
+        }
+        this.save();
+        this.notify();
+        return true;
     },
 
     /**
@@ -283,6 +318,22 @@ export const Store = {
         const resolved = this._resolveTask(taskId);
         if (!resolved) return;
 
+        // Snapshot for undo — capture full serialised state before deletion
+        const snapshot = JSON.parse(
+            JSON.stringify({
+                tasks: state.tasks,
+                weeklyInstances: state.weeklyInstances,
+                templates: state.templates,
+                nextId: state.nextId,
+            })
+        );
+        this.pushUndo(() => {
+            state.tasks = snapshot.tasks;
+            state.weeklyInstances = snapshot.weeklyInstances;
+            state.templates = snapshot.templates;
+            state.nextId = snapshot.nextId;
+        });
+
         if (resolved.type === 'legacy') {
             state.tasks = state.tasks.filter((t) => t.id !== taskId);
         } else if (resolved.type === 'week_standalone' || resolved.type === 'template') {
@@ -345,47 +396,32 @@ export const Store = {
     },
 
     /**
-     * Internal helper to resolve task reference from any ID format
+     * Internal helper to resolve task reference from any ID format.
+     * Uses TaskIdParser for ID interpretation; applies state lookups here.
      * @private
      */
     _resolveTask(taskId) {
-        // pattern 1: Legacy tasks (task_123)
-        if (
-            !taskId.includes('_') ||
-            (!taskId.startsWith('week_') && !taskId.startsWith('template_'))
-        ) {
+        const parsed = parseTaskId(taskId);
+        if (!parsed) return null;
+
+        if (parsed.type === 'legacy') {
             const task = state.tasks.find((t) => t.id === taskId);
             return task ? { type: 'legacy', task } : null;
         }
 
-        // pattern 2: Standalone week task (week_2026-W01_inst_5)
-        if (taskId.startsWith('week_')) {
-            const parts = taskId.split('_');
-            const weekId = parts[1];
+        if (parsed.type === 'week_standalone') {
+            const { weekId, suffix } = parsed;
             const weekInstances = state.weeklyInstances[weekId];
             if (!weekInstances) return null;
-
-            const suffix = parts.slice(2).join('_');
-            let instance = null;
-            if (suffix.startsWith('inst_')) {
-                instance = weekInstances.tasks.find((t) => t.instanceId === suffix);
-            } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
-                const idx = parseInt(suffix.split('_')[1]);
-                instance = weekInstances.tasks[idx];
-            }
+            const instance = resolveWeekInstance(weekInstances.tasks, suffix);
             return instance ? { type: 'week_standalone', instance, weekId } : null;
         }
 
-        // pattern 3: Template-based week task (template_123_2026-W01)
-        if (taskId.startsWith('template_')) {
-            const parts = taskId.split('_');
-            const weekId = parts[parts.length - 1];
-            const templateId = parts.slice(0, -1).join('_');
-
+        if (parsed.type === 'template') {
+            const { weekId, templateId } = parsed;
             const template = state.templates.find((t) => t.id === templateId);
             const weekInstances = state.weeklyInstances[weekId];
             if (!template || !weekInstances) return null;
-
             const instance = weekInstances.tasks.find((t) => t.templateId === templateId);
             return instance ? { type: 'template', template, instance, weekId, templateId } : null;
         }
@@ -436,6 +472,20 @@ export const Store = {
     scheduleTask(taskId, day, time, immediate = false) {
         const task = state.tasks.find((t) => t.id === taskId);
         if (!task) return null;
+
+        // Snapshot for undo
+        const snapBefore = JSON.parse(
+            JSON.stringify({
+                tasks: state.tasks,
+                weeklyInstances: state.weeklyInstances,
+                nextId: state.nextId,
+            })
+        );
+        this.pushUndo(() => {
+            state.tasks = snapBefore.tasks;
+            state.weeklyInstances = snapBefore.weeklyInstances;
+            state.nextId = snapBefore.nextId;
+        });
 
         // Update the legacy task
         task.scheduledDay = day;
@@ -495,36 +545,27 @@ export const Store = {
     rescheduleTaskInWeek(taskId, day, time) {
         if (!taskId) return null;
 
-        if (taskId.startsWith('task_')) {
+        const parsed = parseTaskId(taskId);
+        if (!parsed) return null;
+
+        // Legacy queue task: delegate to scheduleTask
+        if (parsed.type === 'legacy') {
             return this.scheduleTask(taskId, day, time, true);
         }
 
-        // Handle standalone week task IDs (format: week_weekId_instanceId or legacy week_weekId_task_index)
-        if (taskId.startsWith('week_')) {
-            const parts = taskId.split('_');
-            const weekId = parts[1]; // "2026-W01"
-
+        if (parsed.type === 'week_standalone') {
+            const { weekId, suffix } = parsed;
             const weekInstances = state.weeklyInstances[weekId];
             if (!weekInstances) return null;
 
-            // Find the task by instanceId or by index (for legacy)
-            const suffix = parts.slice(2).join('_');
-            let instance = null;
-
-            if (suffix.startsWith('inst_')) {
-                instance = weekInstances.tasks.find((t) => t.instanceId === suffix);
-            } else if (suffix.startsWith('idx_') || suffix.startsWith('task_')) {
-                const taskIndex = parseInt(suffix.split('_')[1]);
-                instance = weekInstances.tasks[taskIndex];
-            }
-
+            const instance = resolveWeekInstance(weekInstances.tasks, suffix);
             if (instance) {
                 DevLog.log(
                     `[Store] Rescheduling week-standalone instance ${taskId} to ${day} ${time}`
                 );
                 instance.scheduledDay = day;
                 instance.scheduledTime = time;
-                this.save(true); // Force immediate save for DnD
+                this.save(true);
                 this.notify();
                 return this.getTask(taskId);
             }
@@ -532,12 +573,8 @@ export const Store = {
             return null;
         }
 
-        // Handle template-based week-specific IDs (format: template_X_weekId)
-        if (taskId.split('_').length >= 3) {
-            const parts = taskId.split('_');
-            const weekId = parts[parts.length - 1];
-            const templateId = parts.slice(0, -1).join('_');
-
+        if (parsed.type === 'template') {
+            const { weekId, templateId } = parsed;
             const weekInstances = state.weeklyInstances[weekId];
             if (!weekInstances) return null;
 
@@ -546,7 +583,7 @@ export const Store = {
                 DevLog.log(`[Store] Rescheduling template instance ${taskId} to ${day} ${time}`);
                 instance.scheduledDay = day;
                 instance.scheduledTime = time;
-                this.save(true); // Force immediate save for DnD
+                this.save(true);
                 this.notify();
                 return this.getTask(taskId);
             }
@@ -1417,10 +1454,6 @@ export const Store = {
      * Export all data as JSON
      * @returns {Object} Complete data export
      */
-    /**
-     * Export all data as JSON
-     * @returns {Object} Complete data export
-     */
     exportData() {
         return {
             version: '3.1', // Bumped version for new format
@@ -1563,42 +1596,5 @@ export const Store = {
             reader.onerror = () => resolve(false);
             reader.readAsText(file);
         });
-    },
-
-    /**
-     * Get the active Pomodoro session
-     */
-    getActivePomodoro() {
-        return state.activePomodoro;
-    },
-
-    /**
-     * Set the active Pomodoro session
-     */
-    setActivePomodoro(taskId, data) {
-        state.activePomodoro = {
-            ...state.activePomodoro,
-            ...data,
-            taskId,
-            updatedAt: Date.now(),
-        };
-        this.save();
-        this.notify();
-    },
-
-    /**
-     * Clear the active Pomodoro session
-     */
-    clearActivePomodoro() {
-        state.activePomodoro = {
-            taskId: null,
-            remainingSeconds: 1500,
-            targetEpoch: null,
-            running: false,
-            mode: 'work',
-            updatedAt: Date.now(),
-        };
-        this.save();
-        this.notify();
     },
 };

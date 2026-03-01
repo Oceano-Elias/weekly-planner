@@ -284,7 +284,7 @@ export const Confetti = {
 
             sparkle.start(sparkleStart);
             sparkle.stop(sparkleStart + 0.4);
-        } catch (e) {
+        } catch {
             // Silently ignore if audio fails
         }
     },

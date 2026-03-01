@@ -3,9 +3,8 @@
  * Tests for time slot utilities and availability checking
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DragDropService } from '../services/DragDropService.js';
-import { Store } from '../store.js';
 
 describe('DragDropService', () => {
     beforeEach(() => {

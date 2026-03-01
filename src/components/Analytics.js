@@ -168,7 +168,7 @@ export const Analytics = {
         if (!container) return;
 
         const data = Store.getAnalyticsForWeek();
-        const { byHierarchy, miniTasks, tasks, duration } = data;
+        const { byHierarchy, miniTasks, tasks } = data;
         const entries = Object.entries(byHierarchy);
 
         DOMUtils.clear(container);
@@ -698,9 +698,53 @@ export const Analytics = {
             );
             wrapper.appendChild(bar);
             barContainer.appendChild(wrapper);
-
             chart.appendChild(barContainer);
         });
         container.appendChild(chart);
+
+        // --- CSV Export Button ---
+        const exportRow = DOMUtils.createElement('div', {
+            className: 'analytics-export-row',
+            style: { marginTop: '16px', display: 'flex', justifyContent: 'flex-end' },
+        });
+        const exportBtn = DOMUtils.createElement('button', {
+            className: 'btn-text analytics-csv-btn',
+            title: "Export this week's analytics as CSV",
+            innerHTML:
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV',
+            onClick: () => this.exportCSV(data),
+        });
+        exportRow.appendChild(exportBtn);
+        container.appendChild(exportRow);
+    },
+
+    /**
+     * Export current week's analytics data as a CSV file
+     */
+    exportCSV(data) {
+        if (!data) data = Store.getAnalyticsForWeek();
+        const scheduledTasks = Store.getScheduledTasksForWeek();
+        const rows = [['Title', 'Department', 'Duration (min)', 'Scheduled Day', 'Completed']];
+
+        scheduledTasks.forEach((task) => {
+            const deptName = (task.hierarchy || []).join(' > ') || 'Uncategorized';
+            rows.push([
+                `"${(task.title || '').replace(/"/g, '""')}"`,
+                `"${deptName.replace(/"/g, '""')}"`,
+                task.duration || 0,
+                task.scheduledDay || '',
+                task.completed ? 'Yes' : 'No',
+            ]);
+        });
+
+        const csv = rows.map((r) => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const weekKey = Store.getCurrentWeekKey ? Store.getCurrentWeekKey() : 'week';
+        a.href = url;
+        a.download = `planner-analytics-${weekKey}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     },
 };

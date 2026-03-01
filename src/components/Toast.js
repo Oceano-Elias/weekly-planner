@@ -63,14 +63,18 @@ export const Toast = {
             this.dismiss(this.toasts[0].id);
         }
 
+        // Auto-size duration: 100ms per word, clamped between 3s and 8s
+        const wordCount = String(message).split(/\s+/).filter(Boolean).length;
+        const duration = Math.min(8000, Math.max(3000, wordCount * 100 + 2500));
+
         const id = Date.now() + Math.random();
-        const toastEl = this.createToastElement(id, type, message, title);
+        const toastEl = this.createToastElement(id, type, message, title, duration);
 
         const toastObj = {
             id,
             el: toastEl,
             timeout: null,
-            duration: this.defaultDuration,
+            duration,
         };
 
         this.toasts.push(toastObj);
@@ -80,7 +84,7 @@ export const Toast = {
         this.startTimer(toastObj);
     },
 
-    createToastElement(id, type, message, title) {
+    createToastElement(id, type, message, title, duration = this.defaultDuration) {
         const icon = this.getIconForType(type);
 
         const toast = DOMUtils.createElement('div', {
@@ -103,10 +107,10 @@ export const Toast = {
             onClick: () => this.dismiss(id),
         });
 
-        // Progress bar for visual feedback of time remaining
+        // Progress bar — duration matches computed read time
         const progress = DOMUtils.createElement('div', {
             className: 'toast-progress',
-            style: { animationDuration: `${this.defaultDuration}ms` },
+            style: { animationDuration: `${duration}ms` },
         });
 
         toast.appendChild(iconEl);

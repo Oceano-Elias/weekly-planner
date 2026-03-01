@@ -27,8 +27,6 @@ export class TaskCard {
         const task = this.task;
         const color = Departments.getColor(task.hierarchy);
         const abbr = Departments.getRootAbbreviation(task.hierarchy);
-        const topDept = task.hierarchy[0] || '';
-        const hierarchyPath = task.hierarchy.slice(1).join(' › ');
 
         // Determine layout tier based on duration
         const isStandard = task.duration >= 45 && task.duration < 90;
@@ -52,7 +50,7 @@ export class TaskCard {
         });
 
         // Add click listener to track last selected task for shortcuts
-        el.addEventListener('click', (e) => {
+        el.addEventListener('click', (_e) => {
             window.lastClickedTaskId = task.id;
         });
 
@@ -113,6 +111,19 @@ export class TaskCard {
                 textContent: abbr,
             })
         );
+
+        // Template indicator — shows recurring tasks have a template
+        if (task.templateId) {
+            headerLeft.appendChild(
+                DOMUtils.createElement('span', {
+                    className: 'task-template-badge',
+                    title: 'Recurring template task',
+                    innerHTML:
+                        '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+                })
+            );
+        }
+
         headerLeft.appendChild(
             DOMUtils.createElement('span', {
                 className: 'task-title',

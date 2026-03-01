@@ -359,7 +359,7 @@ export const DragDropService = {
                     // Capture pointer only when drag threshold is met
                     try {
                         pointerCandidate.taskBlock.setPointerCapture(pointerId);
-                    } catch (err) {
+                    } catch {
                         // Ignore pointer capture errors
                     }
 

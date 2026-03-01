@@ -45,6 +45,19 @@ export const KeyboardService = {
                         return;
                     }
 
+                    // Cmd+Z / Ctrl+Z - Undo last action
+                    if (e.key.toLowerCase() === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+                        e.preventDefault();
+                        if (window.Store && window.Store.undo()) {
+                            if (window.Toast) window.Toast.info('Undid last action');
+                            if (window.Calendar) window.Calendar.refresh();
+                            if (window.TaskQueue) window.TaskQueue.refresh();
+                        } else {
+                            if (window.Toast) window.Toast.info('Nothing to undo');
+                        }
+                        return;
+                    }
+
                     // 2. Toggles that work even if a modal is open (as long as not typing)
                     if (
                         !isInputFocused &&
@@ -87,6 +100,41 @@ export const KeyboardService = {
                             e.preventDefault();
                             document.getElementById('newTaskBtn')?.click();
                             break;
+                        case 'c': {
+                            // Toggle completion on hovered or last-clicked task
+                            e.preventDefault();
+                            const taskEl =
+                                document.querySelector('.calendar-task:hover .task-block') ||
+                                document.querySelector('.task-block:hover') ||
+                                (window.lastClickedTaskId &&
+                                    document.querySelector(
+                                        `[data-task-id="${window.lastClickedTaskId}"]`
+                                    ));
+                            if (taskEl && taskEl.dataset.taskId && window.Store) {
+                                const task = window.Store.getTask(taskEl.dataset.taskId);
+                                if (task) {
+                                    const wasCompleted = task.completed;
+                                    window.Store.pushUndo(() => {
+                                        window.Store.updateTask(taskEl.dataset.taskId, {
+                                            completed: wasCompleted,
+                                        });
+                                    });
+                                    window.Store.updateTask(taskEl.dataset.taskId, {
+                                        completed: !wasCompleted,
+                                    });
+                                    if (window.Calendar) window.Calendar.refresh();
+                                    if (window.TaskQueue) window.TaskQueue.refresh();
+                                    if (window.Toast)
+                                        window.Toast.success(
+                                            !wasCompleted
+                                                ? 'Task marked complete'
+                                                : 'Task marked incomplete'
+                                        );
+                                }
+                            }
+                            break;
+                        }
+
                         case 't':
                             e.preventDefault();
                             document.getElementById('todayBtn')?.click();

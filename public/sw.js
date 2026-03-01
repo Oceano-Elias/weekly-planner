@@ -3,7 +3,7 @@
 
 const CACHE_VERSION = 'v5';
 const APP_VERSION = '3.2.0';
-const CACHE_NAME = `planner-v5`;
+const CACHE_NAME = `planner-v5-${APP_VERSION}`;
 
 const DISABLE_ON_PORTS = new Set(['5173', '5174', '5175']);
 const disableServiceWorker =

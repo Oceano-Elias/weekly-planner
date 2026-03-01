@@ -324,6 +324,24 @@ const App = {
                 const file = e.target.files[0];
                 if (!file) return;
 
+                // Read and validate JSON before confirming
+                let parsedData;
+                try {
+                    const text = await file.text();
+                    parsedData = JSON.parse(text);
+                } catch (parseErr) {
+                    Toast.error(`Invalid JSON file: ${parseErr.message}`, 'Import Failed');
+                    importInput.value = '';
+                    return;
+                }
+
+                // Basic schema check
+                if (!parsedData || typeof parsedData !== 'object') {
+                    Toast.error('File does not contain valid planner data.', 'Import Failed');
+                    importInput.value = '';
+                    return;
+                }
+
                 const confirmed = await ConfirmModal.show(
                     'Import will replace ALL existing data. Are you sure you want to continue?'
                 );
@@ -336,7 +354,10 @@ const App = {
                         TaskQueue.refresh();
                         Filters.refresh();
                     } else {
-                        Toast.error('Failed to import data. Please check the file format.');
+                        Toast.error(
+                            'Import failed — data structure may be incompatible.',
+                            'Import Failed'
+                        );
                     }
                 }
                 importInput.value = '';

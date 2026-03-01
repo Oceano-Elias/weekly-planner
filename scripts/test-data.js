@@ -26,7 +26,7 @@
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) data = JSON.parse(saved);
-    } catch (e) {
+    } catch {
         // Ignore JSON parse errors
     }
 

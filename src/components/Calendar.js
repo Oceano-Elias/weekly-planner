@@ -562,16 +562,35 @@ export const Calendar = {
 
         this.updateTimeMarker();
 
-        this.progressTimer = setInterval(() => {
-            document.querySelectorAll('.calendar-task').forEach((taskEl) => {
-                const taskBlock = taskEl.querySelector('.task-block');
-                if (!taskBlock) return;
-                const taskId = taskBlock.dataset.taskId;
-                const task = Store.getTask(taskId);
-                if (task) this.updateTaskProgress(taskEl, task);
-            });
-            this.updateTimeMarker();
-        }, 10000);
+        const startTimer = () => {
+            if (this.progressTimer) clearInterval(this.progressTimer);
+            this.progressTimer = setInterval(() => {
+                document.querySelectorAll('.calendar-task').forEach((taskEl) => {
+                    const taskBlock = taskEl.querySelector('.task-block');
+                    if (!taskBlock) return;
+                    const taskId = taskBlock.dataset.taskId;
+                    const task = Store.getTask(taskId);
+                    if (task) this.updateTaskProgress(taskEl, task);
+                });
+                this.updateTimeMarker();
+            }, 10000);
+        };
+
+        // Pause when tab is hidden, resume when visible
+        if (!this._visibilityHandler) {
+            this._visibilityHandler = () => {
+                if (document.hidden) {
+                    clearInterval(this.progressTimer);
+                    this.progressTimer = null;
+                } else {
+                    this.updateTimeMarker();
+                    startTimer();
+                }
+            };
+            document.addEventListener('visibilitychange', this._visibilityHandler);
+        }
+
+        startTimer();
     },
 
     /**
